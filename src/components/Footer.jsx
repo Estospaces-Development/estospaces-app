@@ -1,5 +1,6 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram, Linkedin, Send } from 'lucide-react';
+import logoIcon from '../assets/logo-icon.png';
 
 const Footer = () => {
     return (
@@ -10,9 +11,7 @@ const Footer = () => {
                     {/* About */}
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                                ES
-                            </div>
+                            <img src={logoIcon} alt="Estospaces" className="w-10 h-10 object-contain" />
                             <span className="font-bold text-xl">Estospaces</span>
                         </div>
                         <p className="text-gray-400 mb-4">

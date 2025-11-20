@@ -48,7 +48,7 @@ const Navbar = () => {
                     <div className="hidden md:flex items-center space-x-4">
                         <button className="bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-opacity-90 transition-all flex items-center gap-2">
                             <User size={18} />
-                            Login
+                            Login/SignUp
                         </button>
                     </div>
 
@@ -76,7 +76,7 @@ const Navbar = () => {
                         ))}
                         <button className="bg-primary text-white px-6 py-2 rounded-full font-medium w-full flex items-center justify-center gap-2">
                             <User size={18} />
-                            Login
+                            Login/SignUp
                         </button>
                     </div>
                 )}
