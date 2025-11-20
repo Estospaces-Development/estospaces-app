@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Twitter, Instagram, Linkedin, Send } from 'lucide-react';
+import { Twitter, Instagram, Linkedin, Send } from 'lucide-react';
 import logoIcon from '../assets/logo-icon.png';
 
 const Footer = () => {
@@ -18,16 +18,13 @@ const Footer = () => {
                             A virtual-first real estate platform connecting buyers and renters with verified brokers through immersive 3D property tours.
                         </p>
                         <div className="flex gap-3">
-                            <a href="#" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
-                                <Facebook size={18} />
-                            </a>
-                            <a href="#" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
+                            <a href="https://x.com/ESTOSPACES" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
                                 <Twitter size={18} />
                             </a>
-                            <a href="#" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
+                            <a href="https://www.instagram.com/estospaces/" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
                                 <Instagram size={18} />
                             </a>
-                            <a href="#" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
+                            <a href="https://www.linkedin.com/company/106770232/admin/dashboard/" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
                                 <Linkedin size={18} />
                             </a>
                         </div>
