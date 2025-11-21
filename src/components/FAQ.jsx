@@ -34,9 +34,6 @@ const FAQ = () => {
             <div className="container mx-auto px-4 relative z-10">
                 {/* Section Header */}
                 <div className="text-center mb-20 max-w-3xl mx-auto">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-orange-600 rounded-2xl mb-6 shadow-xl">
-                        <HelpCircle className="text-white" size={40} />
-                    </div>
                     <h2 className="text-5xl md:text-6xl font-bold text-secondary mb-6 tracking-tight">
                         Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600">Questions</span>
                     </h2>
