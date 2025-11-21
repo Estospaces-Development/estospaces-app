@@ -21,10 +21,6 @@ const Problem = () => {
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="max-w-4xl mx-auto text-center">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-white/5 backdrop-blur-md rounded-full mb-10 ring-1 ring-white/10 shadow-[0_0_20px_rgba(255,255,255,0.1)] animate-pulse">
-                        <AlertCircle className="text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.5)]" size={40} />
-                    </div>
-
                     <h2 className="text-4xl md:text-6xl font-bold text-white mb-10 leading-tight drop-shadow-lg">
                         Real Estate Shouldn't Be <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">This Hard.</span>
                     </h2>
