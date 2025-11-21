@@ -66,10 +66,10 @@ const WhyJoin = () => {
                         {benefits.slice(0, 3).map((benefit, index) => (
                             <div
                                 key={index}
-                                className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl hover:bg-white/10 transition-all duration-500 group hover:-translate-y-4 hover:shadow-[0_20px_40px_-15px_rgba(249,115,22,0.3)] relative overflow-hidden"
+                                className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl hover:bg-white/10 transition-all duration-500 group hover:-translate-y-4 hover:shadow-[0_10px_25px_-10px_rgba(249,115,22,0.2)] relative overflow-hidden"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                                <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                     {React.cloneElement(benefit.icon, { className: "text-white w-8 h-8" })}
                                 </div>
                                 <p className="text-xl font-medium text-white relative z-10">
@@ -82,7 +82,7 @@ const WhyJoin = () => {
                     {/* CTA Area with Glowing Effect */}
                     <div className="animate-fade-in-up delay-200 relative z-30">
                         <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transform scale-150 opacity-0 hover:opacity-100 transition-opacity duration-700"></div>
-                        <button className="relative bg-gradient-to-r from-primary to-orange-600 text-white px-12 py-6 rounded-full font-bold text-xl hover:shadow-[0_0_40px_rgba(249,115,22,0.6)] transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto border border-white/20">
+                        <button className="relative bg-gradient-to-r from-primary to-orange-600 text-white px-12 py-6 rounded-full font-bold text-xl hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto border border-white/20">
                             Reserve Your Spot
                             <Zap size={24} className="fill-current animate-pulse" />
                         </button>

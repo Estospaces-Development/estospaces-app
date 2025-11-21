@@ -1,39 +1,19 @@
 import React from 'react';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import BigPromise from './components/BigPromise';
-import SneakPeek from './components/SneakPeek';
-import Problem from './components/Problem';
-import Solution from './components/Solution';
-import SocialProof from './components/SocialProof';
-import WhyJoin from './components/WhyJoin';
-import Countdown from './components/Countdown';
-import FAQ from './components/FAQ';
-import FinalCTA from './components/FinalCTA';
-import Footer from './components/Footer';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Terms from './pages/Terms';
+import About from './pages/About';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <Hero />
-      <BigPromise />
-      <SneakPeek />
-      <Problem />
-      <Solution />
-      <SocialProof />
-      <WhyJoin />
-      <Countdown />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </Router>
   );
 }
 
 export default App;
-
-
-
-
-

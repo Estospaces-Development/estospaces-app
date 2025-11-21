@@ -7,14 +7,14 @@ const Footer = () => {
         <footer className="bg-secondary text-white">
             {/* Main Footer */}
             <div className="container mx-auto px-4 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
                     {/* About */}
-                    <div>
+                    <div className="lg:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
                             <img src={logoIcon} alt="Estospaces" className="w-10 h-10 object-contain" />
                             <span className="font-bold text-xl">Estospaces</span>
                         </div>
-                        <p className="text-gray-400 mb-4">
+                        <p className="text-gray-400 mb-4 max-w-sm">
                             A virtual-first real estate platform connecting buyers and renters with verified brokers through immersive 3D property tours.
                         </p>
                         <div className="flex gap-3">
@@ -30,31 +30,39 @@ const Footer = () => {
                         </div>
                     </div>
 
-                    {/* Platform */}
+                    {/* Pages */}
                     <div>
-                        <h3 className="text-lg font-bold mb-4">Platform</h3>
+                        <h3 className="text-lg font-bold mb-4">Pages</h3>
                         <ul className="space-y-2">
-                            {['Virtual Tours', 'How It Works', 'For Brokers', 'Verified Listings', 'FAQ'].map((link) => (
-                                <li key={link}>
-                                    <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                                        {link}
+                            {[
+                                { name: 'Home', link: '/' },
+                                { name: 'Features', link: '#features' },
+                                { name: 'Reviews', link: '#reviews' },
+                                { name: 'Waitlist', link: '#join-waitlist' },
+                                { name: 'About Us', link: '/about' },
+                                { name: 'Contact', link: '#' }
+                            ].map((item) => (
+                                <li key={item.name}>
+                                    <a href={item.link} className="text-gray-400 hover:text-primary transition-colors">
+                                        {item.name}
                                     </a>
                                 </li>
                             ))}
                         </ul>
                     </div>
 
-                    {/* Company */}
+                    {/* Platform */}
                     <div>
-                        <h3 className="text-lg font-bold mb-4">Company</h3>
+                        <h3 className="text-lg font-bold mb-4">Platform</h3>
                         <ul className="space-y-2">
-                            {['About Us', 'Blog', 'Careers', 'Press Kit', 'Contact'].map((link) => (
-                                <li key={link}>
-                                    <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                                        {link}
-                                    </a>
-                                </li>
-                            ))}
+                            <li>
+                                <a href="#" className="text-gray-400 hover:text-primary transition-colors">FAQ</a>
+                            </li>
+                            <li>
+                                <a href="/terms" className="text-gray-400 hover:text-primary transition-colors">
+                                    Terms & Conditions
+                                </a>
+                            </li>
                         </ul>
                     </div>
 
