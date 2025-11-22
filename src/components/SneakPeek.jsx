@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, Play, Eye, MousePointer2 } from 'lucide-react';
+import WaitlistModal from './WaitlistModal';
 
 const SneakPeek = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const features = [
         {
             icon: <Eye size={24} />,
@@ -62,7 +64,10 @@ const SneakPeek = () => {
                         <div className="absolute inset-0 bg-gradient-to-r from-primary to-orange-600 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
 
                         {/* Button */}
-                        <button className="relative bg-gradient-to-r from-primary to-orange-600 text-white px-12 py-5 rounded-full font-bold text-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 mx-auto transform group-hover:scale-105 border border-white/20">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="relative bg-gradient-to-r from-primary to-orange-600 text-white px-12 py-5 rounded-full font-bold text-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 mx-auto transform group-hover:scale-105 border border-white/20"
+                        >
                             Join the Waitlist
                             <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
                         </button>
@@ -74,6 +79,9 @@ const SneakPeek = () => {
                     </p>
                 </div>
             </div>
+
+            {/* Waitlist Modal */}
+            <WaitlistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </section>
     );
 };

@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Eye, Shield, Zap, Bell, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import modernApartment from '../assets/modern-apartment.png';
+import WaitlistModal from './WaitlistModal';
 
 const WhyJoin = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const benefits = [
         {
             icon: <Eye className="text-primary" size={24} />,
@@ -139,7 +142,10 @@ const WhyJoin = () => {
                     {/* CTA Area with Glowing Effect */}
                     <div className="animate-fade-in-up delay-200 relative z-30">
                         <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transform scale-150 opacity-0 hover:opacity-100 transition-opacity duration-700"></div>
-                        <button className="relative bg-gradient-to-r from-primary to-orange-600 text-white px-12 py-6 rounded-full font-bold text-xl hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto border border-white/20">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="relative bg-gradient-to-r from-primary to-orange-600 text-white px-12 py-6 rounded-full font-bold text-xl hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto border border-white/20"
+                        >
                             Reserve Your Spot
                             <Zap size={24} className="fill-current animate-pulse" />
                         </button>
@@ -150,6 +156,9 @@ const WhyJoin = () => {
 
                 </div>
             </motion.div>
+
+            {/* Waitlist Modal */}
+            <WaitlistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </section>
     );
 };

@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
 import { ArrowRight, Mail, Sparkles, CheckCircle2 } from 'lucide-react';
+import WaitlistModal from './WaitlistModal';
 
 const FinalCTA = () => {
-    const [email, setEmail] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Handle waitlist signup
-        console.log('Email submitted:', email);
-        alert('Welcome to the waitlist! We\'ll notify you as soon as we launch.');
-        setEmail('');
+    const handleOpenModal = () => {
+        setIsModalOpen(true);
     };
 
     const benefits = [
@@ -53,31 +50,17 @@ const FinalCTA = () => {
                         ))}
                     </div>
 
-                    {/* Email Form */}
-                    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-10">
-                        <div className="bg-white/10 backdrop-blur-md p-2 rounded-2xl sm:rounded-full border border-white/20 shadow-2xl">
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <div className="flex-1 relative">
-                                    <Mail className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="Enter your email address"
-                                        required
-                                        className="w-full pl-14 pr-6 py-4 rounded-xl sm:rounded-full bg-white text-secondary outline-none focus:ring-2 focus:ring-primary text-lg"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    className="bg-gradient-to-r from-primary to-orange-600 text-white px-10 py-4 rounded-xl sm:rounded-full font-bold hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap transform hover:scale-105 w-full sm:w-auto"
-                                >
-                                    Join Waitlist
-                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                    {/* Join Waitlist Button */}
+                    <div className="max-w-2xl mx-auto mb-10">
+                        <button
+                            onClick={handleOpenModal}
+                            type="button"
+                            className="w-full bg-gradient-to-r from-primary to-orange-600 text-white px-10 py-5 rounded-full font-bold text-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 transform hover:scale-105"
+                        >
+                            Join Waitlist
+                            <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
 
                     {/* Microcopy */}
                     <p className="text-sm text-gray-400 mb-12">
@@ -104,6 +87,9 @@ const FinalCTA = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Waitlist Modal */}
+            <WaitlistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </section>
     );
 };
