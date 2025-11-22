@@ -55,7 +55,7 @@ const FinalCTA = () => {
 
                     {/* Email Form */}
                     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-10">
-                        <div className="bg-white/10 backdrop-blur-md p-2 rounded-full border border-white/20 shadow-2xl">
+                        <div className="bg-white/10 backdrop-blur-md p-2 rounded-2xl sm:rounded-full border border-white/20 shadow-2xl">
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <div className="flex-1 relative">
                                     <Mail className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -65,12 +65,12 @@ const FinalCTA = () => {
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="Enter your email address"
                                         required
-                                        className="w-full pl-14 pr-6 py-4 rounded-full bg-white text-secondary outline-none focus:ring-2 focus:ring-primary text-lg"
+                                        className="w-full pl-14 pr-6 py-4 rounded-xl sm:rounded-full bg-white text-secondary outline-none focus:ring-2 focus:ring-primary text-lg"
                                     />
                                 </div>
                                 <button
                                     type="submit"
-                                    className="bg-gradient-to-r from-primary to-orange-600 text-white px-10 py-4 rounded-full font-bold hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap transform hover:scale-105"
+                                    className="bg-gradient-to-r from-primary to-orange-600 text-white px-10 py-4 rounded-xl sm:rounded-full font-bold hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap transform hover:scale-105 w-full sm:w-auto"
                                 >
                                     Join Waitlist
                                     <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />

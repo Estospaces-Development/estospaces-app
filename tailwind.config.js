@@ -12,7 +12,8 @@ export default {
         accent: '#f3f4f6',
       },
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
+        sans: ['Outfit', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'serif'],
       },
     },
   },

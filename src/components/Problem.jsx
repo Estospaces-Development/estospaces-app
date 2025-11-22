@@ -1,20 +1,26 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { AlertCircle } from 'lucide-react';
-import cityBlur from '../assets/city-blur.png';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import modernApartment from '../assets/modern-apartment.png';
 
 const Problem = () => {
+    const sectionRef = useRef(null);
+    const { scrollYProgress } = useScroll({
+        target: sectionRef,
+        offset: ["start end", "end start"]
+    });
+
+    const y = useTransform(scrollYProgress, [0, 1], ["-20%", "20%"]);
+
     return (
-        <section className="py-32 relative overflow-hidden">
-            {/* Parallax Background - Fixed Attachment */}
-            <div
-                className="absolute inset-0 z-0"
-                style={{
-                    backgroundImage: `url(${cityBlur})`,
-                    backgroundAttachment: 'fixed',
-                    backgroundPosition: 'center',
-                    backgroundSize: 'cover'
-                }}
-            ></div>
+        <section ref={sectionRef} className="py-32 relative overflow-hidden">
+            {/* Parallax Background */}
+            <div className="absolute inset-0 z-0 overflow-hidden">
+                <motion.div
+                    style={{ y, backgroundImage: `url(${modernApartment})` }}
+                    className="absolute inset-0 w-full h-[120%] -top-[10%] bg-cover bg-center"
+                />
+            </div>
 
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-secondary/95 via-secondary/90 to-secondary/95 z-0"></div>

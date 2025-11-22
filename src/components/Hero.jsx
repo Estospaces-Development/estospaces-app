@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import useParallax from '../hooks/useParallax';
 import { Search, MapPin, Home, DollarSign, Settings } from 'lucide-react';
-import backgroundVideo from '../assets/landing-page-baground-video.mp4';
+import backgroundVideo from '../assets/hero-section-video.mp4';
 
 const Hero = () => {
     const [activeTab, setActiveTab] = useState('buy');
@@ -29,10 +29,10 @@ const Hero = () => {
             {/* Content */}
             <div className="relative z-10 container mx-auto px-4 pt-20">
                 <div className="text-center text-white mb-12">
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up leading-tight">
-                        Discover Your Perfect
-                        <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-400 to-orange-600">
-                            Space to Call Home
+                    <h1 className="text-6xl md:text-8xl font-medium mb-6 animate-fade-in-up leading-none font-serif tracking-tighter">
+                        Discover your
+                        <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-orange-600 font-bold italic pr-4 pb-2">
+                            Dream Home
                         </span>
                     </h1>
                     <p className="text-xl md:text-2xl opacity-90 max-w-3xl mx-auto animate-fade-in-up delay-100 font-light leading-relaxed">

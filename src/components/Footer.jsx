@@ -24,7 +24,7 @@ const Footer = () => {
                             <a href="https://www.instagram.com/estospaces/" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
                                 <Instagram size={18} />
                             </a>
-                            <a href="https://www.linkedin.com/company/106770232/admin/dashboard/" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
+                            <a href="https://www.linkedin.com/company/estospaces-solutions-private-limited" className="bg-white bg-opacity-10 p-2 rounded-full hover:bg-primary transition-colors">
                                 <Linkedin size={18} />
                             </a>
                         </div>
@@ -40,7 +40,7 @@ const Footer = () => {
                                 { name: 'Reviews', link: '#reviews' },
                                 { name: 'Waitlist', link: '#join-waitlist' },
                                 { name: 'About Us', link: '/about' },
-                                { name: 'Contact', link: '#' }
+                                { name: 'Contact', link: '#contact' }
                             ].map((item) => (
                                 <li key={item.name}>
                                     <a href={item.link} className="text-gray-400 hover:text-primary transition-colors">
@@ -56,7 +56,7 @@ const Footer = () => {
                         <h3 className="text-lg font-bold mb-4">Platform</h3>
                         <ul className="space-y-2">
                             <li>
-                                <a href="#" className="text-gray-400 hover:text-primary transition-colors">FAQ</a>
+                                <a href="#faq" className="text-gray-400 hover:text-primary transition-colors">FAQ</a>
                             </li>
                             <li>
                                 <a href="/terms" className="text-gray-400 hover:text-primary transition-colors">

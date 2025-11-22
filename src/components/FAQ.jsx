@@ -81,7 +81,7 @@ const FAQ = () => {
                 </div>
 
                 {/* Contact Card */}
-                <div className="text-center mt-16 max-w-2xl mx-auto">
+                <div id="contact" className="text-center mt-16 max-w-2xl mx-auto">
                     <div className="bg-gradient-to-br from-primary/5 to-orange-50 p-8 rounded-3xl border border-primary/10 shadow-lg">
                         <Mail className="text-primary mx-auto mb-4" size={32} />
                         <p className="text-gray-700 text-lg mb-4">

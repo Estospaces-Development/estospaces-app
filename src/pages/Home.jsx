@@ -6,6 +6,7 @@ import SneakPeek from '../components/SneakPeek';
 import Problem from '../components/Problem';
 import Solution from '../components/Solution';
 import SocialProof from '../components/SocialProof';
+import Testimonials from '../components/Testimonials';
 import WhyJoin from '../components/WhyJoin';
 import Countdown from '../components/Countdown';
 import FAQ from '../components/FAQ';
@@ -22,6 +23,7 @@ const Home = () => {
             <Problem />
             <Solution />
             <SocialProof />
+            <Testimonials />
             <WhyJoin />
             <Countdown />
             <FAQ />

@@ -31,13 +31,13 @@ const Navbar = () => {
     }, []);
 
     return (
-        <header className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-primary shadow-md py-2' : 'bg-transparent py-4'}`}>
+        <header className={`fixed w-full z-50 transition-all duration-1000 ease-in-out ${isScrolled ? 'bg-primary shadow-xl py-2' : 'bg-primary/0 py-4'}`}>
             <div className="container mx-auto px-4">
                 <div className="flex justify-between items-center">
                     {/* Logo */}
                     <div className="flex items-center">
                         <a href="/" className="text-2xl font-bold text-secondary flex items-center gap-2">
-                            <img src={logoIcon} alt="Estospaces Logo" className={`h-8 w-auto object-contain transition-all duration-300 ${isScrolled ? 'brightness-0 invert' : ''}`} />
+                            <img src={logoIcon} alt="Estospaces Logo" className={`h-8 w-auto object-contain transition-all duration-1000 ${isScrolled ? 'brightness-0 invert' : ''}`} />
                             <span className="text-white font-bold text-xl">Estospaces</span>
                         </a>
                     </div>
@@ -48,7 +48,7 @@ const Navbar = () => {
                             <a
                                 key={item}
                                 href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
-                                className={`text-sm font-medium transition-colors ${isScrolled ? 'text-white hover:text-secondary' : 'text-white hover:text-primary'}`}
+                                className={`text-sm font-medium transition-colors duration-300 ${isScrolled ? 'text-white hover:text-secondary' : 'text-white hover:text-primary'}`}
                             >
                                 {item}
                             </a>
@@ -57,10 +57,10 @@ const Navbar = () => {
 
                     {/* Actions */}
                     <div className="hidden md:flex items-center space-x-4">
-                        <button className={`px-6 py-2 rounded-full font-medium border-2 transition-all ${isScrolled ? 'border-white text-white hover:bg-white hover:text-primary' : 'border-white text-white hover:bg-white hover:text-secondary'}`}>
+                        <button className={`px-6 py-2 rounded-full font-medium border-2 transition-all duration-1000 ${isScrolled ? 'border-white text-white hover:bg-white hover:text-primary' : 'border-white text-white hover:bg-white hover:text-secondary'}`}>
                             Login
                         </button>
-                        <button className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-xl ${isScrolled ? 'bg-white text-primary hover:bg-gray-100' : 'bg-primary text-white hover:bg-opacity-90'}`}>
+                        <button className={`px-6 py-2 rounded-full font-medium transition-all duration-1000 flex items-center gap-2 shadow-lg hover:shadow-xl ${isScrolled ? 'bg-white text-primary hover:bg-gray-100' : 'bg-primary text-white hover:bg-opacity-90'}`}>
                             <User size={18} />
                             Sign Up
                         </button>

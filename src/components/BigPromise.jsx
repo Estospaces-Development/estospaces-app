@@ -1,5 +1,6 @@
 import React from 'react';
 import { Eye, Shield, Zap, Network } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const BigPromise = () => {
     const features = [
@@ -25,6 +26,28 @@ const BigPromise = () => {
         }
     ];
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 1.4,
+                ease: [0.2, 0.8, 0.2, 1]
+            }
+        }
+    };
+
     return (
         <section id="features" className="py-24 bg-gray-50 relative overflow-hidden">
             {/* Decorative Background Elements */}
@@ -33,29 +56,63 @@ const BigPromise = () => {
                 <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-secondary/5 rounded-full blur-3xl"></div>
             </div>
 
-            <div className="container mx-auto px-4 relative z-10">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                className="container mx-auto px-4 relative z-10"
+            >
                 {/* Section Header */}
                 <div className="text-center mb-20 max-w-3xl mx-auto">
-                    <h2 className="text-4xl md:text-6xl font-bold text-secondary mb-6 tracking-tight">
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="text-4xl md:text-6xl font-bold text-secondary mb-6 tracking-tight"
+                    >
                         Real Estate, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600">Reimagined.</span>
-                    </h2>
-                    <p className="text-xl text-gray-600 leading-relaxed">
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="text-xl text-gray-600 leading-relaxed"
+                    >
                         Estospaces is a virtual-first platform that transforms how you discover, explore, and secure properties.
-                    </p>
+                    </motion.p>
                 </div>
 
                 {/* Features Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+                >
                     {features.map((feature, index) => (
-                        <div
+                        <motion.div
                             key={index}
+                            variants={itemVariants}
                             className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 group transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-6 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                            <motion.div
+                                animate={{ y: [0, -5, 0] }}
+                                transition={{
+                                    duration: 3,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                    delay: index * 0.5
+                                }}
+                                className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-6 group-hover:bg-primary group-hover:text-white transition-colors duration-300"
+                            >
                                 {React.cloneElement(feature.icon, { className: "text-primary group-hover:text-white transition-colors duration-300", size: 32 })}
-                            </div>
+                            </motion.div>
 
                             <h3 className="text-xl font-bold text-secondary mb-3 group-hover:text-primary transition-colors duration-300">
                                 {feature.title}
@@ -63,10 +120,10 @@ const BigPromise = () => {
                             <p className="text-gray-600 leading-relaxed">
                                 {feature.description}
                             </p>
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
         </section>
     );
 };
