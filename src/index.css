@@ -8,6 +8,32 @@ body {
   font-family: 'DM Sans', sans-serif;
 }
 
+/* Custom Scrollbar Design */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #f97316 #1f2937;
+}
+
 /* Hide scrollbar for modal */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
