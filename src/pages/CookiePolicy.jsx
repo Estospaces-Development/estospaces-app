@@ -32,14 +32,21 @@ const CookiePolicy = () => {
                     <section>
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">2. How We Use Cookies</h2>
                         <p className="text-gray-700 leading-relaxed mb-4">
-                            Estospaces uses cookies for the following purposes:
+                            Estospaces uses cookies and local storage to enhance your experience. When you accept cookies, we collect:
                         </p>
                         <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-                            <li><strong>Essential Cookies:</strong> These cookies are necessary for the website to function properly</li>
-                            <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our website</li>
-                            <li><strong>Functionality Cookies:</strong> Enable enhanced functionality and personalization</li>
-                            <li><strong>Preference Cookies:</strong> Remember your preferences and settings</li>
+                            <li><strong>Essential Cookies:</strong> Store your cookie consent preference</li>
+                            <li><strong>Analytics Data:</strong> Session timestamp, user agent, browser language, screen resolution</li>
+                            <li><strong>Page Views:</strong> URLs visited and timestamps to understand user journey</li>
+                            <li><strong>Referrer Information:</strong> How you arrived at our website</li>
                         </ul>
+                        <div className="mt-4 p-4 bg-blue-50 border-l-4 border-primary rounded">
+                            <p className="text-sm text-gray-700">
+                                <strong>Note:</strong> All data is stored locally in your browser using localStorage.
+                                We do not send this data to external servers. You can clear this data anytime by clearing
+                                your browser's local storage or using the browser settings.
+                            </p>
+                        </div>
                     </section>
 
                     <section>
@@ -73,7 +80,40 @@ const CookiePolicy = () => {
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Managing Cookies</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">4. What Data We Store</h2>
+                        <p className="text-gray-700 leading-relaxed mb-4">
+                            When you accept cookies, we store the following information in your browser's local storage:
+                        </p>
+                        <div className="space-y-3">
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h4 className="font-semibold text-gray-900 mb-2">Cookie Consent</h4>
+                                <p className="text-sm text-gray-700">
+                                    <strong>Key:</strong> <code className="bg-gray-200 px-2 py-1 rounded">cookieConsent</code><br />
+                                    <strong>Value:</strong> "accepted" or "declined"<br />
+                                    <strong>Purpose:</strong> Remember your cookie preference
+                                </p>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h4 className="font-semibold text-gray-900 mb-2">User Session Data</h4>
+                                <p className="text-sm text-gray-700">
+                                    <strong>Key:</strong> <code className="bg-gray-200 px-2 py-1 rounded">userSession</code><br />
+                                    <strong>Data:</strong> Timestamp, user agent, language, screen resolution, referrer<br />
+                                    <strong>Purpose:</strong> Understand user demographics and improve UX
+                                </p>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <h4 className="font-semibold text-gray-900 mb-2">Page Views</h4>
+                                <p className="text-sm text-gray-700">
+                                    <strong>Key:</strong> <code className="bg-gray-200 px-2 py-1 rounded">pageViews</code><br />
+                                    <strong>Data:</strong> Array of visited URLs with timestamps<br />
+                                    <strong>Purpose:</strong> Analyze user navigation patterns
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Managing Cookies</h2>
                         <p className="text-gray-700 leading-relaxed mb-4">
                             You can control and/or delete cookies as you wish. You can delete all cookies that are already on
                             your computer and you can set most browsers to prevent them from being placed.
@@ -85,7 +125,7 @@ const CookiePolicy = () => {
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Browser Settings</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Browser Settings</h2>
                         <p className="text-gray-700 leading-relaxed mb-4">
                             Most web browsers allow you to control cookies through their settings preferences. To find out more
                             about cookies, including how to see what cookies have been set and how to manage and delete them, visit:
@@ -94,10 +134,16 @@ const CookiePolicy = () => {
                             <li><a href="https://www.allaboutcookies.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">www.allaboutcookies.org</a></li>
                             <li><a href="https://www.youronlinechoices.eu" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">www.youronlinechoices.eu</a></li>
                         </ul>
+                        <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                            <p className="text-sm text-gray-700">
+                                <strong>To clear Estospaces data:</strong> Open your browser's Developer Tools (F12),
+                                go to Application → Local Storage → select our domain → delete the keys mentioned above.
+                            </p>
+                        </div>
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Updates to This Policy</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Updates to This Policy</h2>
                         <p className="text-gray-700 leading-relaxed">
                             We may update this Cookie Policy from time to time. We will notify you of any changes by posting the
                             new Cookie Policy on this page and updating the "Last updated" date.
@@ -105,7 +151,7 @@ const CookiePolicy = () => {
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Contact Us</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Contact Us</h2>
                         <p className="text-gray-700 leading-relaxed">
                             If you have any questions about our use of cookies, please contact us at:{' '}
                             <a href="mailto:contact@estospaces.com" className="text-primary hover:underline">

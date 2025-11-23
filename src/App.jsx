@@ -9,6 +9,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminChatDashboard from './pages/AdminChatDashboard';
 import ProtectedRoute from './components/Admin/ProtectedRoute';
 import ChatWidget from './components/LiveChat/ChatWidget';
+import CookieConsent from './components/CookieConsent';
 
 // Layout component to handle conditional rendering of global components
 const Layout = ({ children }) => {
@@ -20,6 +21,7 @@ const Layout = ({ children }) => {
     <>
       {children}
       {showChatWidget && <ChatWidget />}
+      <CookieConsent />
     </>
   );
 };
