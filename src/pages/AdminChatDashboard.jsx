@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogOut, MessageSquare, RefreshCw, Archive, Inbox } from 'lucide-react';
+import { LogOut, MessageSquare, RefreshCw, Archive, Inbox, Ticket } from 'lucide-react';
 import useAdminChat from '../hooks/useAdminChat';
 import ConversationList from '../components/Admin/ConversationList';
 import AdminChatWindow from '../components/Admin/AdminChatWindow';
 import CreateTicketModal from '../components/Admin/CreateTicketModal';
+import TicketsList from '../components/Admin/TicketsList';
+import TicketDetailsModal from '../components/Admin/TicketDetailsModal';
 
 const AdminChatDashboard = () => {
     const navigate = useNavigate();
@@ -20,12 +22,15 @@ const AdminChatDashboard = () => {
         refreshConversations,
         archiveConversation,
         createTicket,
-        closeTicket
+        closeTicket,
+        updateTicket
     } = useAdminChat();
 
-    const [activeTab, setActiveTab] = useState('active'); // 'active' | 'archived'
+    const [activeTab, setActiveTab] = useState('active'); // 'active' | 'archived' | 'tickets'
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
     const [ticketLoading, setTicketLoading] = useState(false);
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [isTicketDetailsOpen, setIsTicketDetailsOpen] = useState(false);
 
     const handleLogout = async () => {
         if (supabase) {
@@ -73,6 +78,23 @@ const AdminChatDashboard = () => {
             await archiveConversation(conversationId);
         }
     };
+
+    const handleSelectTicket = (ticket) => {
+        setSelectedTicket(ticket);
+        setIsTicketDetailsOpen(true);
+    };
+
+    const handleSaveTicket = async (ticketId, updates) => {
+        await updateTicket(ticketId, updates);
+        setIsTicketDetailsOpen(false);
+        setSelectedTicket(null);
+    };
+
+    // Get all tickets from conversations
+    const allTickets = conversations
+        .map(c => c.ticket)
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     return (
         <div className="h-screen flex flex-col bg-gray-100">
@@ -135,14 +157,33 @@ const AdminChatDashboard = () => {
                                 <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>
                             )}
                         </button>
+                        <button
+                            onClick={() => setActiveTab('tickets')}
+                            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative
+                                ${activeTab === 'tickets' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'}
+                            `}
+                        >
+                            <Ticket size={18} />
+                            Tickets
+                            {activeTab === 'tickets' && (
+                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>
+                            )}
+                        </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto">
-                        <ConversationList
-                            conversations={filteredConversations}
-                            selectedConversation={selectedConversation}
-                            onSelect={selectConversation}
-                        />
+                        {activeTab === 'tickets' ? (
+                            <TicketsList
+                                tickets={allTickets}
+                                onSelectTicket={handleSelectTicket}
+                            />
+                        ) : (
+                            <ConversationList
+                                conversations={filteredConversations}
+                                selectedConversation={selectedConversation}
+                                onSelect={selectConversation}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -171,6 +212,16 @@ const AdminChatDashboard = () => {
                 onClose={() => setIsTicketModalOpen(false)}
                 onSubmit={handleCreateTicket}
                 loading={ticketLoading}
+            />
+
+            <TicketDetailsModal
+                ticket={selectedTicket}
+                isOpen={isTicketDetailsOpen}
+                onClose={() => {
+                    setIsTicketDetailsOpen(false);
+                    setSelectedTicket(null);
+                }}
+                onSave={handleSaveTicket}
             />
         </div>
     );

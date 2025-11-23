@@ -111,8 +111,9 @@ const useLiveChat = () => {
         setError(null);
 
         // Optimistic update - add message to UI immediately
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
         const optimisticMessage = {
-            id: `temp-${Date.now()}`, // Temporary ID
+            id: tempId,
             conversation_id: conversation.id,
             sender_type: 'visitor',
             message: text,
@@ -138,15 +139,16 @@ const useLiveChat = () => {
             if (insertError) throw insertError;
 
             // Replace optimistic message with real one from database
+            // The realtime subscription will be ignored for this message
             setMessages((prev) =>
                 prev.map((msg) =>
-                    msg.id === optimisticMessage.id ? data : msg
+                    msg.id === tempId ? { ...data, _skipRealtime: true } : msg
                 )
             );
         } catch (e) {
             // Remove optimistic message on error
             setMessages((prev) =>
-                prev.filter((msg) => msg.id !== optimisticMessage.id)
+                prev.filter((msg) => msg.id !== tempId)
             );
             setError(e.message || 'Failed to send message');
         }
@@ -192,28 +194,25 @@ const useLiveChat = () => {
                 },
                 (payload) => {
                     console.log('🔔 Realtime message received (visitor):', payload.new);
-                    console.log('📊 Payload details:', {
-                        id: payload.new.id,
-                        sender: payload.new.sender_type,
-                        message: payload.new.message,
-                        conversation_id: payload.new.conversation_id
-                    });
+
+                    // Only add messages from admin via realtime
+                    // Visitor's own messages are handled via optimistic updates
+                    if (payload.new.sender_type === 'visitor') {
+                        console.log('⏭️ Skipping visitor message (handled by optimistic update)');
+                        return;
+                    }
 
                     // Prevent duplicates - check if message already exists
                     setMessages((prev) => {
-                        console.log('📝 Current messages count:', prev.length);
                         const exists = prev.some((msg) => msg.id === payload.new.id);
-                        console.log('❓ Message already exists?', exists);
 
                         if (exists) {
                             console.log('⚠️ Message already exists, skipping');
                             return prev;
                         }
 
-                        console.log('✅ Adding new message to list');
-                        const updated = [...prev, payload.new];
-                        console.log('📝 New messages count:', updated.length);
-                        return updated;
+                        console.log('✅ Adding admin message to list');
+                        return [...prev, payload.new];
                     });
                 }
             )

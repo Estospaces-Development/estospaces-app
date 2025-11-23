@@ -293,12 +293,31 @@ const useAdminChat = () => {
         try {
             const { error } = await supabase
                 .from('tickets')
-                .update({ status: 'closed' })
+                .update({ status: 'closed', updated_at: new Date().toISOString() })
                 .eq('id', ticketId);
 
             if (error) throw error;
         } catch (e) {
             console.error('Error closing ticket:', e);
+            throw e;
+        }
+    };
+
+    // Update a ticket
+    const updateTicket = async (ticketId, updates) => {
+        if (!supabase) return;
+        try {
+            const { error } = await supabase
+                .from('tickets')
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('id', ticketId);
+
+            if (error) throw error;
+
+            // Refresh conversations to update ticket info
+            await loadConversations();
+        } catch (e) {
+            console.error('Error updating ticket:', e);
             throw e;
         }
     };
@@ -314,7 +333,8 @@ const useAdminChat = () => {
         refreshConversations: loadConversations,
         archiveConversation,
         createTicket,
-        closeTicket
+        closeTicket,
+        updateTicket
     };
 };
 
