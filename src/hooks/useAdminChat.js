@@ -258,6 +258,7 @@ const useAdminChat = () => {
             setConversations(prev => prev.filter(c => c.id !== conversationId));
             if (selectedConversation?.id === conversationId) {
                 setSelectedConversation(null);
+                setMessages([]); // Clear messages when archiving the selected conversation
             }
         } catch (e) {
             console.error('Error archiving conversation:', e);
