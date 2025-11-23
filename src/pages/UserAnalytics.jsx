@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogOut, Users, Eye, Globe, TrendingUp, Calendar, RefreshCw } from 'lucide-react';
+import { LogOut, Users, Eye, Globe, TrendingUp, Calendar, RefreshCw, MessageSquare } from 'lucide-react';
 
 const UserAnalytics = () => {
     const navigate = useNavigate();
@@ -126,7 +126,8 @@ const UserAnalytics = () => {
                             onClick={() => navigate('/admin/chat')}
                             className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
                         >
-                            Chat Dashboard
+                            <MessageSquare size={18} />
+                            <span>Chat Dashboard</span>
                         </button>
                         <button
                             onClick={handleLogout}

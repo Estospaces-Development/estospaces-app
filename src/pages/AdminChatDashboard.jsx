@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogOut, MessageSquare, RefreshCw, Archive, Inbox, Ticket } from 'lucide-react';
+import { LogOut, MessageSquare, RefreshCw, Archive, Inbox, Ticket, TrendingUp } from 'lucide-react';
 import useAdminChat from '../hooks/useAdminChat';
 import ConversationList from '../components/Admin/ConversationList';
 import AdminChatWindow from '../components/Admin/AdminChatWindow';
@@ -127,6 +127,13 @@ const AdminChatDashboard = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/admin/user-analytics')}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+                    >
+                        <TrendingUp size={18} />
+                        <span>Analytics</span>
+                    </button>
                     <button
                         onClick={refreshConversations}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
