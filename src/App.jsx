@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Terms from './pages/Terms';
 import About from './pages/About';
@@ -8,10 +8,24 @@ import AdminChatDashboard from './pages/AdminChatDashboard';
 import ProtectedRoute from './components/Admin/ProtectedRoute';
 import ChatWidget from './components/LiveChat/ChatWidget';
 
-function App() {
+// Layout component to handle conditional rendering of global components
+const Layout = ({ children }) => {
+  const location = useLocation();
+  // Hide chat widget on admin pages
+  const showChatWidget = !location.pathname.startsWith('/admin');
+
   return (
     <>
-      <Router>
+      {children}
+      {showChatWidget && <ChatWidget />}
+    </>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/terms" element={<Terms />} />
@@ -26,9 +40,8 @@ function App() {
             }
           />
         </Routes>
-      </Router>
-      <ChatWidget />
-    </>
+      </Layout>
+    </Router>
   );
 }
 
