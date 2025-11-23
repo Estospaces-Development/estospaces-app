@@ -1,0 +1,51 @@
+import React, { useState } from 'react';
+
+const WelcomeForm = ({ onSubmit, loading, error }) => {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit({ name: name.trim(), email: email.trim() });
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+            <h4 className="text-lg font-semibold mb-2">Start Chat</h4>
+            <div>
+                <label className="block text-sm font-medium mb-1">Name (optional)</label>
+                <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={loading}
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium mb-1">Email (optional)</label>
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="john@example.com"
+                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={loading}
+                />
+            </div>
+            {error && (
+                <p className="text-red-500 text-sm">{error}</p>
+            )}
+            <button
+                type="submit"
+                className="w-full bg-primary text-white py-2 rounded hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
+            >
+                {loading ? 'Starting Chat...' : 'Start Chat'}
+            </button>
+        </form>
+    );
+};
+
+export default WelcomeForm;

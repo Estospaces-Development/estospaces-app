@@ -43,3 +43,28 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* BotSailor Widget Custom Colors */
+iframe[src*="botsailor"] {
+  z-index: 9999 !important;
+}
+
+/* Override BotSailor button colors - targeting specific elements */
+#final_reply_button,
+.btn-primary,
+#bs-widget-launcher,
+.bs-launcher-button,
+[class*="botsailor"] button,
+[class*="bs-"] button {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  border-color: #f97316 !important;
+  color: #ffffff !important;
+}
+
+#final_reply_button:hover,
+.btn-primary:hover,
+#bs-widget-launcher:hover,
+.bs-launcher-button:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
+  border-color: #fb923c !important;
+}
