@@ -13,7 +13,9 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
         <form onSubmit={handleSubmit} className="space-y-4 p-4">
             <h4 className="text-lg font-semibold mb-2">Start Chat</h4>
             <div>
-                <label className="block text-sm font-medium mb-1">Name (optional)</label>
+                <label className="block text-sm font-medium mb-1">
+                    Name <span className="text-red-500">*</span>
+                </label>
                 <input
                     type="text"
                     value={name}
@@ -21,10 +23,13 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
                     placeholder="John Doe"
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                     disabled={loading}
+                    required
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1">Email (optional)</label>
+                <label className="block text-sm font-medium mb-1">
+                    Email <span className="text-red-500">*</span>
+                </label>
                 <input
                     type="email"
                     value={email}
@@ -32,6 +37,7 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
                     placeholder="john@example.com"
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                     disabled={loading}
+                    required
                 />
             </div>
             {error && (
@@ -40,7 +46,7 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
             <button
                 type="submit"
                 className="w-full bg-primary text-white py-2 rounded hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
+                disabled={loading || !name.trim() || !email.trim()}
             >
                 {loading ? 'Starting Chat...' : 'Start Chat'}
             </button>
