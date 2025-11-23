@@ -297,6 +297,9 @@ const useAdminChat = () => {
                 .eq('id', ticketId);
 
             if (error) throw error;
+
+            // Refresh conversations to update ticket status in UI
+            await loadConversations();
         } catch (e) {
             console.error('Error closing ticket:', e);
             throw e;
