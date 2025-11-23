@@ -96,18 +96,21 @@ const useLiveChat = () => {
             }
             setConversation(data);
 
-            // Send automatic welcome message after a brief delay
-            // This ensures the real-time subscription is set up to receive it
+            // Send automatic welcome message immediately
             if (data) {
-                setTimeout(async () => {
-                    const welcomeMessage = `👋 Hi ${name}! Welcome to Estospaces.\n\nThank you for reaching out! How can we help you today?\n\nOur team will respond to your message shortly.`;
+                const welcomeMessage = `👋 Hi ${name}! Welcome to Estospaces.\n\nThank you for reaching out! How can we help you today?\n\nOur team will respond to your message shortly.`;
 
-                    await supabase.from('messages').insert([{
-                        conversation_id: data.id,
-                        sender_type: 'admin',
-                        message: welcomeMessage,
-                    }]).select();
-                }, 1000); // 1 second delay to ensure subscription is ready
+                // Insert into database
+                const { data: messageData } = await supabase.from('messages').insert([{
+                    conversation_id: data.id,
+                    sender_type: 'admin',
+                    message: welcomeMessage,
+                }]).select().single();
+
+                // Add to messages state immediately so it appears right away
+                if (messageData) {
+                    setMessages([messageData]);
+                }
             }
         } catch (e) {
             setError(e.message || 'Failed to start conversation');
