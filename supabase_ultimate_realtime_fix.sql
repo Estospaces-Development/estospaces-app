@@ -49,6 +49,7 @@ DROP POLICY IF EXISTS "Visitors can create conversation" ON conversations;
 DROP POLICY IF EXISTS "Visitors can view messages" ON messages;
 DROP POLICY IF EXISTS "Visitors can send messages" ON messages;
 DROP POLICY IF EXISTS "Admins can view all conversations" ON conversations;
+DROP POLICY IF EXISTS "Admins can create conversations" ON conversations;
 DROP POLICY IF EXISTS "Admins can view all messages" ON messages;
 DROP POLICY IF EXISTS "Admins can send messages" ON messages;
 
