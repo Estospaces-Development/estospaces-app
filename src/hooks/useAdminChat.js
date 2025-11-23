@@ -26,13 +26,33 @@ const useAdminChat = () => {
         setLoading(true);
         setError(null);
         try {
-            const { data, error: fetchError } = await supabase
+            // Fetch conversations with their tickets
+            const { data: conversationsData, error: fetchError } = await supabase
                 .from('conversations')
                 .select('*')
                 .order('updated_at', { ascending: false });
 
             if (fetchError) throw fetchError;
-            setConversations(data || []);
+
+            // Fetch tickets separately and attach to conversations
+            const { data: ticketsData } = await supabase
+                .from('tickets')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            // Attach the most recent open ticket to each conversation
+            const conversationsWithTickets = (conversationsData || []).map(conv => {
+                const conversationTickets = (ticketsData || []).filter(t => t.conversation_id === conv.id);
+                const openTicket = conversationTickets.find(t => t.status === 'open');
+                const latestTicket = openTicket || conversationTickets[0];
+
+                return {
+                    ...conv,
+                    ticket: latestTicket || null
+                };
+            });
+
+            setConversations(conversationsWithTickets);
         } catch (e) {
             setError(e.message || 'Failed to load conversations');
         } finally {
@@ -68,8 +88,9 @@ const useAdminChat = () => {
         setError(null);
 
         // Optimistic update - add message to UI immediately
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
         const optimisticMessage = {
-            id: `temp-${Date.now()}`, // Temporary ID
+            id: tempId,
             conversation_id: selectedConversation.id,
             sender_type: 'admin',
             message: text,
@@ -97,13 +118,13 @@ const useAdminChat = () => {
             // Replace optimistic message with real one from database
             setMessages((prev) =>
                 prev.map((msg) =>
-                    msg.id === optimisticMessage.id ? data : msg
+                    msg.id === tempId ? { ...data, _skipRealtime: true } : msg
                 )
             );
         } catch (e) {
             // Remove optimistic message on error
             setMessages((prev) =>
-                prev.filter((msg) => msg.id !== optimisticMessage.id)
+                prev.filter((msg) => msg.id !== tempId)
             );
             setError(e.message || 'Failed to send message');
         }
@@ -131,28 +152,25 @@ const useAdminChat = () => {
                 },
                 (payload) => {
                     console.log('🔔 Realtime message received (admin):', payload.new);
-                    console.log('📊 Payload details:', {
-                        id: payload.new.id,
-                        sender: payload.new.sender_type,
-                        message: payload.new.message,
-                        conversation_id: payload.new.conversation_id
-                    });
+
+                    // Only add messages from visitors via realtime
+                    // Admin's own messages are handled via optimistic updates
+                    if (payload.new.sender_type === 'admin') {
+                        console.log('⏭️ Skipping admin message (handled by optimistic update)');
+                        return;
+                    }
 
                     // Prevent duplicates - check if message already exists
                     setMessages((prev) => {
-                        console.log('📝 Current messages count (admin):', prev.length);
                         const exists = prev.some((msg) => msg.id === payload.new.id);
-                        console.log('❓ Message already exists?', exists);
 
                         if (exists) {
                             console.log('⚠️ Message already exists, skipping');
                             return prev;
                         }
 
-                        console.log('✅ Adding new message to admin list');
-                        const updated = [...prev, payload.new];
-                        console.log('📝 New messages count (admin):', updated.length);
-                        return updated;
+                        console.log('✅ Adding visitor message to admin list');
+                        return [...prev, payload.new];
                     });
                 }
             )
