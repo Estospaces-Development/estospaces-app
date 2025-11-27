@@ -111,6 +111,28 @@ const useLiveChat = () => {
                 if (messageData) {
                     setMessages([messageData]);
                 }
+
+                // Send notification email to admin
+                try {
+                    console.log('📧 Sending admin notification email...');
+                    const { data: funcData, error: funcError } = await supabase.functions.invoke('send-chat-notification', {
+                        body: {
+                            name,
+                            email,
+                            conversationId: data.id,
+                            visitorId
+                        }
+                    });
+
+                    if (funcError) {
+                        console.error('❌ Failed to invoke notification function:', funcError);
+                    } else {
+                        console.log('✅ Admin notification sent successfully. Response:', funcData);
+                    }
+                } catch (notifyError) {
+                    console.error('❌ Error sending notification:', notifyError);
+                    // Don't block the user flow if email fails
+                }
             }
         } catch (e) {
             setError(e.message || 'Failed to start conversation');
