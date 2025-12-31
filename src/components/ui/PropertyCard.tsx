@@ -31,24 +31,28 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     (property.createdAt ? new Date(property.createdAt).toLocaleDateString() : '');
   
   return (
-    <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md transition-shadow font-sans">
+    <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden font-sans group relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-105 dark:hover:brightness-110">
+      {/* Shine effect */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 dark:group-hover:opacity-15 transition-opacity duration-300 bg-gradient-to-br from-white/50 dark:from-white/30 via-transparent to-transparent z-20"></div>
+      
       {/* Image */}
-      <div className="relative h-48 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400">
-        <div className="absolute top-4 right-4">
-          <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full">
+      <div className="relative h-48 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute top-4 right-4 z-10 transition-transform duration-300 group-hover:scale-110">
+          <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full shadow-lg">
             {property.status}
           </span>
         </div>
         {/* Placeholder for property image - you can replace with actual image */}
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
           <HomeIcon className="w-16 h-16 text-white opacity-30" />
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-800 dark:text-white mb-1">{title}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{property.address}</p>
+      <div className="p-4 relative z-10">
+        <h3 className="font-semibold text-gray-800 dark:text-white mb-1 transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary-light">{title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 transition-colors duration-300 group-hover:text-gray-800 dark:group-hover:text-gray-300">{property.address}</p>
 
         {/* Specs */}
         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">

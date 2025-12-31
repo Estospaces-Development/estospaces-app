@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingState from '../components/ui/LoadingState';
 import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
 import { 
@@ -32,16 +31,7 @@ interface Application {
 
 const Application = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const applications: Application[] = [
     {
@@ -81,10 +71,6 @@ const Application = () => {
     app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     app.propertyInterested.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  if (loading) {
-    return <LoadingState />;
-  }
 
   return (
     <div className="space-y-6 font-sans">

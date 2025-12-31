@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingState from '../components/ui/LoadingState';
 import SummaryCard from '../components/ui/SummaryCard';
 import AddLeadModal from '../components/ui/AddLeadModal';
 import BackButton from '../components/ui/BackButton';
@@ -25,19 +24,10 @@ import {
 const LeadsClients = () => {
   const navigate = useNavigate();
   const { leads, addLead, updateLead, deleteLead } = useLeads();
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const filteredLeads = leads.filter((lead) =>
     lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,10 +66,6 @@ const LeadsClients = () => {
   const approvedCount = leads.filter(l => l.status === 'Approved').length;
   const rejectedCount = leads.filter(l => l.status === 'Rejected').length;
   const totalClientsCount = approvedCount; // Assuming approved leads become clients
-
-  if (loading) {
-    return <LoadingState />;
-  }
 
   return (
     <div className="space-y-6 font-sans">

@@ -1,5 +1,6 @@
 import { Search, Bell, User, Palette } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface HeaderProps {
@@ -7,6 +8,7 @@ interface HeaderProps {
 }
 
 const Header = ({ onMenuToggle }: HeaderProps) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   const themeDropdownRef = useRef<HTMLDivElement>(null);
@@ -103,7 +105,11 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             </button>
 
             {/* User Profile */}
-            <button className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
+            <button 
+              onClick={() => navigate('/profile')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300"
+              title="Profile"
+            >
               <User className="w-6 h-6" />
             </button>
           </div>

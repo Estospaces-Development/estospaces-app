@@ -319,55 +319,64 @@ const Dashboard = () => {
       {/* Content based on active tab */}
       {activeTab === 'overview' && (
         <>
-          {/* Recent Activity and Top Properties */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activity - Full Width for Better Map View */}
+          <div className="mb-6">
             <RecentActivity />
+          </div>
+
+          {/* Top Properties */}
+          <div>
             <TopProperties />
           </div>
 
           {/* Your Properties Section */}
-          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Home className="w-5 h-5 text-primary" />
-                <h3 className="section-heading text-gray-800 dark:text-white">Your Properties</h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <button className="btn-secondary flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                  <Filter className="w-4 h-4" />
-                  <span>Filters</span>
-                </button>
-                <button className="btn-secondary flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                  <Download className="w-4 h-4" />
-                  <span>Export</span>
-                </button>
-                <button
-                  onClick={() => navigate('/properties/add')}
-                  className="btn-primary bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Property</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Property Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.length > 0 ? (
-                properties.map((property) => (
-                  <PropertyCard key={property.id} property={property as any} />
-                ))
-              ) : (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">No properties yet</p>
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:scale-[1.01] hover:brightness-105 dark:hover:brightness-110">
+            {/* Animated light overlay */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 dark:via-white/5 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Home className="w-5 h-5 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+                  <h3 className="section-heading text-gray-800 dark:text-white transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary-light">Your Properties</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button className="btn-secondary flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Filter className="w-4 h-4" />
+                    <span>Filters</span>
+                  </button>
+                  <button className="btn-secondary flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Download className="w-4 h-4" />
+                    <span>Export</span>
+                  </button>
                   <button
                     onClick={() => navigate('/properties/add')}
-                    className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg font-medium"
+                    className="btn-primary bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                   >
-                    Add Your First Property
+                    <Plus className="w-4 h-4" />
+                    <span>Add Property</span>
                   </button>
                 </div>
-              )}
+              </div>
+
+              {/* Property Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {properties.length > 0 ? (
+                  properties.map((property) => (
+                    <PropertyCard key={property.id} property={property as any} />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">No properties yet</p>
+                    <button
+                      onClick={() => navigate('/properties/add')}
+                      className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg font-medium"
+                    >
+                      Add Your First Property
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </>
@@ -457,7 +466,7 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {leads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
+                    <tr key={lead.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="body-text font-medium text-gray-900 dark:text-white">{lead.name}</div>
                       </td>
@@ -584,8 +593,12 @@ const Dashboard = () => {
           </div>
 
           {/* Recently Added Properties */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="section-heading text-gray-800 dark:text-white mb-4">Recently Added Properties</h2>
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:scale-[1.01] hover:brightness-105 dark:hover:brightness-110">
+            {/* Animated light overlay */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 dark:via-white/5 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+            
+            <div className="relative z-10">
+            <h2 className="section-heading text-gray-800 dark:text-white mb-4 transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary-light">Recently Added Properties</h2>
             
             {(() => {
               // Filter and sort properties
@@ -659,6 +672,7 @@ const Dashboard = () => {
                 </div>
               );
             })()}
+            </div>
           </div>
 
           {/* Properties Summary */}
@@ -782,9 +796,9 @@ const Dashboard = () => {
           </div>
 
           {/* Approved Applications */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Approved Applications ({approvedApplications.length})</h2>
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative group transition-all duration-300 hover:shadow-xl">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary-light">Approved Applications ({approvedApplications.length})</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -801,7 +815,7 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {approvedApplications.map((app) => (
-                    <tr key={app.id} className="hover:bg-gray-50">
+                    <tr key={app.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{app.name}</div>
                         <div className="text-sm text-gray-500">{app.email}</div>
@@ -883,9 +897,9 @@ const Dashboard = () => {
           </div>
 
           {/* Pending Applications */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Pending Applications ({pendingApplications.length})</h2>
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative group transition-all duration-300 hover:shadow-xl">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary-light">Pending Applications ({pendingApplications.length})</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -902,7 +916,7 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {pendingApplications.map((app) => (
-                    <tr key={app.id} className="hover:bg-gray-50">
+                    <tr key={app.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{app.name}</div>
                         <div className="text-sm text-gray-500">{app.email}</div>
@@ -984,9 +998,9 @@ const Dashboard = () => {
           </div>
 
           {/* Application History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Application History</h2>
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative group transition-all duration-300 hover:shadow-xl">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary-light">Application History</h2>
               <button
                 onClick={() => navigate('/application')}
                 className="text-primary hover:text-primary-dark text-sm font-medium"
@@ -1010,7 +1024,7 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {allApplications.map((app) => (
-                    <tr key={app.id} className="hover:bg-gray-50">
+                    <tr key={app.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{app.name}</div>
                         <div className="text-sm text-gray-500">{app.email}</div>

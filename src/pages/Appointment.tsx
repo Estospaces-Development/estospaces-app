@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingState from '../components/ui/LoadingState';
 import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
 import Calendar from '../components/ui/Calendar';
@@ -32,20 +31,11 @@ interface Appointment {
 
 const Appointment = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const [appointments, setAppointments] = useState<Appointment[]>([
     {
@@ -124,10 +114,6 @@ const Appointment = () => {
     setEditingAppointment(appointment);
     setIsAddModalOpen(true);
   };
-
-  if (loading) {
-    return <LoadingState />;
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
