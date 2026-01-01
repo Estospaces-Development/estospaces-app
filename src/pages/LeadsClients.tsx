@@ -18,8 +18,13 @@ import {
   Edit,
   Trash2,
   Mail,
-  Phone
+  Phone,
+  Download,
+  Share2,
+  FileDown,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 const LeadsClients = () => {
   const navigate = useNavigate();
@@ -28,12 +33,28 @@ const LeadsClients = () => {
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showViewModal, setShowViewModal] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [scoreFilter, setScoreFilter] = useState('all');
 
-  const filteredLeads = leads.filter((lead) =>
-    lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.propertyInterested.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLeads = leads.filter((lead) => {
+    const matchesSearch = 
+      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.propertyInterested.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
+    
+    const matchesScore = scoreFilter === 'all' || 
+      (scoreFilter === 'high' && lead.score >= 90) ||
+      (scoreFilter === 'medium' && lead.score >= 70 && lead.score < 90) ||
+      (scoreFilter === 'low' && lead.score < 70);
+    
+    return matchesSearch && matchesStatus && matchesScore;
+  });
 
   const handleAddLead = () => {
     setEditingLead(null);
@@ -58,6 +79,68 @@ const LeadsClients = () => {
   const handleDeleteLead = (id: string) => {
     deleteLead(id);
     setShowDeleteConfirm(null);
+    setSelectedLeads(prev => prev.filter(lid => lid !== id));
+  };
+
+  const handleExport = (format: 'pdf' | 'excel') => {
+    const leadsToExport = selectedLeads.length > 0
+      ? leads.filter(l => selectedLeads.includes(l.id))
+      : filteredLeads;
+
+    const exportData = {
+      title: 'Leads Export',
+      headers: ['Name', 'Email', 'Property Interested', 'Status', 'Score', 'Budget', 'Last Contact'],
+      rows: leadsToExport.map(lead => [
+        lead.name,
+        lead.email,
+        lead.propertyInterested,
+        lead.status,
+        lead.score,
+        lead.budget,
+        lead.lastContact,
+      ]),
+    };
+
+    if (format === 'pdf') {
+      exportToPDF(exportData, `leads_${new Date().toISOString().split('T')[0]}`);
+    } else {
+      exportToExcel(exportData, `leads_${new Date().toISOString().split('T')[0]}`);
+    }
+    setShowExportMenu(false);
+    setSelectedLeads([]);
+  };
+
+  const handleShare = async (lead: Lead) => {
+    const shareData = {
+      title: `Lead: ${lead.name}`,
+      text: `Lead Details\nName: ${lead.name}\nEmail: ${lead.email}\nProperty: ${lead.propertyInterested}\nStatus: ${lead.status}`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(shareData.text);
+      alert('Lead details copied to clipboard!');
+    }
+  };
+
+  const toggleSelectLead = (id: string) => {
+    setSelectedLeads(prev =>
+      prev.includes(id) ? prev.filter(lid => lid !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLeads.length === filteredLeads.length) {
+      setSelectedLeads([]);
+    } else {
+      setSelectedLeads(filteredLeads.map(lead => lead.id));
+    }
   };
 
   // Calculate summary statistics
@@ -113,7 +196,7 @@ const LeadsClients = () => {
       </div>
 
       {/* Search and Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -122,13 +205,93 @@ const LeadsClients = () => {
               placeholder="Search Leads"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-            <Filter className="w-4 h-4" />
-            <span className="text-sm font-medium">More Filters</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">More Filters</span>
+            </button>
+            {showFilters && (
+              <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-10 min-w-[250px]">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="New Lead">New Lead</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Score</label>
+                    <select
+                      value={scoreFilter}
+                      onChange={(e) => setScoreFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                    >
+                      <option value="all">All Scores</option>
+                      <option value="high">High (90+)</option>
+                      <option value="medium">Medium (70-89)</option>
+                      <option value="low">Low (&lt;70)</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setStatusFilter('all');
+                      setScoreFilter('all');
+                      setShowFilters(false);
+                    }}
+                    className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span className="text-sm font-medium">Export</span>
+              {selectedLeads.length > 0 && (
+                <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">
+                  {selectedLeads.length}
+                </span>
+              )}
+            </button>
+            {showExportMenu && (
+              <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[180px]">
+                <button
+                  onClick={() => handleExport('pdf')}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Export as PDF
+                </button>
+                <button
+                  onClick={() => handleExport('excel')}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Export as Excel
+                </button>
+              </div>
+            )}
+          </div>
           <button 
             onClick={handleAddLead}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
@@ -140,83 +303,115 @@ const LeadsClients = () => {
       </div>
 
       {/* Leads Overview Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Leads Overview</h2>
+      <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Leads Overview</h2>
+          {selectedLeads.length > 0 && (
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedLeads.length} selected
+            </span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leads</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property Interested</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leads</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Property Interested</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Budget</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
               {filteredLeads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50">
+                <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeads.includes(lead.id)}
+                      onChange={() => toggleSelectLead(lead.id)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{lead.name}</div>
-                      <div className="text-sm text-gray-500">{lead.email}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{lead.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{lead.email}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{lead.propertyInterested}</div>
+                    <div className="text-sm text-gray-900 dark:text-white">{lead.propertyInterested}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      lead.status === 'New Lead' ? 'bg-blue-100 text-blue-800' :
-                      lead.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                      lead.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                      'bg-red-100 text-red-800'
+                      lead.status === 'New Lead' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                      lead.status === 'In Progress' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                      lead.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                      'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                     }`}>
                       {lead.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{lead.score}</div>
+                    <div className="text-sm text-gray-900 dark:text-white">{lead.score}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{lead.budget}</div>
+                    <div className="text-sm text-gray-900 dark:text-white">{lead.budget}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{lead.lastContact}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{lead.lastContact}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
-                      <button className="text-blue-600 hover:text-blue-900" title="View">
+                      <button
+                        onClick={() => setShowViewModal(lead.id)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                        title="View"
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => handleEditLead(lead)}
-                        className="text-green-600 hover:text-green-900" 
+                        className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300" 
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => window.location.href = `mailto:${lead.email}`}
-                        className="text-gray-600 hover:text-gray-900" 
+                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200" 
                         title="Email"
                       >
                         <Mail className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => lead.phone && (window.location.href = `tel:${lead.phone}`)}
-                        className="text-gray-600 hover:text-gray-900" 
+                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200" 
                         title="Call"
                       >
                         <Phone className="w-4 h-4" />
                       </button>
+                      <button
+                        onClick={() => handleShare(lead)}
+                        className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+                        title="Share"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
                       <button 
                         onClick={() => setShowDeleteConfirm(lead.id)}
-                        className="text-red-600 hover:text-red-900" 
+                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300" 
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -241,18 +436,90 @@ const LeadsClients = () => {
         existingLead={editingLead}
       />
 
+      {/* View Lead Modal */}
+      {showViewModal && (() => {
+        const lead = leads.find(l => l.id === showViewModal);
+        if (!lead) return null;
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Lead Details</h3>
+                <button
+                  onClick={() => setShowViewModal(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{lead.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{lead.email}</p>
+                </div>
+                {lead.phone && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                    <p className="text-sm text-gray-900 dark:text-white">{lead.phone}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property Interested</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{lead.propertyInterested}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                    lead.status === 'New Lead' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                    lead.status === 'In Progress' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                    lead.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                    'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                  }`}>
+                    {lead.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Score</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{lead.score}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Budget</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{lead.budget}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Contact</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{lead.lastContact}</p>
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => setShowViewModal(null)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Delete Lead</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Delete Lead</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete this lead? This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>

@@ -8,10 +8,11 @@ import RecentActivity from '../components/ui/RecentActivity';
 import TopProperties from '../components/ui/TopProperties';
 import PropertyCard from '../components/ui/PropertyCard';
 import LakshmiChatbot from '../components/chatbot/LakshmiChatbot';
-import { DollarSign, Building2, Eye, UserCheck, Filter, Download, Plus, Home, Mail, Phone, Users, FileText, CheckCircle, Clock, XCircle, Trash2, Search, MessageSquare, Edit, MoreVertical, TrendingUp, Target, Bot, TrendingDown, AlertCircle, Lightbulb } from 'lucide-react';
+import { DollarSign, Building2, Eye, UserCheck, Filter, Download, Plus, Home, Mail, Phone, Users, FileText, CheckCircle, Clock, XCircle, Trash2, Search, MessageSquare, Edit, MoreVertical, TrendingUp, Target, Bot, TrendingDown, AlertCircle, Lightbulb, Share2, FileDown, FileSpreadsheet } from 'lucide-react';
 import PieChart from '../components/ui/PieChart';
 import BarChart from '../components/ui/BarChart';
 import LineChart from '../components/ui/LineChart';
+import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 interface Lead {
   id: string;
@@ -49,6 +50,15 @@ const Dashboard = () => {
   const [propertyStatusFilter, setPropertyStatusFilter] = useState('all');
   const [showPropertyDeleteConfirm, setShowPropertyDeleteConfirm] = useState<string | null>(null);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [showPropertyFilters, setShowPropertyFilters] = useState(false);
+  const [showPropertyExportMenu, setShowPropertyExportMenu] = useState(false);
+  const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
+  const [showLeadFilters, setShowLeadFilters] = useState(false);
+  const [showLeadExportMenu, setShowLeadExportMenu] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [showApplicationFilters, setShowApplicationFilters] = useState(false);
+  const [showApplicationExportMenu, setShowApplicationExportMenu] = useState(false);
+  const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
 
   // Sample leads data
   const leads: Lead[] = [
@@ -439,6 +449,97 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* Search and Filter Bar for Leads */}
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search leads..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLeadFilters(!showLeadFilters)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="text-sm font-medium">More Filters</span>
+                </button>
+                {showLeadFilters && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-10 min-w-[250px]">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                        <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
+                          <option value="all">All Status</option>
+                          <option value="New Lead">New Lead</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Approved">Approved</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Score Range</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowLeadFilters(false)}
+                        className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLeadExportMenu(!showLeadExportMenu)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm font-medium">Export</span>
+                  {selectedLeads.length > 0 && (
+                    <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">
+                      {selectedLeads.length}
+                    </span>
+                  )}
+                </button>
+                {showLeadExportMenu && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[180px]">
+                    <button
+                      onClick={() => handleExportLeads('pdf')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Export as PDF
+                    </button>
+                    <button
+                      onClick={() => handleExportLeads('excel')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Export as Excel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Leads Table */}
           <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
@@ -454,6 +555,12 @@ const Dashboard = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-black">
                   <tr>
+                    <th className="px-6 py-3 text-left caption text-gray-500 dark:text-gray-400 uppercase">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left caption text-gray-500 dark:text-gray-400 uppercase">Lead Name</th>
                     <th className="px-6 py-3 text-left caption text-gray-500 dark:text-gray-400 uppercase">Contact</th>
                     <th className="px-6 py-3 text-left caption text-gray-500 dark:text-gray-400 uppercase">Property Interested</th>
@@ -467,6 +574,14 @@ const Dashboard = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {leads.map((lead) => (
                     <tr key={lead.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedLeads.includes(lead.id)}
+                          onChange={() => toggleSelectLead(lead.id)}
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="body-text font-medium text-gray-900 dark:text-white">{lead.name}</div>
                       </td>
@@ -528,6 +643,13 @@ const Dashboard = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleShareLead(lead)}
+                            className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+                            title="Share"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -558,7 +680,7 @@ const Dashboard = () => {
           </div>
 
           {/* Search and Filter Bar */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -567,13 +689,13 @@ const Dashboard = () => {
                   placeholder="Search properties by name, address, or city..."
                   value={propertySearch}
                   onChange={(e) => setPropertySearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <select
                 value={propertyStatusFilter}
                 onChange={(e) => setPropertyStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Status</option>
                 <option value="Available">Available</option>
@@ -581,14 +703,84 @@ const Dashboard = () => {
                 <option value="Sold">Sold</option>
                 <option value="Rented">Rented</option>
               </select>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                <Filter className="w-4 h-4" />
-                <span className="text-sm font-medium">More Filters</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                <Download className="w-4 h-4" />
-                <span className="text-sm font-medium">Export</span>
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowPropertyFilters(!showPropertyFilters)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="text-sm font-medium">More Filters</span>
+                </button>
+                {showPropertyFilters && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-10 min-w-[250px]">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price Range</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bedrooms</label>
+                        <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
+                          <option value="all">All</option>
+                          <option value="1">1+</option>
+                          <option value="2">2+</option>
+                          <option value="3">3+</option>
+                          <option value="4">4+</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => setShowPropertyFilters(false)}
+                        className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowPropertyExportMenu(!showPropertyExportMenu)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm font-medium">Export</span>
+                  {selectedProperties.length > 0 && (
+                    <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">
+                      {selectedProperties.length}
+                    </span>
+                  )}
+                </button>
+                {showPropertyExportMenu && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[180px]">
+                    <button
+                      onClick={() => handleExportProperties('pdf')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Export as PDF
+                    </button>
+                    <button
+                      onClick={() => handleExportProperties('excel')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Export as Excel
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -639,24 +831,31 @@ const Dashboard = () => {
                       <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => navigate(`/properties/${property.id}`)}
-                          className="bg-white p-2 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+                          className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           title="View"
                         >
-                          <Eye className="w-4 h-4 text-blue-600" />
+                          <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         </button>
                         <button
                           onClick={() => navigate(`/properties/edit/${property.id}`)}
-                          className="bg-white p-2 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+                          className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           title="Edit"
                         >
-                          <Edit className="w-4 h-4 text-green-600" />
+                          <Edit className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        </button>
+                        <button
+                          onClick={() => handleShareProperty(property)}
+                          className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          title="Share"
+                        >
+                          <Share2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                         </button>
                         <button
                           onClick={() => setShowPropertyDeleteConfirm(property.id)}
-                          className="bg-white p-2 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+                          className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                          <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                         </button>
                       </div>
                     </div>
@@ -754,7 +953,7 @@ const Dashboard = () => {
           </div>
 
           {/* Search and Filter Bar */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -763,27 +962,87 @@ const Dashboard = () => {
                   placeholder="Search applications by name, email, or property..."
                   value={applicationSearch}
                   onChange={(e) => setApplicationSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <select
                 value={applicationStatusFilter}
                 onChange={(e) => setApplicationStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Status</option>
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending</option>
                 <option value="Rejected">Rejected</option>
               </select>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                <Filter className="w-4 h-4" />
-                <span className="text-sm font-medium">More Filters</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                <Download className="w-4 h-4" />
-                <span className="text-sm font-medium">Export</span>
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowApplicationFilters(!showApplicationFilters)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="text-sm font-medium">More Filters</span>
+                </button>
+                {showApplicationFilters && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-10 min-w-[250px]">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Score Range</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowApplicationFilters(false)}
+                        className="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowApplicationExportMenu(!showApplicationExportMenu)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm font-medium">Export</span>
+                  {selectedApplications.length > 0 && (
+                    <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">
+                      {selectedApplications.length}
+                    </span>
+                  )}
+                </button>
+                {showApplicationExportMenu && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[180px]">
+                    <button
+                      onClick={() => handleExportApplications('pdf')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Export as PDF
+                    </button>
+                    <button
+                      onClick={() => handleExportApplications('excel')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Export as Excel
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -805,12 +1064,20 @@ const Dashboard = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
                   {approvedApplications.map((app) => (
                     <tr key={app.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{app.name}</div>
-                        <div className="text-sm text-gray-500">{app.email}</div>
+                        <input
+                          type="checkbox"
+                          checked={selectedApplications.includes(app.id)}
+                          onChange={() => toggleSelectApplication(app.id)}
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{app.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{app.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{app.propertyInterested}</div>
@@ -895,77 +1162,98 @@ const Dashboard = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Budget</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Applicant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Property</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Budget</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Submitted</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
                   {pendingApplications.map((app) => (
                     <tr key={app.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{app.name}</div>
-                        <div className="text-sm text-gray-500">{app.email}</div>
+                        <input
+                          type="checkbox"
+                          checked={selectedApplications.includes(app.id)}
+                          onChange={() => toggleSelectApplication(app.id)}
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.propertyInterested}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{app.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{app.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        <div className="text-sm text-gray-900 dark:text-white">{app.propertyInterested}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
                           {app.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.score}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{app.score}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.budget}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{app.budget}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {new Date(app.submittedDate).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <button
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                             title="View"
                             onClick={() => navigate('/application')}
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
                             title="Message"
                             onClick={() => navigate('/messages')}
                           >
                             <MessageSquare className="w-4 h-4" />
                           </button>
                           <button
-                            className="text-gray-600 hover:text-gray-900"
+                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                             title="Email"
                             onClick={() => window.location.href = `mailto:${app.email}`}
                           >
                             <Mail className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleShareApplication(app)}
+                            className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+                            title="Share"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
                           {app.status === 'Pending' && (
                             <>
                               <button
-                                className="text-green-600 hover:text-green-900"
+                                className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
                                 title="Approve"
                                 onClick={() => handleApproveApplication(app.id)}
                               >
                                 <CheckCircle className="w-4 h-4" />
                               </button>
                               <button
-                                className="text-red-600 hover:text-red-900"
+                                className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                                 title="Reject"
                                 onClick={() => handleRejectApplication(app.id)}
                               >
@@ -974,7 +1262,7 @@ const Dashboard = () => {
                             </>
                           )}
                           <button
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                             title="Delete"
                             onClick={() => setShowDeleteConfirm(app.id)}
                           >
@@ -1002,70 +1290,91 @@ const Dashboard = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Budget</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Contact</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Applicant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Property</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Budget</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Submitted</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Last Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
                   {allApplications.map((app) => (
                     <tr key={app.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{app.name}</div>
-                        <div className="text-sm text-gray-500">{app.email}</div>
+                        <input
+                          type="checkbox"
+                          checked={selectedApplications.includes(app.id)}
+                          onChange={() => toggleSelectApplication(app.id)}
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.propertyInterested}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{app.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{app.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">{app.propertyInterested}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 py-1 text-xs font-medium rounded-full ${
                             app.status === 'Approved'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                               : app.status === 'Pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                           }`}
                         >
                           {app.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.score}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{app.score}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.budget}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{app.budget}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {new Date(app.submittedDate).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{app.lastContact}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{app.lastContact}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <button
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                             title="View"
                             onClick={() => navigate('/application')}
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
                             title="Message"
                             onClick={() => navigate('/messages')}
                           >
                             <MessageSquare className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleShareApplication(app)}
+                            className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+                            title="Share"
+                          >
+                            <Share2 className="w-4 h-4" />
                           </button>
                           <button
                             className="text-gray-600 hover:text-gray-900"

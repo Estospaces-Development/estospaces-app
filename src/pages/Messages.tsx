@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { Search, Send, Paperclip, Smile } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Search, Send, Paperclip, Smile, X, File, Image, FileText } from 'lucide-react';
 import BackButton from '../components/ui/BackButton';
+import EmojiPicker from '../components/ui/EmojiPicker';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'contact';
   timestamp: string;
+  attachments?: Array<{ name: string; type: string; url: string }>;
 }
 
 interface Conversation {
@@ -22,6 +24,9 @@ interface Conversation {
 const Messages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string>('1');
   const [messageInput, setMessageInput] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [attachments, setAttachments] = useState<Array<{ name: string; type: string; file: File }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const conversations: Conversation[] = [
     {
@@ -87,10 +92,33 @@ const Messages = () => {
   const currentConversation = conversations.find((c) => c.id === selectedConversation);
 
   const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // In a real app, this would send the message
+    if (messageInput.trim() || attachments.length > 0) {
+      // In a real app, this would send the message with attachments
+      console.log('Sending message:', messageInput, 'Attachments:', attachments);
       setMessageInput('');
+      setAttachments([]);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newAttachments = files.map(file => ({
+      name: file.name,
+      type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file',
+      file: file
+    }));
+    setAttachments(prev => [...prev, ...newAttachments]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setMessageInput(prev => prev + emoji);
   };
 
   return (
@@ -102,17 +130,17 @@ const Messages = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Messages</h1>
       </div>
 
-      <div className="flex-1 flex gap-4 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="flex-1 flex gap-4 bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         {/* Conversations List */}
-        <div className="w-80 border-r border-gray-200 flex flex-col">
+        <div className="w-80 border-r border-gray-200 dark:border-gray-800 flex flex-col">
           {/* Search */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search conversations..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
               />
             </div>
           </div>
@@ -123,8 +151,8 @@ const Messages = () => {
               <div
                 key={conversation.id}
                 onClick={() => setSelectedConversation(conversation.id)}
-                className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedConversation === conversation.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''
+                className={`p-4 border-b border-gray-200 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${
+                  selectedConversation === conversation.id ? 'bg-primary/5 dark:bg-primary/10 border-l-4 border-l-primary' : ''
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -133,7 +161,7 @@ const Messages = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-sm font-semibold text-gray-800 truncate">
+                      <h3 className="text-sm font-semibold text-gray-800 dark:text-white truncate">
                         {conversation.name}
                       </h3>
                       {conversation.unread > 0 && (
@@ -142,8 +170,8 @@ const Messages = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 truncate mb-1">{conversation.lastMessage}</p>
-                    <p className="text-xs text-gray-400">{conversation.timestamp}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate mb-1">{conversation.lastMessage}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{conversation.timestamp}</p>
                   </div>
                 </div>
               </div>
@@ -156,18 +184,18 @@ const Messages = () => {
           {currentConversation ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
                 <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
                   {currentConversation.avatar}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">{currentConversation.name}</h3>
-                  <p className="text-xs text-gray-500">Online</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-white">{currentConversation.name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
                 {currentConversation.messages.map((message) => (
                   <div
                     key={message.id}
@@ -177,13 +205,13 @@ const Messages = () => {
                       className={`max-w-[70%] rounded-lg px-4 py-2 ${
                         message.sender === 'user'
                           ? 'bg-primary text-white'
-                          : 'bg-white text-gray-800 border border-gray-200'
+                          : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-200 dark:border-gray-700'
                       }`}
                     >
                       <p className="text-sm">{message.text}</p>
                       <p
                         className={`text-xs mt-1 ${
-                          message.sender === 'user' ? 'text-white/70' : 'text-gray-400'
+                          message.sender === 'user' ? 'text-white/70' : 'text-gray-400 dark:text-gray-500'
                         }`}
                       >
                         {message.timestamp}
@@ -193,26 +221,83 @@ const Messages = () => {
                 ))}
               </div>
 
+              {/* Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((attachment, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2"
+                      >
+                        {attachment.type === 'image' ? (
+                          <Image className="w-4 h-4 text-blue-500" />
+                        ) : attachment.type === 'video' ? (
+                          <FileText className="w-4 h-4 text-purple-500" />
+                        ) : (
+                          <File className="w-4 h-4 text-gray-500" />
+                        )}
+                        <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[150px]">
+                          {attachment.name}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveAttachment(index)}
+                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        >
+                          <X className="w-3 h-3 text-gray-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 relative">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                />
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Paperclip className="w-5 h-5" />
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Attach file"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                  </div>
                   <input
                     type="text"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
-                  <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Smile className="w-5 h-5" />
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Add emoji"
+                    >
+                      <Smile className="w-5 h-5" />
+                    </button>
+                    <EmojiPicker
+                      isOpen={showEmojiPicker}
+                      onClose={() => setShowEmojiPicker(false)}
+                      onEmojiSelect={handleEmojiSelect}
+                    />
+                  </div>
                   <button
                     onClick={handleSendMessage}
-                    className="p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                    disabled={!messageInput.trim() && attachments.length === 0}
+                    className="p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="w-5 h-5" />
                   </button>

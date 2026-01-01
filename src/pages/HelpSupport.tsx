@@ -1,16 +1,23 @@
 import { useState } from 'react';
-import { Clock, TrendingUp, CheckCircle, FileText, Search, MessageSquare, Headphones, Mail, Plus, Bell } from 'lucide-react';
+import { Clock, TrendingUp, CheckCircle, FileText, Search, MessageSquare, Headphones, Mail, Plus, Bell, X } from 'lucide-react';
 import BackButton from '../components/ui/BackButton';
 
 type ViewType = 'search' | 'contact' | 'tickets' | 'notifications';
 
 const HelpSupport = () => {
   const [currentView, setCurrentView] = useState<ViewType>('search');
+  const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
     message: '',
+  });
+  const [newTicket, setNewTicket] = useState({
+    title: '',
+    description: '',
+    priority: 'Medium',
+    category: 'General',
   });
 
   const tickets = [
@@ -60,6 +67,16 @@ const HelpSupport = () => {
     // Handle form submission
     console.log('Form submitted:', formData);
     setFormData({ name: '', email: '', subject: '', message: '' });
+    alert('Message sent successfully!');
+  };
+
+  const handleCreateTicket = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle ticket creation
+    console.log('New ticket:', newTicket);
+    setShowNewTicketModal(false);
+    setNewTicket({ title: '', description: '', priority: 'Medium', category: 'General' });
+    alert('Ticket created successfully!');
   };
 
   return (
@@ -201,46 +218,46 @@ const HelpSupport = () => {
       )}
 
       {currentView === 'contact' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">Send us a Message</h2>
+        <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Send us a Message</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
               <input
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message</label>
               <textarea
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
@@ -255,10 +272,13 @@ const HelpSupport = () => {
       )}
 
       {currentView === 'tickets' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-800">Support Ticket</h2>
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Support Ticket</h2>
+            <button
+              onClick={() => setShowNewTicketModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+            >
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">New Ticket</span>
             </button>
@@ -286,6 +306,101 @@ const HelpSupport = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* New Ticket Modal */}
+      {showNewTicketModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Create New Ticket</h3>
+              <button
+                onClick={() => {
+                  setShowNewTicketModal(false);
+                  setNewTicket({ title: '', description: '', priority: 'Medium', category: 'General' });
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateTicket} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Ticket Title *
+                </label>
+                <input
+                  type="text"
+                  value={newTicket.title}
+                  onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={newTicket.category}
+                  onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="General">General</option>
+                  <option value="Technical">Technical</option>
+                  <option value="Billing">Billing</option>
+                  <option value="Feature Request">Feature Request</option>
+                  <option value="Bug Report">Bug Report</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Priority *
+                </label>
+                <select
+                  value={newTicket.priority}
+                  onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Urgent">Urgent</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description *
+                </label>
+                <textarea
+                  value={newTicket.description}
+                  onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                  rows={6}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewTicketModal(false);
+                    setNewTicket({ title: '', description: '', priority: 'Medium', category: 'General' });
+                  }}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                >
+                  Create Ticket
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

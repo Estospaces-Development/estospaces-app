@@ -4,6 +4,13 @@ import BackButton from '../components/ui/BackButton';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
   const [formData, setFormData] = useState({
     name: 'Property Manager',
     email: 'manager@estospaces.com',
@@ -30,6 +37,40 @@ const Profile = () => {
   const handleCancel = () => {
     setIsEditing(false);
     // Reset form data if needed
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('New passwords do not match');
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      alert('Password must be at least 8 characters long');
+      return;
+    }
+    // Handle password change
+    console.log('Changing password...');
+    setShowPasswordModal(false);
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    alert('Password changed successfully');
+  };
+
+  const handleToggle2FA = () => {
+    if (!twoFactorEnabled) {
+      // In a real app, this would initiate 2FA setup
+      const confirm = window.confirm('This will enable Two-Factor Authentication. Do you want to continue?');
+      if (confirm) {
+        setTwoFactorEnabled(true);
+        alert('Two-Factor Authentication enabled successfully');
+      }
+    } else {
+      const confirm = window.confirm('Are you sure you want to disable Two-Factor Authentication?');
+      if (confirm) {
+        setTwoFactorEnabled(false);
+        alert('Two-Factor Authentication disabled');
+      }
+    }
   };
 
   return (
@@ -288,7 +329,10 @@ const Profile = () => {
               <p className="font-medium text-gray-800 dark:text-white">Change Password</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Update your password to keep your account secure</p>
             </div>
-            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+            >
               Change Password
             </button>
           </div>
@@ -296,10 +340,19 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-800 dark:text-white">Two-Factor Authentication</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Add an extra layer of security to your account</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {twoFactorEnabled ? 'Enabled' : 'Add an extra layer of security to your account'}
+              </p>
             </div>
-            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              Enable
+            <button
+              onClick={handleToggle2FA}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                twoFactorEnabled
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {twoFactorEnabled ? 'Disable' : 'Enable'}
             </button>
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
@@ -314,6 +367,84 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Change Password</h3>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Password *
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  New Password *
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                  minLength={8}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be at least 8 characters</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm New Password *
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  }}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                >
+                  Change Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
