@@ -112,7 +112,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
                       isActive
                         ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-black hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
                     }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
@@ -137,7 +137,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
                       isActive
                         ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-black hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
                     }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
