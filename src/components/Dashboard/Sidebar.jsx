@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard,
-  Search, 
+  Search,
   Heart,
   FileText,
   Calendar,
@@ -13,7 +13,8 @@ import {
   LogOut,
   Menu,
   X,
-  CreditCard
+  CreditCard,
+  CheckCircle
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onToggle }) => {
@@ -21,19 +22,19 @@ const Sidebar = ({ isOpen, onToggle }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Search, label: 'Browse Properties', path: '/dashboard/discover' },
-    { icon: Heart, label: 'Saved Properties', path: '/dashboard/saved' },
-    { icon: FileText, label: 'My Applications', path: '/dashboard/applications' },
-    { icon: Calendar, label: 'Viewings', path: '/dashboard/viewings' },
-    { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages' },
-    { icon: CreditCard, label: 'Payments', path: '/dashboard/payments' },
-    { icon: FileText, label: 'Contracts', path: '/dashboard/contracts' },
-    { icon: Star, label: 'Reviews', path: '/dashboard/reviews' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/user/dashboard' },
+    { icon: Search, label: 'Browse Properties', path: '/user/dashboard/discover' },
+    { icon: Heart, label: 'Saved Properties', path: '/user/dashboard/saved' },
+    { icon: FileText, label: 'My Applications', path: '/user/dashboard/applications' },
+    { icon: Calendar, label: 'Viewings', path: '/user/dashboard/viewings' },
+    { icon: MessageSquare, label: 'Messages', path: '/user/dashboard/messages' },
+    { icon: CreditCard, label: 'Payments', path: '/user/dashboard/payments' },
+    { icon: FileText, label: 'Contracts', path: '/user/dashboard/contracts' },
+    { icon: Star, label: 'Reviews', path: '/user/dashboard/reviews' },
   ];
 
   const isActive = (path) => {
-    if (path === '/dashboard') {
+    if (path === '/user/dashboard') {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
@@ -80,11 +81,17 @@ const Sidebar = ({ isOpen, onToggle }) => {
             </div>
             {isOpen && (
               <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-800">
-                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0 relative">
                   <User size={16} className="text-gray-600 dark:text-gray-300" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
+                    <CheckCircle size={10} className="text-white" fill="currentColor" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">Property Viewer</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">Property Viewer</p>
+                    <CheckCircle size={14} className="text-green-500 flex-shrink-0" fill="currentColor" />
+                  </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">viewer@estospaces.com</p>
                 </div>
               </div>
@@ -125,10 +132,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
           <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 px-3 pb-4 flex-shrink-0 space-y-1">
             {/* Profile */}
             <Link
-              to="/dashboard/profile"
+              to="/user/dashboard/profile"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                location.pathname === '/dashboard/profile'
+                location.pathname === '/user/dashboard/profile'
                   ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
               } ${!isOpen && 'justify-center'}`}
@@ -136,7 +143,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
               <User
                 size={20}
                 className={`flex-shrink-0 ${
-                  location.pathname === '/dashboard/profile'
+                  location.pathname === '/user/dashboard/profile'
                     ? 'text-orange-600 dark:text-orange-400'
                     : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
                 }`}
@@ -146,10 +153,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
             {/* Help & Support */}
             <Link
-              to="/dashboard/help"
+              to="/user/dashboard/help"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                location.pathname === '/dashboard/help'
+                location.pathname === '/user/dashboard/help'
                   ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
               } ${!isOpen && 'justify-center'}`}
@@ -157,7 +164,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
               <HelpCircle
                 size={20}
                 className={`flex-shrink-0 ${
-                  location.pathname === '/dashboard/help'
+                  location.pathname === '/user/dashboard/help'
                     ? 'text-orange-600 dark:text-orange-400'
                     : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
                 }`}

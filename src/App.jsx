@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
 import Home from './pages/Home';
 import Terms from './pages/Terms';
 import About from './pages/About';
@@ -25,12 +26,13 @@ import DashboardSaved from './pages/DashboardSaved';
 import DashboardApplications from './pages/DashboardApplications';
 import DashboardViewings from './pages/DashboardViewings';
 import DashboardReviews from './pages/DashboardReviews';
+import PropertyDetail from './pages/PropertyDetail';
 
 // Layout component to handle conditional rendering of global components
 const Layout = ({ children }) => {
   const location = useLocation();
   // Hide chat widget on admin and dashboard pages
-  const showChatWidget = !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/dashboard');
+  const showChatWidget = !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/user/dashboard');
 
   return (
     <>
@@ -44,8 +46,9 @@ const Layout = ({ children }) => {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <Layout>
+      <SavedPropertiesProvider>
+        <Router>
+          <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/terms" element={<Terms />} />
@@ -71,7 +74,7 @@ function App() {
           />
           {/* Dashboard Routes */}
           <Route
-            path="/dashboard"
+            path="/user/dashboard"
             element={
               <DashboardLayout>
                 <Dashboard />
@@ -79,7 +82,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/discover"
+            path="/user/dashboard/discover"
             element={
               <DashboardLayout>
                 <DashboardDiscover />
@@ -87,7 +90,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/saved"
+            path="/user/dashboard/saved"
             element={
               <DashboardLayout>
                 <DashboardSaved />
@@ -95,7 +98,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/applications"
+            path="/user/dashboard/applications"
             element={
               <DashboardLayout>
                 <DashboardApplications />
@@ -103,7 +106,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/viewings"
+            path="/user/dashboard/viewings"
             element={
               <DashboardLayout>
                 <DashboardViewings />
@@ -111,7 +114,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/messages"
+            path="/user/dashboard/messages"
             element={
               <DashboardLayout>
                 <DashboardMessages />
@@ -119,7 +122,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/reviews"
+            path="/user/dashboard/reviews"
             element={
               <DashboardLayout>
                 <DashboardReviews />
@@ -127,7 +130,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/payments"
+            path="/user/dashboard/payments"
             element={
               <DashboardLayout>
                 <DashboardPayments />
@@ -135,7 +138,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/contracts"
+            path="/user/dashboard/contracts"
             element={
               <DashboardLayout>
                 <DashboardContracts />
@@ -143,7 +146,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/settings"
+            path="/user/dashboard/settings"
             element={
               <DashboardLayout>
                 <DashboardSettings />
@@ -151,7 +154,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/help"
+            path="/user/dashboard/help"
             element={
               <DashboardLayout>
                 <DashboardHelp />
@@ -159,16 +162,26 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/profile"
+            path="/user/dashboard/profile"
             element={
               <DashboardLayout>
                 <DashboardProfile />
               </DashboardLayout>
             }
           />
+          {/* Property Detail Route */}
+          <Route
+            path="/user/dashboard/property/:id"
+            element={
+              <DashboardLayout>
+                <PropertyDetail />
+              </DashboardLayout>
+            }
+          />
         </Routes>
         </Layout>
       </Router>
+      </SavedPropertiesProvider>
     </ThemeProvider>
   );
 }

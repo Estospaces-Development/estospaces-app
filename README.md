@@ -4,6 +4,13 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 
 ## 🌟 Features
 
+### Recent Updates
+- ✅ **Property Detail Page**: Comprehensive property information with market insights and analytics
+- ✅ **Smart Search Navigation**: Search bars navigate to relevant pages based on keywords
+- ✅ **User Verification Badge**: Verified indicator displayed in sidebar for authenticated users
+- ✅ **Global Chatbot Access**: Lakshmi AI Assistant available on all dashboard pages
+- ✅ **Theme Switcher**: Available on all dashboard pages (not just main dashboard)
+
 ### User Dashboard
 - **Responsive Dashboard Layout**: Clean, modern SaaS-style dashboard with sidebar navigation and top header
 - **Property Management**: Browse, search, and manage properties with detailed property cards
@@ -18,7 +25,18 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 ### Dashboard Pages
 - **Dashboard Home**: Main dashboard with featured properties, map view, and quick stats
 - **Discover Properties**: Browse and search properties
-- **Saved Properties**: View saved/favorited properties
+- **Saved Properties**: View saved/favorited properties (saved from Featured Properties or Browse Properties)
+- **Property Detail Page**: Comprehensive property information page with:
+  - Property details (images, description, specs, agent info, inspection times)
+  - Financial metrics (median price, rent, cashflow, yield, vacancy rate)
+  - Market insights dashboard with charts and analytics:
+    - Median price & growth trends
+    - Average bedrooms distribution
+    - Gross yield & vacancy rate history
+    - Average age demographics
+    - Potential value range analysis
+  - Interactive map with street view and directions
+  - Agent contact and calendar integration
 - **My Applications**: Track property applications
 - **Viewings**: Manage scheduled property viewings
 - **Messages**: Chat with brokers and agencies
@@ -27,7 +45,7 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 - **Contracts**: View and sign digital contracts
 - **Settings**: User settings and preferences
 - **Help & Support**: Help center and support resources
-- **Profile**: User profile management
+- **Profile**: User profile management with verified badge
 
 ### Key Components
 
@@ -36,13 +54,52 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 - Property details (beds, baths, area, price)
 - Hover effects and skeleton loaders
 - Virtual tour integration
-- Favorite/save functionality
+- Favorite/save functionality with global state management
+- Save properties from Featured Properties or Browse Properties pages
+- Saved properties persist in localStorage
+- "View Details" button navigates to comprehensive property detail page
+
+#### Property Detail Page
+- Full property information display
+- Image carousel with navigation
+- Financial metrics and market analytics
+- Market insights dashboard with interactive charts:
+  - Price history and growth trends
+  - Bedroom distribution charts
+  - Yield and vacancy rate analytics
+  - Demographic data visualization
+- Agent contact information
+- Inspection times with calendar integration
+- Map view with street view and directions
+- Save/favorite functionality integrated
+
+#### Search Functionality
+- **Header Search Bar**: Universal search available on all dashboard pages
+- **Dashboard Search Bar**: AI-powered property search with navigation
+- **Smart Navigation**: Search keywords automatically navigate to relevant pages:
+  - `payments`, `payment`, `pay` → Payments page
+  - `messages`, `message`, `chat` → Messages page
+  - `contracts`, `contract` → Contracts page
+  - `applications`, `application`, `apply` → Applications page
+  - `viewings`, `viewing`, `schedule` → Viewings page
+  - `saved`, `favorites`, `favorite` → Saved Properties page
+  - `discover`, `browse`, `properties`, `property` → Discover page
+  - `reviews`, `review` → Reviews page
+  - `settings`, `setting` → Settings page
+  - `profile` → Profile page
+  - `help`, `support` → Help page
 
 #### Theme System
 - Light and Deep Dark themes
-- Theme switcher in header (dashboard only)
+- Theme switcher in header (all dashboard pages)
 - Persistent theme preference (localStorage)
 - Fully responsive dark mode styling
+
+#### User Profile & Verification
+- Verified badge displayed in sidebar
+- Green checkmark indicator on user avatar
+- Verification status shown next to username
+- Professional user identification
 
 #### AI Assistant (Lakshmi)
 - Chat bubble interface (bottom-right)
@@ -112,7 +169,24 @@ A modern, responsive property management dashboard built with React, Tailwind CS
    ```
 
 6. **Open your browser**
-   Navigate to `http://localhost:5173` (or the port shown in your terminal)
+   Navigate to `http://localhost:5173/user/dashboard` (or the port shown in your terminal)
+
+### Dashboard URLs
+
+After starting the development server, access the dashboard at:
+- **Main Dashboard**: `http://localhost:5173/user/dashboard`
+- **Discover Properties**: `http://localhost:5173/user/dashboard/discover`
+- **Saved Properties**: `http://localhost:5173/user/dashboard/saved`
+- **Property Detail**: `http://localhost:5173/user/dashboard/property/:id` (accessed via "View Details" button)
+- **My Applications**: `http://localhost:5173/user/dashboard/applications`
+- **Viewings**: `http://localhost:5173/user/dashboard/viewings`
+- **Messages**: `http://localhost:5173/user/dashboard/messages`
+- **Payments**: `http://localhost:5173/user/dashboard/payments`
+- **Contracts**: `http://localhost:5173/user/dashboard/contracts`
+- **Reviews**: `http://localhost:5173/user/dashboard/reviews`
+- **Settings**: `http://localhost:5173/user/dashboard/settings`
+- **Help & Support**: `http://localhost:5173/user/dashboard/help`
+- **Profile**: `http://localhost:5173/user/dashboard/profile`
 
 ### Build for Production
 
@@ -139,7 +213,7 @@ yarn preview
 - **Tailwind CSS**: Utility-first CSS framework
 - **React Router DOM**: Client-side routing
 - **Lucide React**: Icon library
-- **Context API**: State management (Theme)
+- **Context API**: State management (Theme, Saved Properties)
 
 ## 📁 Project Structure
 
@@ -169,7 +243,8 @@ estospaces-app/
 │   │   ├── DashboardContracts.jsx     # Contracts page
 │   │   └── ...
 │   ├── contexts/
-│   │   └── ThemeContext.jsx           # Theme context provider
+│   │   ├── ThemeContext.jsx           # Theme context provider
+│   │   └── SavedPropertiesContext.jsx # Saved properties context provider
 │   └── App.jsx                        # Main app component
 ├── tailwind.config.js                 # Tailwind configuration
 ├── vite.config.js                     # Vite configuration
@@ -182,7 +257,7 @@ The dashboard supports two themes:
 - **Light**: Default light theme
 - **Deep Dark**: Dark theme with gray-900 background
 
-Theme preference is saved in localStorage and persists across sessions. The theme switcher is available in the header on the main dashboard page (`/dashboard`).
+Theme preference is saved in localStorage and persists across sessions. The theme switcher is available in the header on the main dashboard page (`/user/dashboard`).
 
 ## 🗺️ Map Integration
 

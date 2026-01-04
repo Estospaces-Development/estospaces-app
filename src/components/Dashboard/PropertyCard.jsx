@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Heart, 
   Bookmark, 
@@ -12,12 +13,23 @@ import {
   ChevronRight
 } from 'lucide-react';
 import VirtualTourModal from './VirtualTourModal';
+import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
 
 const PropertyCard = ({ property, onViewDetails }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const { toggleProperty, isPropertySaved } = useSavedProperties();
+  const navigate = useNavigate();
+  const isSaved = isPropertySaved(property.id);
+
+  const handleViewDetails = (e) => {
+    e?.stopPropagation();
+    if (onViewDetails) {
+      onViewDetails(property);
+    } else {
+      navigate(`/user/dashboard/property/${property.id}`);
+    }
+  };
 
   const images = property.images || [property.image].filter(Boolean).slice(0, 4);
   const hasMultipleImages = images.length > 1;
@@ -121,26 +133,28 @@ const PropertyCard = ({ property, onViewDetails }) => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setIsFavorite(!isFavorite);
+                toggleProperty(property);
               }}
               className={`p-2 rounded-full backdrop-blur-sm transition-all ${
-                isFavorite
+                isSaved
                   ? 'bg-red-500 text-white'
-                  : 'bg-white/90 text-gray-700 hover:bg-white'
+                  : 'bg-white/90 dark:bg-gray-900/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900'
               }`}
+              aria-label={isSaved ? 'Remove from saved' : 'Save property'}
             >
-              <Heart size={16} className={isFavorite ? 'fill-current' : ''} />
+              <Heart size={16} className={isSaved ? 'fill-current' : ''} />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setIsSaved(!isSaved);
+                toggleProperty(property);
               }}
               className={`p-2 rounded-full backdrop-blur-sm transition-all ${
                 isSaved
                   ? 'bg-blue-500 text-white'
-                  : 'bg-white/90 text-gray-700 hover:bg-white'
+                  : 'bg-white/90 dark:bg-gray-900/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900'
               }`}
+              aria-label={isSaved ? 'Remove bookmark' : 'Bookmark property'}
             >
               <Bookmark size={16} className={isSaved ? 'fill-current' : ''} />
             </button>

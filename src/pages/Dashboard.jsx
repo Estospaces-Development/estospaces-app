@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Home, Heart, FileText, Map as MapIcon } from 'lucide-react';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import PromiseBanner from '../components/Dashboard/PromiseBanner';
 import MapView from '../components/Dashboard/MapView';
-import LakshmiAssistant from '../components/Dashboard/LakshmiAssistant';
+import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { savedProperties } = useSavedProperties();
+  const navigate = useNavigate();
 
   // Mock data - replace with actual API calls
   const featuredProperties = [
@@ -73,13 +76,61 @@ const Dashboard = () => {
 
   const stats = [
     { label: 'Properties Available', value: '6', color: 'bg-green-500', icon: Home },
-    { label: 'Saved Favorites', value: '3', color: 'bg-blue-500', icon: Heart },
+    { label: 'Saved Favorites', value: savedProperties.length.toString(), color: 'bg-blue-500', icon: Heart },
     { label: 'Active Applications', value: '2', color: 'bg-purple-500', icon: FileText },
   ];
 
   const handleViewDetails = (property) => {
-    // Navigate to property detail page
-    console.log('View details for:', property);
+    navigate(`/user/dashboard/property/${property.id}`);
+  };
+
+  const handleSearch = (e) => {
+    e?.preventDefault();
+    const query = searchQuery.toLowerCase().trim();
+    
+    if (!query) return;
+
+    // Navigation mapping for search
+    const navigationMap = {
+      'payments': '/user/dashboard/payments',
+      'payment': '/user/dashboard/payments',
+      'pay': '/user/dashboard/payments',
+      'messages': '/user/dashboard/messages',
+      'message': '/user/dashboard/messages',
+      'chat': '/user/dashboard/messages',
+      'contracts': '/user/dashboard/contracts',
+      'contract': '/user/dashboard/contracts',
+      'applications': '/user/dashboard/applications',
+      'application': '/user/dashboard/applications',
+      'apply': '/user/dashboard/applications',
+      'viewings': '/user/dashboard/viewings',
+      'viewing': '/user/dashboard/viewings',
+      'schedule': '/user/dashboard/viewings',
+      'saved': '/user/dashboard/saved',
+      'favorites': '/user/dashboard/saved',
+      'favorite': '/user/dashboard/saved',
+      'discover': '/user/dashboard/discover',
+      'browse': '/user/dashboard/discover',
+      'properties': '/user/dashboard/discover',
+      'property': '/user/dashboard/discover',
+      'search': '/user/dashboard/discover',
+      'reviews': '/user/dashboard/reviews',
+      'review': '/user/dashboard/reviews',
+      'settings': '/user/dashboard/settings',
+      'setting': '/user/dashboard/settings',
+      'profile': '/user/dashboard/profile',
+      'help': '/user/dashboard/help',
+      'support': '/user/dashboard/help',
+    };
+
+    // Check if query matches any navigation keyword
+    for (const [key, path] of Object.entries(navigationMap)) {
+      if (query.includes(key)) {
+        navigate(path);
+        setSearchQuery('');
+        return;
+      }
+    }
   };
 
   return (
@@ -128,24 +179,24 @@ const Dashboard = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Tell us what you're looking for and let AI find your perfect match
             </p>
-            <div className="flex gap-3">
+            <form onSubmit={handleSearch} className="flex gap-3">
               <div className="flex-1 relative">
                 <input
                   type="text"
-                  placeholder="Try: Find me a modern 3 bedroom house under $500k with a garden near..."
+                  placeholder="Try: payments, messages, contracts, discover..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
-              <button className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors">
+              <button type="submit" className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors">
                 Search
               </button>
-              <button className="px-4 py-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2">
+              <button type="button" className="px-4 py-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2">
                 <Filter size={18} />
                 <span className="hidden sm:inline">Filters</span>
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
@@ -212,9 +263,6 @@ const Dashboard = () => {
           </div>
         )}
       </div>
-
-      {/* Lakshmi AI Assistant */}
-      <LakshmiAssistant />
     </div>
   );
 };

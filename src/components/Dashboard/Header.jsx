@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, ChevronDown } from 'lucide-react';
 import ThemeSwitcher from './ThemeSwitcher';
 
 const Header = ({ onMenuToggle }) => {
   const location = useLocation();
-  const isDashboard = location.pathname === '/dashboard';
+  const navigate = useNavigate();
+  const isDashboard = location.pathname.startsWith('/user/dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -27,18 +28,67 @@ const Header = ({ onMenuToggle }) => {
         {/* Right side - Search, Notifications, User */}
         <div className="flex items-center gap-4 flex-1 justify-end">
           {/* Search */}
-          <div className="hidden md:flex items-center max-w-md flex-1">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const query = searchQuery.toLowerCase().trim();
+              if (!query) return;
+
+              // Navigation mapping for search
+              const navigationMap = {
+                'payments': '/user/dashboard/payments',
+                'payment': '/user/dashboard/payments',
+                'pay': '/user/dashboard/payments',
+                'messages': '/user/dashboard/messages',
+                'message': '/user/dashboard/messages',
+                'chat': '/user/dashboard/messages',
+                'contracts': '/user/dashboard/contracts',
+                'contract': '/user/dashboard/contracts',
+                'applications': '/user/dashboard/applications',
+                'application': '/user/dashboard/applications',
+                'apply': '/user/dashboard/applications',
+                'viewings': '/user/dashboard/viewings',
+                'viewing': '/user/dashboard/viewings',
+                'schedule': '/user/dashboard/viewings',
+                'saved': '/user/dashboard/saved',
+                'favorites': '/user/dashboard/saved',
+                'favorite': '/user/dashboard/saved',
+                'discover': '/user/dashboard/discover',
+                'browse': '/user/dashboard/discover',
+                'properties': '/user/dashboard/discover',
+                'property': '/user/dashboard/discover',
+                'search': '/user/dashboard/discover',
+                'reviews': '/user/dashboard/reviews',
+                'review': '/user/dashboard/reviews',
+                'settings': '/user/dashboard/settings',
+                'setting': '/user/dashboard/settings',
+                'profile': '/user/dashboard/profile',
+                'help': '/user/dashboard/help',
+                'support': '/user/dashboard/help',
+              };
+
+              // Check if query matches any navigation keyword
+              for (const [key, path] of Object.entries(navigationMap)) {
+                if (query.includes(key)) {
+                  navigate(path);
+                  setSearchQuery('');
+                  return;
+                }
+              }
+            }}
+            className="hidden md:flex items-center max-w-md flex-1"
+          >
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Search, properties, application"
+                placeholder="Search: payments, messages, contracts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
-          </div>
+          </form>
 
           {/* Theme Switcher - Only show on dashboard */}
           {isDashboard && <ThemeSwitcher />}

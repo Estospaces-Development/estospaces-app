@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import LakshmiAssistant from './LakshmiAssistant';
 
 const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -14,6 +15,8 @@ const DashboardLayout = ({ children }) => {
           {children}
         </main>
       </div>
+      {/* Lakshmi AI Assistant - Available on all dashboard pages */}
+      <LakshmiAssistant />
     </div>
   );
 };
