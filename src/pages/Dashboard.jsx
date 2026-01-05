@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Home, Heart, FileText, Map as MapIcon } from 'lucide-react';
+import { Search, Filter, Home, Heart, FileText, Map as MapIcon, User } from 'lucide-react';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import PromiseBanner from '../components/Dashboard/PromiseBanner';
