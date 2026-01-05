@@ -241,7 +241,7 @@ const PropertyDetail = () => {
             <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
               {property.description}
             </p>
-            <button className="text-green-600 dark:text-green-400 font-medium hover:underline">
+            <button className="text-orange-600 dark:text-orange-400 font-medium hover:underline">
               Read more
             </button>
           </div>
@@ -292,7 +292,7 @@ const PropertyDetail = () => {
           {/* Potential Value */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Potential value</h3>
-            <span className="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium mb-4">
+            <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
               {marketInsights.valueRange.confidence}
             </span>
             <div className="space-y-2">
@@ -348,9 +348,9 @@ const PropertyDetail = () => {
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-gray-100">{time.date}</p>
-                    <p className="text-sm text-green-600 dark:text-green-400">{time.time}</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400">{time.time}</p>
                   </div>
-                  <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                  <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                     <Calendar size={16} />
                     ADD TO CALENDAR
                   </button>
@@ -372,10 +372,10 @@ const PropertyDetail = () => {
               </div>
             </div>
             <div className="absolute bottom-4 right-4 flex gap-2">
-              <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+              <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
                 STREET VIEW
               </button>
-              <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+              <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
                 DIRECTIONS →
               </button>
             </div>
@@ -454,7 +454,7 @@ const PropertyDetail = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Gross yield: {marketInsights.grossYieldHistory[marketInsights.grossYieldHistory.length - 1].yield}%
                   </span>
@@ -474,8 +474,8 @@ const PropertyDetail = () => {
               {marketInsights.grossYieldHistory.map((data, index) => (
                 <div key={index} className="flex-1 flex flex-col items-center">
                   <div className="w-full space-y-1">
-                    <div className="bg-green-100 dark:bg-green-900/30 rounded" style={{ height: `${data.yield * 10}%` }}></div>
-                    <div className="bg-orange-100 dark:bg-orange-900/30 rounded" style={{ height: `${data.vacancy * 5}%` }}></div>
+                    <div className="bg-orange-100 dark:bg-orange-900/30 rounded" style={{ height: `${data.yield * 10}%` }}></div>
+                    <div className="bg-orange-200 dark:bg-orange-800/30 rounded" style={{ height: `${data.vacancy * 5}%` }}></div>
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">{data.year}</div>
                 </div>
@@ -498,10 +498,10 @@ const PropertyDetail = () => {
                     <div
                       className={`h-full rounded-full ${
                         index === 0
-                          ? 'bg-green-500'
+                          ? 'bg-orange-500'
                           : index === 1
-                          ? 'bg-blue-400'
-                          : 'bg-blue-600 dark:bg-blue-500'
+                          ? 'bg-orange-400'
+                          : 'bg-orange-600 dark:bg-orange-500'
                       }`}
                       style={{ width: `${item.percentage}%` }}
                     ></div>
@@ -513,7 +513,7 @@ const PropertyDetail = () => {
           </div>
         </div>
 
-        <button className="mt-6 w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
+        <button className="mt-6 w-full px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
           VIEW ALL MARKET INSIGHTS
           <span>→</span>
         </button>
