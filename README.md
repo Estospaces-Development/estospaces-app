@@ -5,11 +5,13 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 ## 🌟 Features
 
 ### Recent Updates
-- ✅ **Property Detail Page**: Comprehensive property information with market insights and analytics
+- ✅ **Property Detail Page**: Comprehensive property information with market insights and analytics (orange theme)
+- ✅ **Welcome Card**: Personalized welcome message with user name and email integrated into Discover Your Dream Home banner
 - ✅ **Smart Search Navigation**: Search bars navigate to relevant pages based on keywords
 - ✅ **User Verification Badge**: Verified indicator displayed in sidebar for authenticated users
 - ✅ **Global Chatbot Access**: Lakshmi AI Assistant available on all dashboard pages
 - ✅ **Theme Switcher**: Available on all dashboard pages (not just main dashboard)
+- ✅ **Orange Theme**: Property Detail page uses consistent orange branding matching dashboard theme
 
 ### User Dashboard
 - **Responsive Dashboard Layout**: Clean, modern SaaS-style dashboard with sidebar navigation and top header
@@ -60,7 +62,7 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 - "View Details" button navigates to comprehensive property detail page
 
 #### Property Detail Page
-- Full property information display
+- Full property information display with orange theme (buttons, badges, text, charts)
 - Image carousel with navigation
 - Financial metrics and market analytics
 - Market insights dashboard with interactive charts:
