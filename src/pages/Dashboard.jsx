@@ -133,8 +133,31 @@ const Dashboard = () => {
     }
   };
 
+  // Mock user data - In production, fetch from authentication context/API
+  const userData = {
+    name: 'Prajol Annamudu',
+    email: 'viewer@estospaces.com',
+  };
+
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-gray-900">
+      {/* Welcome Card */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 lg:p-8 text-white shadow-lg">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-2">Welcome, {userData.name}</h1>
+            <p className="text-orange-50 text-sm lg:text-base">
+              Logged in as <span className="font-semibold">{userData.email}</span>
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <User size={32} className="text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 24-Hour Process & Key Handover Promise Banner */}
       <PromiseBanner />
 
