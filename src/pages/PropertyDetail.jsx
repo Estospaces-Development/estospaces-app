@@ -149,7 +149,7 @@ const PropertyDetail = () => {
               </button>
             </div>
             <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">{property.address}</p>
-            <p className="text-xl font-bold text-green-600 dark:text-green-400 mb-4">
+            <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4">
               Offers from {formatPrice(property.price)}
             </p>
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -171,7 +171,7 @@ const PropertyDetail = () => {
               </div>
             </div>
           </div>
-          <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors">
+          <button className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors">
             PURCHASE THIS PROPERTY
             <span>→</span>
           </button>
@@ -331,7 +331,7 @@ const PropertyDetail = () => {
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{property.agent.name}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{property.agent.agency}</p>
               </div>
-              <button className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
+              <button className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors">
                 CONTACT AGENT & VIEW LISTING
               </button>
             </div>
