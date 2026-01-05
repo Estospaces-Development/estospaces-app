@@ -364,7 +364,7 @@ const PropertyDetail = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="h-96 bg-gray-200 dark:bg-gray-700 relative">
             {/* Placeholder Map - In production, integrate with Mapbox/Google Maps */}
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/20 dark:to-green-900/20">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-orange-100 dark:from-blue-900/20 dark:to-orange-900/20">
               <div className="text-center">
                 <MapPin size={48} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                 <p className="text-gray-600 dark:text-gray-400 font-medium">{property.address}</p>
