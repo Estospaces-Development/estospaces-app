@@ -162,7 +162,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
           {/* Price */}
           <div className="absolute bottom-3 left-3">
-            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-bold text-lg">
+            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-bold text-base">
               {formatPrice(property.price)}
             </span>
           </div>
@@ -170,14 +170,14 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">{property.title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">{property.title}</h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
             <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
             <span className="line-clamp-1">{property.location}</span>
           </p>
 
           {/* Specs */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mb-3">
             {property.beds && (
               <div className="flex items-center gap-1">
                 <Bed size={16} className="text-gray-400 dark:text-gray-500" />

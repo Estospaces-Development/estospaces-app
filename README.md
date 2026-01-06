@@ -5,15 +5,22 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 ## 🌟 Features
 
 ### Recent Updates
-- ✅ **Property Detail Page**: Comprehensive property information with market insights and analytics (orange theme)
-- ✅ **Welcome Card**: Personalized welcome message with user name and email integrated into Discover Your Dream Home banner
-- ✅ **Smart Search Navigation**: Search bars navigate to relevant pages based on keywords
-- ✅ **User Verification Badge**: Verified indicator displayed in sidebar for authenticated users
-- ✅ **Global Chatbot Access**: Lakshmi AI Assistant available on all dashboard pages
-- ✅ **Theme Switcher**: Available on all dashboard pages (not just main dashboard)
-- ✅ **Orange Theme**: Property Detail page uses consistent orange branding matching dashboard theme
+
+- **✅ Smart Search Filtering**: Enhanced "Discover Properties" page with multi-criteria filtering (Location, Type, Price, Beds, Baths).
+- **✅ Enhanced Help Center**: Interactive "Help & Support" page with:
+  - **Documentation Modal**: Quick access to getting started guides and resources.
+  - **Live Chat**: Direct email integration for support requests.
+  - **Email Support**: One-click email composition.
+- **✅ Property Detail Page**: Comprehensive property information with market insights and analytics (orange theme)
+- **✅ Welcome Card**: Personalized welcome message with user name and email integrated into Discover Your Dream Home banner
+- **✅ Smart Search Navigation**: Search bars navigate to relevant pages based on keywords
+- **✅ User Verification Badge**: Verified indicator displayed in sidebar for authenticated users
+- **✅ Global Chatbot Access**: Lakshmi AI Assistant available on all dashboard pages
+- **✅ Theme Switcher**: Available on all dashboard pages (not just main dashboard)
+- **✅ Orange Theme**: Property Detail page uses consistent orange branding matching dashboard theme
 
 ### User Dashboard
+
 - **Responsive Dashboard Layout**: Clean, modern SaaS-style dashboard with sidebar navigation and top header
 - **Property Management**: Browse, search, and manage properties with detailed property cards
 - **AI Assistant (Lakshmi)**: Integrated AI assistant for property search, navigation help, and FAQs
@@ -25,8 +32,9 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 - **Virtual Tours**: View property virtual tours with embedded video/360 iframe support
 
 ### Dashboard Pages
+
 - **Dashboard Home**: Main dashboard with featured properties, map view, and quick stats
-- **Discover Properties**: Browse and search properties
+- **Discover Properties**: Browse and search properties with advanced filtering
 - **Saved Properties**: View saved/favorited properties (saved from Featured Properties or Browse Properties)
 - **Property Detail Page**: Comprehensive property information page with:
   - Property details (images, description, specs, agent info, inspection times)
@@ -46,96 +54,15 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 - **Payments**: Manage payments and view payment history
 - **Contracts**: View and sign digital contracts
 - **Settings**: User settings and preferences
-- **Help & Support**: Help center and support resources
+- **Help & Support**: Interactive help center with documentation and support channels
 - **Profile**: User profile management with verified badge
-
-### Key Components
-
-#### Property Cards
-- Image carousel (max 4 images)
-- Property details (beds, baths, area, price)
-- Hover effects and skeleton loaders
-- Virtual tour integration
-- Favorite/save functionality with global state management
-- Save properties from Featured Properties or Browse Properties pages
-- Saved properties persist in localStorage
-- "View Details" button navigates to comprehensive property detail page
-
-#### Property Detail Page
-- Full property information display with orange theme (buttons, badges, text, charts)
-- Image carousel with navigation
-- Financial metrics and market analytics
-- Market insights dashboard with interactive charts:
-  - Price history and growth trends
-  - Bedroom distribution charts
-  - Yield and vacancy rate analytics
-  - Demographic data visualization
-- Agent contact information
-- Inspection times with calendar integration
-- Map view with street view and directions
-- Save/favorite functionality integrated
-
-#### Search Functionality
-- **Header Search Bar**: Universal search available on all dashboard pages
-- **Dashboard Search Bar**: AI-powered property search with navigation
-- **Smart Navigation**: Search keywords automatically navigate to relevant pages:
-  - `payments`, `payment`, `pay` → Payments page
-  - `messages`, `message`, `chat` → Messages page
-  - `contracts`, `contract` → Contracts page
-  - `applications`, `application`, `apply` → Applications page
-  - `viewings`, `viewing`, `schedule` → Viewings page
-  - `saved`, `favorites`, `favorite` → Saved Properties page
-  - `discover`, `browse`, `properties`, `property` → Discover page
-  - `reviews`, `review` → Reviews page
-  - `settings`, `setting` → Settings page
-  - `profile` → Profile page
-  - `help`, `support` → Help page
-
-#### Theme System
-- Light and Deep Dark themes
-- Theme switcher in header (all dashboard pages)
-- Persistent theme preference (localStorage)
-- Fully responsive dark mode styling
-
-#### User Profile & Verification
-- Verified badge displayed in sidebar
-- Green checkmark indicator on user avatar
-- Verification status shown next to username
-- Professional user identification
-
-#### AI Assistant (Lakshmi)
-- Chat bubble interface (bottom-right)
-- Property search assistance
-- Navigation help
-- FAQ responses
-- API-ready structure for future AI integration
-
-#### Digital Contracts
-- PDF contract viewer
-- Canvas-based e-signature
-- Signature confirmation modal
-- Local storage persistence
-- Signed contract tracking
-
-#### Payments
-- Pay rent functionality
-- Pay utility bills
-- Payment history table
-- Upcoming payments reminders
-- Stripe placeholder integration (ready for real integration)
-
-#### Messaging
-- Chat list with online/offline indicators
-- Message window with timestamps
-- Real-time message updates (mock implementation)
-- Attachment support
-- WebSocket-ready structure
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher recommended)
-- npm or yarn package manager
+
+- Node.js (v16 or higher)
+- npm or yarn
 
 ### Installation
 
@@ -145,32 +72,21 @@ A modern, responsive property management dashboard built with React, Tailwind CS
    cd estospaces-app
    ```
 
-2. **Checkout the user-dashboard branch**
-   ```bash
-   git checkout user-dashboard
-   ```
-
-3. **Install dependencies**
+2. **Install dependencies**
    ```bash
    npm install
    # or
    yarn install
    ```
 
-4. **Set up environment variables** (if needed)
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your configuration
-   ```
-
-5. **Run the development server**
+3. **Run the development server**
    ```bash
    npm run dev
    # or
    yarn dev
    ```
 
-6. **Open your browser**
+4. **Open your browser**
    Navigate to `http://localhost:5173/user/dashboard` (or the port shown in your terminal)
 
 ### Dashboard URLs
@@ -299,15 +215,15 @@ Authentication setup is not included in this branch. Add authentication as neede
 
 ## 📝 License
 
-[Add your license here]
+MIT License
 
 ## 🤝 Contributing
 
-[Add contributing guidelines here]
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 ## 📞 Support
 
-For support, email [your-email] or open an issue in the repository.
+For support, email support@estospaces.com or open an issue in the repository.
 
 ---
 

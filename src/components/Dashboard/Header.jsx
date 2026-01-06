@@ -22,7 +22,7 @@ const Header = ({ onMenuToggle }) => {
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
         {/* Left side - Title */}
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">User Dashboard</h1>
+          <div><h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome, Prajol Annamudu</h1><p className="text-xs text-gray-500 dark:text-gray-400">viewer@estospaces.com</p></div>
         </div>
 
         {/* Right side - Search, Notifications, User */}

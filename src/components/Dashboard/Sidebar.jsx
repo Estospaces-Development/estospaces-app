@@ -24,13 +24,11 @@ const Sidebar = ({ isOpen, onToggle }) => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/user/dashboard' },
     { icon: Search, label: 'Browse Properties', path: '/user/dashboard/discover' },
-    { icon: Heart, label: 'Saved Properties', path: '/user/dashboard/saved' },
     { icon: FileText, label: 'My Applications', path: '/user/dashboard/applications' },
     { icon: Calendar, label: 'Viewings', path: '/user/dashboard/viewings' },
     { icon: MessageSquare, label: 'Messages', path: '/user/dashboard/messages' },
     { icon: CreditCard, label: 'Payments', path: '/user/dashboard/payments' },
     { icon: FileText, label: 'Contracts', path: '/user/dashboard/contracts' },
-    { icon: Star, label: 'Reviews', path: '/user/dashboard/reviews' },
   ];
 
   const isActive = (path) => {
@@ -121,7 +119,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                         active ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
                       }`}
                     />
-                    {isOpen && <span className="text-sm whitespace-nowrap">{item.label}</span>}
+                    {isOpen && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                   </Link>
                 );
               })}
@@ -148,7 +146,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
                 }`}
               />
-              {isOpen && <span className="text-sm whitespace-nowrap">Profile</span>}
+              {isOpen && <span className="text-xs font-medium whitespace-nowrap">Profile</span>}
             </Link>
 
             {/* Help & Support */}
@@ -169,7 +167,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
                 }`}
               />
-              {isOpen && <span className="text-sm whitespace-nowrap">Help & Support</span>}
+              {isOpen && <span className="text-xs font-medium whitespace-nowrap">Help & Support</span>}
             </Link>
 
             {/* Sign Out */}
@@ -179,7 +177,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
               }`}
             >
               <LogOut size={20} className="flex-shrink-0 text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400" />
-              {isOpen && <span className="text-sm whitespace-nowrap">Sign Out</span>}
+              {isOpen && <span className="text-xs font-medium whitespace-nowrap">Sign Out</span>}
             </button>
           </div>
         </div>

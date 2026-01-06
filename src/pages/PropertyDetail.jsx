@@ -241,6 +241,20 @@ const PropertyDetail = () => {
             <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
               {property.description}
             </p>
+            <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Property Features</h3>
+                <div className="flex flex-wrap gap-2">
+                    {property.tags.map((tag, index) => (
+                    <span 
+                        key={index}
+                        className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium flex items-center gap-1"
+                    >
+                        <CheckCircle size={14} className="text-orange-600 dark:text-orange-400" />
+                        {tag}
+                    </span>
+                    ))}
+                </div>
+            </div>
             <button className="text-orange-600 dark:text-orange-400 font-medium hover:underline">
               Read more
             </button>
@@ -298,229 +312,45 @@ const PropertyDetail = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Low Range</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {formatPrice(marketInsights.valueRange.low)}
-                </span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(marketInsights.valueRange.low)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Med Range</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {formatPrice(marketInsights.valueRange.med)}
-                </span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(marketInsights.valueRange.med)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">High Range</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {formatPrice(marketInsights.valueRange.high)}
-                </span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(marketInsights.valueRange.high)}</span>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Bottom Section - Agent Details, Inspection Times, and Map */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left - Agent Details & Inspection Times */}
-        <div className="space-y-6">
-          {/* Agent Details */}
+          {/* Agent Information */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Agent details</h3>
-            <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Agent Information</h3>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-500">
+                {property.agent.name.charAt(0)}
+              </div>
               <div>
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{property.agent.name}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{property.agent.agency}</p>
               </div>
-              <button className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors">
-                CONTACT AGENT & VIEW LISTING
-              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <span className="font-medium">Phone:</span> {property.agent.phone}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <span className="font-medium">Email:</span> {property.agent.email}
+              </p>
             </div>
           </div>
 
-          {/* Inspection Times */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Inspection times</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Inspections and auctions are still happening
-            </p>
-            <div className="space-y-3">
-              {property.inspectionTimes.map((time, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{time.date}</p>
-                    <p className="text-sm text-orange-600 dark:text-orange-400">{time.time}</p>
-                  </div>
-                  <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-                    <Calendar size={16} />
-                    ADD TO CALENDAR
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-
-        {/* Right - Map */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="h-96 bg-gray-200 dark:bg-gray-700 relative">
-            {/* Placeholder Map - In production, integrate with Mapbox/Google Maps */}
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-orange-100 dark:from-blue-900/20 dark:to-orange-900/20">
-              <div className="text-center">
-                <MapPin size={48} className="text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                <p className="text-gray-600 dark:text-gray-400 font-medium">{property.address}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Map integration ready</p>
-              </div>
-            </div>
-            <div className="absolute bottom-4 right-4 flex gap-2">
-              <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
-                STREET VIEW
-              </button>
-              <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
-                DIRECTIONS →
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Market Insights Section */}
-      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Market Insights</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Comprehensive market data and analytics for this property location
-        </p>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Median Price & Growth Chart */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Median price: {formatPrice(marketInsights.medianPrice)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Growth per year: {marketInsights.priceHistory[marketInsights.priceHistory.length - 1].growth}%
-                  </span>
-                </div>
-              </div>
-              <select className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                <option>Last 5 years</option>
-              </select>
-            </div>
-            <div className="h-48 flex items-end justify-between gap-2">
-              {marketInsights.priceHistory.map((data, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-t mb-1" style={{ height: `${(data.price / marketInsights.medianPrice) * 100}%` }}>
-                    <div className="text-xs text-center text-gray-600 dark:text-gray-400 pt-1">
-                      {formatPrice(data.price)}
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-500">{data.year}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Average Bedrooms */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-4">
-              <Home size={20} className="text-gray-700 dark:text-gray-300" />
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Average number of bedrooms</h3>
-            </div>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">{marketInsights.avgBedrooms}</p>
-            <div className="space-y-2">
-              {marketInsights.bedroomDistribution.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-16 text-sm text-gray-600 dark:text-gray-400">{item.beds} bed</div>
-                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 relative overflow-hidden">
-                    <div
-                      className="bg-blue-600 dark:bg-blue-500 h-full rounded-full"
-                      style={{ width: `${item.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="w-12 text-sm text-gray-600 dark:text-gray-400 text-right">{item.percentage}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Gross Yield & Vacancy Rate */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Gross yield: {marketInsights.grossYieldHistory[marketInsights.grossYieldHistory.length - 1].yield}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Vacancy rate: {marketInsights.grossYieldHistory[marketInsights.grossYieldHistory.length - 1].vacancy}%
-                  </span>
-                </div>
-              </div>
-              <select className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                <option>Last 5 years</option>
-              </select>
-            </div>
-            <div className="h-48 flex items-end justify-between gap-2">
-              {marketInsights.grossYieldHistory.map((data, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="w-full space-y-1">
-                    <div className="bg-orange-100 dark:bg-orange-900/30 rounded" style={{ height: `${data.yield * 10}%` }}></div>
-                    <div className="bg-orange-200 dark:bg-orange-800/30 rounded" style={{ height: `${data.vacancy * 5}%` }}></div>
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">{data.year}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Average Age */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={20} className="text-gray-700 dark:text-gray-300" />
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Average age</h3>
-            </div>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">{marketInsights.avgAge} years</p>
-            <div className="space-y-2">
-              {marketInsights.ageDistribution.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-16 text-sm text-gray-600 dark:text-gray-400">{item.range}</div>
-                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 relative overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${
-                        index === 0
-                          ? 'bg-orange-500'
-                          : index === 1
-                          ? 'bg-orange-400'
-                          : 'bg-orange-600 dark:bg-orange-500'
-                      }`}
-                      style={{ width: `${item.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="w-12 text-sm text-gray-600 dark:text-gray-400 text-right">{item.percentage}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <button className="mt-6 w-full px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
-          VIEW ALL MARKET INSIGHTS
-          <span>→</span>
-        </button>
       </div>
     </div>
   );
 };
 
 export default PropertyDetail;
-

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Home, Heart, FileText, Map as MapIcon, User } from 'lucide-react';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
-import PromiseBanner from '../components/Dashboard/PromiseBanner';
 import MapView from '../components/Dashboard/MapView';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 
@@ -14,7 +13,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   // Mock data - replace with actual API calls
-  const featuredProperties = [
+  const [properties, setProperties] = useState([
     {
       id: 1,
       title: 'Modern Downtown Apartment',
@@ -27,7 +26,7 @@ const Dashboard = () => {
       rating: 4.8,
       reviews: 24,
       listedDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-      tags: ['Apartment', 'Balcony', 'Gym'],
+      tags: ['Apartment', 'Balcony', 'Gym'], views: 1250,
       images: [
         'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
         'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
@@ -46,7 +45,7 @@ const Dashboard = () => {
       rating: 4.9,
       reviews: 32,
       listedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      tags: ['Condo', 'Ocean View', 'Pool'],
+      tags: ['Condo', 'Ocean View', 'Pool'], views: 2100,
       images: [
         'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
         'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
@@ -64,7 +63,7 @@ const Dashboard = () => {
       rating: 4.7,
       reviews: 18,
       listedDate: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
-      tags: ['House', 'Garden', 'Garage'],
+      tags: ['House', 'Garden', 'Garage'], views: 850,
       images: [
         'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800',
         'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
@@ -72,7 +71,11 @@ const Dashboard = () => {
         'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800',
       ],
     },
-  ];
+  ]);
+
+  useEffect(() => { const interval = setInterval(() => { setProperties(prev => prev.map(p => ({ ...p, views: p.views + Math.floor(Math.random() * 5) }))); }, 3000); return () => clearInterval(interval); }, []);
+
+  const mostViewedProperties = [...properties].sort((a, b) => b.views - a.views);
 
   const stats = [
     { label: 'Properties Available', value: '6', color: 'bg-green-500', icon: Home },
@@ -141,40 +144,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-gray-900">
-      {/* 24-Hour Process & Key Handover Promise Banner */}
-      <PromiseBanner />
-
-      {/* Discover Your Dream Home Banner with Welcome Card */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 lg:p-8 text-white">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="flex-1">
-            <h1 className="text-2xl lg:text-3xl font-bold mb-2">Welcome, {userData.name}</h1>
-            <p className="text-orange-50 text-sm lg:text-base mb-2">
-              Logged in as <span className="font-semibold">{userData.email}</span>
-            </p>
-            <h2 className="text-2xl lg:text-3xl font-bold mb-2 mt-4">Discover Your Dream Home</h2>
-            <p className="text-orange-50 text-sm lg:text-base mb-4">
-              Explore premium properties tailored just for you
-            </p>
-            <div className="flex flex-wrap gap-4">
-              {stats.map((stat, index) => {
-                const Icon = stat.icon;
-                return (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className={`w-3 h-3 ${stat.color} rounded-full`}></div>
-                    <span className="text-sm font-medium">{stat.value} {stat.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <div className="w-20 h-20 lg:w-24 lg:h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <Home size={40} className="text-white" />
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* AI-Powered Property Search */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -186,7 +156,7 @@ const Dashboard = () => {
           </div>
           <div className="flex-1 w-full">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">AI-Powered Property Search</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
               Tell us what you're looking for and let AI find your perfect match
             </p>
             <form onSubmit={handleSearch} className="flex gap-3">
@@ -196,7 +166,7 @@ const Dashboard = () => {
                   placeholder="Try: payments, messages, contracts, discover..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
               <button type="submit" className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors">
@@ -215,14 +185,14 @@ const Dashboard = () => {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">Nearby Properties & Agencies</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Explore properties and agencies on the map</p>
+            <h2 className="text-lg font-bold font-bold text-gray-900 dark:text-gray-100">Nearby Properties & Agencies</h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Explore properties and agencies on the map</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="h-96 lg:h-[500px]">
             <MapView
-              houses={featuredProperties.map((p, idx) => ({
+              houses={properties.map((p, idx) => ({
                 id: p.id,
                 name: p.title,
                 lat: 37.7749 + (idx * 0.01),
@@ -235,21 +205,40 @@ const Dashboard = () => {
         </div>
       </div>
 
+            {/* Most Viewed Properties */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Most Viewed Properties</h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Properties that are getting the most attention</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {mostViewedProperties.map((property) => (
+            <PropertyCard
+              key={property.id}
+              property={property}
+              onViewDetails={handleViewDetails}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Featured Properties */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">Featured Properties</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Handpicked properties that match your preferences</p>
+            <h2 className="text-lg font-bold font-bold text-gray-900 dark:text-gray-100">Featured Properties</h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Handpicked properties that match your preferences</p>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors">
+            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium transition-colors">
               Filter
             </button>
-            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors">
+            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium transition-colors">
               Map View
             </button>
-            <button className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <button className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-medium transition-colors">
               + Save Search
             </button>
           </div>
@@ -263,7 +252,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProperties.map((property) => (
+            {properties.map((property) => (
               <PropertyCard
                 key={property.id}
                 property={property}
