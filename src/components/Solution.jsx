@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserCheck, Eye, Handshake, ArrowRight } from 'lucide-react';
+import { UserCheck, Eye, Users, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Solution = () => {
@@ -17,7 +17,7 @@ const Solution = () => {
             description: 'Discover and tour properties from anywhere—no travel required.'
         },
         {
-            icon: <Handshake className="text-white" size={32} />,
+            icon: <Users className="text-white" size={32} />,
             number: '03',
             title: 'Connect & Close',
             description: 'Reach out to brokers, finalize details, and close deals seamlessly.'

@@ -1,0 +1,17 @@
+Forced re-optimization of dependencies
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+
+  [32m[1mVITE[22m v4.5.14[39m  [2mready in [0m[1m344[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5175[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh[22m[2m to show help[22m
+Error: The following dependencies are imported but could not be resolved:
+
+  [36m@supabase/supabase-js[39m [37m[2m(imported by C:/Users/jeevi/Estospaces/project/estospaces-app/src/lib/supabase.js)[22m[39m
+
+Are they installed?
+    at file:///C:/Users/jeevi/Estospaces/project/estospaces-app/node_modules/vite/dist/node/chunks/dep-827b23df.js:45783:23
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///C:/Users/jeevi/Estospaces/project/estospaces-app/node_modules/vite/dist/node/chunks/dep-827b23df.js:45191:38

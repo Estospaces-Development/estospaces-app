@@ -1,15 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Users, 
-  FileText, 
-  Calendar, 
-  MessageSquare, 
-  BarChart3, 
-  CreditCard, 
-  HelpCircle, 
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  FileText,
+  Calendar,
+  MessageSquare,
+  BarChart3,
+  CreditCard,
+  HelpCircle,
   LogOut,
   User,
   BadgeCheck,
@@ -36,21 +36,21 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
     setIsVerified(true);
     localStorage.setItem('managerVerified', 'true');
   };
-  
+
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Building2, label: 'Properties', path: '/properties' },
-    { icon: Users, label: 'Leads & Clients', path: '/leads' },
-    { icon: FileText, label: 'Applications', path: '/application' },
-    { icon: Calendar, label: 'Appointments', path: '/appointment' },
-    { icon: MessageSquare, label: 'Messages', path: '/messages' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-    { icon: CreditCard, label: 'Billing', path: '/billing' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/manager/dashboard' },
+    { icon: Building2, label: 'Properties', path: '/manager/dashboard/properties' },
+    { icon: Users, label: 'Leads & Clients', path: '/manager/dashboard/leads' },
+    { icon: FileText, label: 'Applications', path: '/manager/dashboard/application' },
+    { icon: Calendar, label: 'Appointments', path: '/manager/dashboard/appointment' },
+    { icon: MessageSquare, label: 'Messages', path: '/manager/dashboard/messages' },
+    { icon: BarChart3, label: 'Analytics', path: '/manager/dashboard/analytics' },
+    { icon: CreditCard, label: 'Billing', path: '/manager/dashboard/billing' },
   ];
 
   const footerMenuItems = [
-    { icon: UserCircle, label: 'Profile', path: '/profile' },
-    { icon: HelpCircle, label: 'Help & Support', path: '/help' },
+    { icon: UserCircle, label: 'Profile', path: '/manager/dashboard/profile' },
+    { icon: HelpCircle, label: 'Help & Support', path: '/manager/dashboard/help' },
   ];
 
   return (
@@ -109,11 +109,10 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                 <li key={index}>
                   <Link
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
                         ? 'bg-primary text-white shadow-md'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
-                    }`}
+                      }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
                     {isOpen && <span className={`menu-item transition-all duration-300 ${!isActive && 'group-hover:translate-x-1'}`}>{item.label}</span>}
@@ -134,11 +133,10 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                 <li key={index}>
                   <Link
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
                         ? 'bg-primary text-white shadow-md'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
-                    }`}
+                      }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
                     {isOpen && <span className={`menu-item transition-all duration-300 ${!isActive && 'group-hover:translate-x-1'}`}>{item.label}</span>}
