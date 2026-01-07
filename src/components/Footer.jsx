@@ -1,15 +1,51 @@
 import React, { useState } from 'react';
-import { Twitter, Instagram, Linkedin, Send } from 'lucide-react';
+import { Twitter, Instagram, Linkedin, Send, Loader2 } from 'lucide-react';
 import logoIcon from '../assets/logo-icon.png';
+import { supabase } from '../lib/supabase';
+import { useChat } from '../contexts/ChatContext';
 
 const Footer = () => {
+    const { closeChat } = useChat();
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSubmit = () => {
-        if (email.trim() && email.includes('@')) {
-            // Here you can add your email submission logic (e.g., API call)
-            console.log('Email submitted:', email);
+    const handleSubmit = async () => {
+        if (!email.trim() || !email.includes('@')) {
+            setError('Please enter a valid email address');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            // Check if Supabase is configured
+            if (!supabase) {
+                throw new Error('Newsletter feature is not configured yet.');
+            }
+
+            // Insert email into newsletter_subscribers table
+            const { error: supabaseError } = await supabase
+                .from('newsletter_subscribers')
+                .insert([
+                    {
+                        email: email.trim().toLowerCase(),
+                        subscribed_at: new Date().toISOString(),
+                        source: 'footer'
+                    }
+                ]);
+
+            if (supabaseError) {
+                // Check for duplicate email
+                if (supabaseError.code === '23505') {
+                    throw new Error('This email is already subscribed!');
+                }
+                throw supabaseError;
+            }
+
+            console.log('Email saved to Supabase:', email);
             setSubmitted(true);
             setEmail('');
 
@@ -17,6 +53,16 @@ const Footer = () => {
             setTimeout(() => {
                 setSubmitted(false);
             }, 3000);
+        } catch (err) {
+            console.error('Error saving email:', err);
+            setError(err.message || 'Failed to subscribe. Please try again.');
+            
+            // Clear error after 3 seconds
+            setTimeout(() => {
+                setError('');
+            }, 3000);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -66,7 +112,11 @@ const Footer = () => {
                                 { name: 'Contact', link: '#contact' }
                             ].map((item) => (
                                 <li key={item.name}>
-                                    <a href={item.link} className="text-gray-400 hover:text-primary transition-colors">
+                                    <a 
+                                        href={item.link} 
+                                        onClick={closeChat}
+                                        className="text-gray-400 hover:text-primary transition-colors"
+                                    >
                                         {item.name}
                                     </a>
                                 </li>
@@ -79,10 +129,10 @@ const Footer = () => {
                         <h3 className="text-lg font-bold mb-4">Platform</h3>
                         <ul className="space-y-2">
                             <li>
-                                <a href="#faq" className="text-gray-400 hover:text-primary transition-colors">FAQ</a>
+                                <a href="#faq" onClick={closeChat} className="text-gray-400 hover:text-primary transition-colors">FAQ</a>
                             </li>
                             <li>
-                                <a href="/terms" className="text-gray-400 hover:text-primary transition-colors">
+                                <a href="/terms" onClick={closeChat} className="text-gray-400 hover:text-primary transition-colors">
                                     Terms & Conditions
                                 </a>
                             </li>
@@ -102,18 +152,25 @@ const Footer = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="flex-1 px-4 py-2 rounded bg-white bg-opacity-10 border border-gray-600 outline-none focus:border-primary transition-colors placeholder-gray-500"
+                                disabled={loading}
+                                className="flex-1 px-4 py-2 rounded bg-white bg-opacity-10 border border-gray-600 outline-none focus:border-primary transition-colors placeholder-gray-500 text-gray-900 disabled:opacity-50"
                             />
                             <button
                                 onClick={handleSubmit}
-                                className="bg-primary p-2 rounded hover:bg-opacity-90 transition-colors"
+                                disabled={loading}
+                                className="bg-primary p-2 rounded hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Send size={20} />
+                                {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
                             </button>
                         </div>
                         {submitted && (
                             <p className="text-green-400 text-sm mt-2 animate-fade-in">
-                                ✓ Message sent! We'll keep you updated.
+                                ✓ Subscribed! We'll keep you updated.
+                            </p>
+                        )}
+                        {error && (
+                            <p className="text-red-400 text-sm mt-2 animate-fade-in">
+                                ✗ {error}
                             </p>
                         )}
                     </div>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, Facebook, Twitter, Instagram, Linkedin, Search, User, Menu, X } from 'lucide-react';
 import logoIcon from '../assets/logo-icon.png';
+import { useChat } from '../contexts/ChatContext';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { closeChat } = useChat();
 
     useEffect(() => {
         let ticking = false;
@@ -30,13 +32,20 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const handleNavClick = () => {
+        // Close the chat when navigating
+        closeChat();
+        // Close mobile menu if open
+        setIsMobileMenuOpen(false);
+    };
+
     return (
         <header className={`fixed w-full z-50 transition-all duration-1000 ease-in-out ${isScrolled ? 'bg-primary shadow-xl py-2' : 'bg-primary/0 py-4'}`}>
             <div className="container mx-auto px-4">
                 <div className="flex justify-between items-center">
                     {/* Logo */}
                     <div className="flex items-center">
-                        <a href="/" className="text-2xl font-bold text-secondary flex items-center gap-2">
+                        <a href="/" className="text-2xl font-bold text-secondary flex items-center gap-2" onClick={handleNavClick}>
                             <img src={logoIcon} alt="Estospaces Logo" className={`h-8 w-auto object-contain transition-all duration-1000 ${isScrolled ? 'brightness-0 invert' : ''}`} />
                             <span className="text-white font-bold text-xl">Estospaces</span>
                         </a>
@@ -48,6 +57,7 @@ const Navbar = () => {
                             <a
                                 key={item}
                                 href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                onClick={handleNavClick}
                                 className={`text-sm font-medium transition-colors duration-300 ${isScrolled ? 'text-white hover:text-secondary' : 'text-white hover:text-primary'}`}
                             >
                                 {item}
@@ -79,7 +89,7 @@ const Navbar = () => {
                                 key={item}
                                 href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
                                 className="text-secondary font-medium hover:text-primary"
-                                onClick={() => setIsMobileMenuOpen(false)}
+                                onClick={handleNavClick}
                             >
                                 {item}
                             </a>

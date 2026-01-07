@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import useParallax from '../hooks/useParallax';
-import { Search, MapPin, Home, DollarSign, Settings } from 'lucide-react';
+import { Search, MapPin, Home, DollarSign, Settings, Key, Building2 } from 'lucide-react';
 import backgroundVideo from '../assets/hero-section-video.mp4';
 
 const Hero = () => {
@@ -43,23 +43,33 @@ const Hero = () => {
                 {/* Search Form */}
                 <div className="max-w-5xl mx-auto bg-white bg-opacity-10 backdrop-blur-md rounded-lg p-1 animate-fade-in-up delay-200">
                     {/* Tabs */}
-                    <div className="flex mb-0">
+                    <div className="inline-flex p-1 bg-white/10 backdrop-blur-sm rounded-t-xl border border-white/20 border-b-0">
                         <button
-                            className={`px-8 py-3 rounded-t-lg font-medium transition-colors ${activeTab === 'buy' ? 'bg-primary text-white' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-300 ${
+                                activeTab === 'buy' 
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02]' 
+                                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                            }`}
                             onClick={() => setActiveTab('buy')}
                         >
+                            <Key size={18} className={activeTab === 'buy' ? 'animate-pulse' : ''} />
                             Buy
                         </button>
                         <button
-                            className={`px-8 py-3 rounded-t-lg font-medium transition-colors ${activeTab === 'rent' ? 'bg-primary text-white' : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'}`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-300 ${
+                                activeTab === 'rent' 
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02]' 
+                                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                            }`}
                             onClick={() => setActiveTab('rent')}
                         >
+                            <Building2 size={18} className={activeTab === 'rent' ? 'animate-pulse' : ''} />
                             Rent
                         </button>
                     </div>
 
                     {/* Form Fields */}
-                    <div className="bg-white p-6 rounded-b-lg rounded-tr-lg shadow-xl grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-6 rounded-b-xl rounded-tr-xl shadow-2xl grid grid-cols-1 md:grid-cols-4 gap-4 border border-gray-100">
                         {/* Keyword */}
                         <div className="relative">
                             <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Keyword</label>
@@ -68,7 +78,7 @@ const Hero = () => {
                                 <input
                                     type="text"
                                     placeholder="Enter Keyword..."
-                                    className="w-full outline-none text-secondary placeholder-gray-400"
+                                    className="w-full outline-none text-secondary placeholder-gray-400 bg-white"
                                 />
                             </div>
                         </div>

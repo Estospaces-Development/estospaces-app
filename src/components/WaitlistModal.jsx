@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Home, Building, Mail, Phone, MapPin, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
 import { useWaitlist } from '../hooks/useWaitlist';
+import Toast from './ui/Toast';
 
 const WaitlistModal = ({ isOpen, onClose }) => {
     const { submitToWaitlist, loading, error, success } = useWaitlist();
@@ -16,6 +17,15 @@ const WaitlistModal = ({ isOpen, onClose }) => {
     });
 
     const [errors, setErrors] = useState({});
+    const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => {
+        setToast({ isVisible: true, message, type });
+    };
+
+    const hideToast = () => {
+        setToast({ ...toast, isVisible: false });
+    };
 
     const userTypes = [
         { value: 'buyer', label: 'Buyer', icon: Home, description: 'Looking to buy a property' },
@@ -48,7 +58,10 @@ const WaitlistModal = ({ isOpen, onClose }) => {
         const result = await submitToWaitlist(formData);
 
         if (result.success) {
-            // Reset form after 2 seconds
+            // Show success toast
+            showToast('🎉 Welcome to Estospaces! You\'ve successfully joined our waitlist.', 'success');
+            
+            // Reset form and close modal after 2 seconds
             setTimeout(() => {
                 setFormData({
                     userType: '',
@@ -61,6 +74,9 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                 setErrors({});
                 onClose();
             }, 2000);
+        } else if (result.error) {
+            // Show error toast
+            showToast(result.error, 'error');
         }
     };
 
@@ -72,20 +88,28 @@ const WaitlistModal = ({ isOpen, onClose }) => {
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    />
+        <>
+            {/* Toast Notification - Always rendered */}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={hideToast}
+                duration={5000}
+            />
+
+            <AnimatePresence>
+                {isOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={onClose}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
 
                     {/* Modal */}
                     <motion.div
@@ -93,27 +117,27 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="relative w-full max-w-2xl max-h-[95vh] bg-white rounded-3xl shadow-2xl overflow-hidden"
+                        className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
                     >
                         {/* Close Button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition-colors z-10"
+                            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors z-10"
                         >
                             <X size={24} className="text-gray-500" />
                         </button>
 
                         {/* Content with hidden scrollbar */}
-                        <div className="p-8 md:p-12 overflow-y-auto max-h-[95vh] scrollbar-hide" style={{
+                        <div className="p-6 md:p-8 overflow-y-auto max-h-[90vh] scrollbar-hide" style={{
                             scrollbarWidth: 'none',
                             msOverflowStyle: 'none'
                         }}>
                             {/* Header */}
-                            <div className="text-center mb-8">
-                                <h2 className="text-4xl md:text-5xl font-bold text-secondary mb-4 font-serif">
+                            <div className="text-center mb-6">
+                                <h2 className="text-2xl md:text-3xl font-bold text-secondary mb-3 font-serif">
                                     Join the <span className="text-primary">Waitlist</span>
                                 </h2>
-                                <p className="text-gray-600 text-lg">
+                                <p className="text-gray-600 text-sm">
                                     Be among the first to experience the future of real estate
                                 </p>
                             </div>
@@ -121,15 +145,12 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                             {/* Success State */}
                             {success && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mb-6 p-6 bg-green-50 border border-green-200 rounded-2xl flex items-start gap-3"
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="mb-4 p-6 bg-green-50 border border-green-200 rounded-xl text-center"
                                 >
-                                    <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={24} />
-                                    <div>
-                                        <h3 className="font-bold text-green-900 mb-1">Welcome to Estospaces!</h3>
-                                        <p className="text-green-700">You've successfully joined our waitlist. We'll be in touch soon!</p>
-                                    </div>
+                                    <CheckCircle className="text-green-600 mx-auto mb-2" size={28} />
+                                    <p className="text-green-700 font-medium">Success! Closing...</p>
                                 </motion.div>
                             )}
 
@@ -149,7 +170,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                             )}
 
                             {/* Form */}
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 {/* User Type Selection */}
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-3">
@@ -184,12 +205,12 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                         Full Name <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                                         <input
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => handleChange('name', e.target.value)}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${errors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
                                                 }`}
                                             placeholder="John Doe"
                                         />
@@ -203,12 +224,12 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                         Email Address <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                                         <input
                                             type="email"
                                             value={formData.email}
                                             onChange={(e) => handleChange('email', e.target.value)}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
                                                 }`}
                                             placeholder="john@example.com"
                                         />
@@ -222,12 +243,12 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                         Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
                                     </label>
                                     <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                                         <input
                                             type="tel"
                                             value={formData.phone}
                                             onChange={(e) => handleChange('phone', e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-colors"
+                                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-colors bg-white text-gray-900 placeholder-gray-400"
                                             placeholder="+1 (555) 000-0000"
                                         />
                                     </div>
@@ -239,12 +260,12 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                         Location/City <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                                         <input
                                             type="text"
                                             value={formData.location}
                                             onChange={(e) => handleChange('location', e.target.value)}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.location ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${errors.location ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
                                                 }`}
                                             placeholder="New York, NY"
                                         />
@@ -258,12 +279,12 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                         What are you looking for? <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <MessageSquare className="absolute left-4 top-4 text-gray-400" size={20} />
+                                        <MessageSquare className="absolute left-4 top-4 text-gray-400 pointer-events-none" size={20} />
                                         <textarea
                                             value={formData.lookingFor}
                                             onChange={(e) => handleChange('lookingFor', e.target.value)}
                                             rows={4}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors resize-none ${errors.lookingFor ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors resize-none bg-white text-gray-900 placeholder-gray-400 ${errors.lookingFor ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
                                                 }`}
                                             placeholder="Tell us about your ideal property, budget, preferences, etc."
                                         />
@@ -288,6 +309,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                 </div>
             )}
         </AnimatePresence>
+        </>
     );
 };
 
