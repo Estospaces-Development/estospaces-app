@@ -47,7 +47,7 @@ const ChatWindow = ({ onClose }) => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 custom-scrollbar">
                 {!isConversationReady ? (
                     <WelcomeForm onSubmit={startConversation} loading={loading} error={error} />
                 ) : (

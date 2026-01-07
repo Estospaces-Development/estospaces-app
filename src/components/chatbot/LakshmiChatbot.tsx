@@ -322,7 +322,7 @@ const LakshmiChatbot = ({ isOpen, onClose }: LakshmiChatbotProps) => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 space-y-4 custom-scrollbar">
         {messages.map((message) => (
           <div
             key={message.id}
