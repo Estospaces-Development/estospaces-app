@@ -4,13 +4,14 @@ import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
-import { Check, X, Eye, EyeOff } from 'lucide-react';
+import { Check, X, Eye, EyeOff, User, Briefcase } from 'lucide-react';
 
 const Signup = () => {
     const navigate = useNavigate();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('user'); // 'user' or 'manager'
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -58,8 +59,13 @@ const Signup = () => {
                 email,
                 password,
                 options: { 
-                    data: { full_name: name },
-                    emailRedirectTo: `${window.location.origin}/manager/dashboard`
+                    data: { 
+                        full_name: name,
+                        role: role 
+                    },
+                    emailRedirectTo: role === 'manager' 
+                        ? `${window.location.origin}/manager/dashboard`
+                        : `${window.location.origin}/`
                 },
             });
 
@@ -98,10 +104,16 @@ const Signup = () => {
                         Check your email
                     </h2>
                     
-                    <p className="text-gray-500 text-sm mb-8">
+                    <p className="text-gray-500 text-sm mb-4">
                         We've sent a confirmation link to<br />
                         <strong className="text-gray-800">{email}</strong>
                     </p>
+                    
+                    <div className="bg-orange-50 rounded-lg px-4 py-2 mb-8">
+                        <p className="text-primary text-sm font-medium">
+                            Signed up as: {role === 'manager' ? 'Property Manager' : 'User'}
+                        </p>
+                    </div>
 
                     <button
                         onClick={() => navigate('/auth/sign-in-email')}
@@ -131,6 +143,39 @@ const Signup = () => {
                 </p>
 
                 <form onSubmit={handleSignup} className="w-full">
+                    {/* Role Selection */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">I am a</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setRole('user')}
+                                className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200 ${
+                                    role === 'user'
+                                        ? 'border-primary bg-orange-50 text-primary'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                }`}
+                            >
+                                <User size={24} className={role === 'user' ? 'text-primary' : 'text-gray-400'} />
+                                <span className="mt-2 font-medium text-sm">User</span>
+                                <span className="text-xs text-gray-400 mt-1">Looking for property</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRole('manager')}
+                                className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200 ${
+                                    role === 'manager'
+                                        ? 'border-primary bg-orange-50 text-primary'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                }`}
+                            >
+                                <Briefcase size={24} className={role === 'manager' ? 'text-primary' : 'text-gray-400'} />
+                                <span className="mt-2 font-medium text-sm">Manager</span>
+                                <span className="text-xs text-gray-400 mt-1">Managing properties</span>
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Name Input */}
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
