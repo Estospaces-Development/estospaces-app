@@ -46,9 +46,8 @@ const ResetPassword = () => {
             <AuthLayout image={building}>
                 <div className="flex flex-col items-center text-center">
                     {/* Logo */}
-                    <div className="flex items-center gap-2 mb-8">
-                        <img src={logo} alt="Estospaces" className="h-8" />
-                        <span className="text-primary font-semibold text-lg">Estospaces</span>
+                    <div className="mb-8">
+                        <img src={logo} alt="Estospaces" className="h-10" />
                     </div>
                     
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
@@ -79,9 +78,8 @@ const ResetPassword = () => {
         <AuthLayout image={building}>
             <div className="flex flex-col items-center">
                 {/* Logo */}
-                <div className="flex items-center gap-2 mb-8">
-                    <img src={logo} alt="Estospaces" className="h-8" />
-                    <span className="text-primary font-semibold text-lg">Estospaces</span>
+                <div className="mb-8">
+                    <img src={logo} alt="Estospaces" className="h-10" />
                 </div>
                 
                 <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
