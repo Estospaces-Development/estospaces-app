@@ -1,143 +1,133 @@
 import React, { useState, useEffect } from 'react';
-import ChatList from '../components/Dashboard/Messaging/ChatList';
-import MessageWindow from '../components/Dashboard/Messaging/MessageWindow';
+import { MessageSquare, AlertCircle } from 'lucide-react';
+import { useMessages } from '../contexts/MessagesContext';
+import ConversationList from '../components/Dashboard/Messaging/ConversationList';
+import ConversationThread from '../components/Dashboard/Messaging/ConversationThread';
+import MessageInput from '../components/Dashboard/Messaging/MessageInput';
+import ConversationListSkeleton from '../components/Dashboard/Messaging/ConversationListSkeleton';
+import ConversationThreadSkeleton from '../components/Dashboard/Messaging/ConversationThreadSkeleton';
 import NearestBrokerWidget from '../components/Dashboard/NearestBrokerWidget';
 
 const DashboardMessages = () => {
-  const [brokers, setBrokers] = useState([
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      agency: 'Prime Realty Group',
-      isOnline: true,
-      lastMessage: 'Hi! I have some properties that might interest you.',
-      lastMessageTime: '2m ago',
-      unreadCount: 2,
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      agency: 'Elite Properties',
-      isOnline: false,
-      lastMessage: 'Thank you for your interest. Let me know if you have any questions.',
-      lastMessageTime: '1h ago',
-      unreadCount: 0,
-    },
-    {
-      id: 3,
-      name: 'Emily Rodriguez',
-      agency: 'City View Realty',
-      isOnline: true,
-      lastMessage: 'The viewing is scheduled for tomorrow at 3 PM.',
-      lastMessageTime: '3h ago',
-      unreadCount: 1,
-    },
-  ]);
+  const {
+    conversations,
+    selectedConversationId,
+    setSelectedConversationId,
+    isLoading,
+    sendMessage,
+  } = useMessages();
 
-  const [selectedBroker, setSelectedBroker] = useState(null);
-  const [messages, setMessages] = useState({});
+  const [error, setError] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(false);
 
-  // Initialize messages for selected broker
+  // Handle mobile view
   useEffect(() => {
-    if (selectedBroker && !messages[selectedBroker.id]) {
-      setMessages((prev) => ({
-        ...prev,
-        [selectedBroker.id]: [
-          {
-            id: 1,
-            senderId: 'broker',
-            text: selectedBroker.lastMessage,
-            timestamp: new Date(Date.now() - 120000).toISOString(),
-          },
-          {
-            id: 2,
-            senderId: 'user',
-            text: 'Hello! I\'m interested in learning more.',
-            timestamp: new Date(Date.now() - 60000).toISOString(),
-          },
-        ],
-      }));
-    }
-  }, [selectedBroker]);
-
-  const handleSendMessage = (text) => {
-    if (!selectedBroker) return;
-
-    const newMessage = {
-      id: Date.now(),
-      senderId: 'user',
-      text,
-      timestamp: new Date().toISOString(),
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 1024);
     };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-    setMessages((prev) => ({
-      ...prev,
-      [selectedBroker.id]: [...(prev[selectedBroker.id] || []), newMessage],
-    }));
-
-    // Mock broker response after 2 seconds (simulating real-time)
-    setTimeout(() => {
-      const brokerResponse = {
-        id: Date.now() + 1,
-        senderId: 'broker',
-        text: 'Thanks for your message! I\'ll get back to you shortly.',
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => ({
-        ...prev,
-        [selectedBroker.id]: [...(prev[selectedBroker.id] || []), brokerResponse],
-      }));
-
-      // Update last message in broker list
-      setBrokers((prev) =>
-        prev.map((broker) =>
-          broker.id === selectedBroker.id
-            ? {
-                ...broker,
-                lastMessage: brokerResponse.text,
-                lastMessageTime: 'Just now',
-                unreadCount: 0,
-              }
-            : broker
-        )
-      );
-    }, 2000);
+  const handleSelectConversation = (conversationId) => {
+    setSelectedConversationId(conversationId);
+    if (isMobileView) {
+      // On mobile, hide conversation list when a conversation is selected
+      // This would be handled by a state or component structure
+    }
   };
 
-  const handleSelectBroker = (broker) => {
-    setSelectedBroker(broker);
-    // Mark as read
-    setBrokers((prev) =>
-      prev.map((b) => (b.id === broker.id ? { ...b, unreadCount: 0 } : b))
-    );
+  const handleSend = (conversationId, text, attachments) => {
+    try {
+      sendMessage(conversationId, text, attachments);
+      setError(null);
+    } catch (err) {
+      setError('Failed to send message. Please try again.');
+      console.error('Error sending message:', err);
+    }
   };
 
   return (
-    <div className="p-4 lg:p-6 h-full">
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Messages</h1>
-        <p className="text-gray-600">Chat with brokers and property agencies</p>
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          Messages
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Chat with brokers and property agencies
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
-        {/* Chat List and Message Window */}
-        <div className="lg:col-span-3 flex bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <ChatList
-            brokers={brokers}
-            selectedBroker={selectedBroker}
-            onSelectBroker={handleSelectBroker}
-          />
-          <MessageWindow
-            broker={selectedBroker}
-            messages={selectedBroker ? messages[selectedBroker.id] || [] : []}
-            onSendMessage={handleSendMessage}
-          />
+      {/* Error Message */}
+      {error && (
+        <div className="mx-4 lg:mx-6 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 h-full">
+          {/* Conversation List and Thread */}
+          <div className="lg:col-span-3 flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full">
+            {/* Conversation List */}
+            {isLoading ? (
+              <ConversationListSkeleton />
+            ) : (
+              <ConversationList
+                onSelectConversation={handleSelectConversation}
+                selectedConversationId={selectedConversationId}
+              />
+            )}
+
+            {/* Conversation Thread */}
+            <div className="flex-1 flex flex-col border-l border-gray-200 dark:border-gray-700">
+              {isLoading ? (
+                <ConversationThreadSkeleton />
+              ) : selectedConversationId ? (
+                <>
+                  <div className="flex-1 overflow-hidden">
+                    <ConversationThread conversationId={selectedConversationId} />
+                  </div>
+                  <MessageInput
+                    conversationId={selectedConversationId}
+                    onSend={handleSend}
+                  />
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                  <div className="text-center p-8">
+                    <MessageSquare
+                      size={64}
+                      className="mx-auto mb-4 text-gray-300 dark:text-gray-600"
+                    />
+                    <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">
+                      Select a conversation to start messaging
+                    </p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      Choose a conversation from the list to view messages and reply
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
         </div>
 
         {/* Nearest Broker Widget */}
-        <div className="lg:col-span-1">
+          <div className="lg:col-span-1 hidden lg:block">
+            <div className="h-full p-4 lg:p-6">
           <NearestBrokerWidget />
+            </div>
+          </div>
         </div>
       </div>
     </div>

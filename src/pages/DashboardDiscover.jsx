@@ -1,19 +1,172 @@
-import React, { useState } from 'react';
-import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useProperties } from '../contexts/PropertiesContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
+import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
+import MapView from '../components/Dashboard/MapView';
+import * as postcodeService from '../services/postcodeService';
 
 const DashboardDiscover = () => {
+  const navigate = useNavigate();
+  const {
+    properties,
+    loading,
+    error,
+    filters,
+    setFilters,
+    pagination,
+    setPagination,
+    fetchProperties,
+    searchProperties,
+  } = useProperties();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
-  const [propertyType, setPropertyType] = useState('All Types');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
-  const [beds, setBeds] = useState('Any');
-  const [baths, setBaths] = useState('Any');
-  
-  const navigate = useNavigate();
+  const [propertyType, setPropertyType] = useState('all');
+  const [priceRange, setPriceRange] = useState({ min: null, max: null });
+  const [beds, setBeds] = useState(null);
+  const [baths, setBaths] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
+  const [debounceTimer, setDebounceTimer] = useState(null);
+  const [postcodeSuggestions, setPostcodeSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionTimer, setSuggestionTimer] = useState(null);
 
-  const properties = [
+  // Debounced search
+  useEffect(() => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    const timer = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchProperties(searchQuery);
+      } else {
+        fetchProperties(true);
+      }
+    }, 500);
+
+    setDebounceTimer(timer);
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  }, [searchQuery]);
+
+  // Update filters when local state changes
+  useEffect(() => {
+    setFilters({
+      country: 'UK',
+      status: 'online',
+      propertyType: propertyType === 'all' ? null : propertyType,
+      city: locationQuery || null,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      minBedrooms: beds ? parseInt(beds) : null,
+      maxBedrooms: null,
+      minBathrooms: baths ? parseInt(baths) : null,
+    });
+  }, [propertyType, locationQuery, priceRange, beds, baths, setFilters]);
+
+  // Fetch properties when filters change
+  useEffect(() => {
+    fetchProperties(true);
+  }, [filters.propertyType, filters.city, filters.minPrice, filters.maxPrice, filters.minBedrooms, filters.minBathrooms]);
+
+  // Handle postcode autocomplete
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (locationQuery.length >= 2) {
+        const suggestions = await postcodeService.getPostcodeSuggestions(locationQuery);
+        setPostcodeSuggestions(suggestions);
+        setShowSuggestions(true);
+      } else {
+        setPostcodeSuggestions([]);
+        setShowSuggestions(false);
+      }
+    };
+
+    if (suggestionTimer) {
+      clearTimeout(suggestionTimer);
+    }
+
+    const timer = setTimeout(() => {
+      fetchSuggestions();
+    }, 300); // Debounce for 300ms
+
+    setSuggestionTimer(timer);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [locationQuery]);
+
+  const handlePostcodeSelect = (postcode) => {
+    setLocationQuery(postcode);
+    setShowSuggestions(false);
+    setPostcodeSuggestions([]);
+  };
+
+  // Transform properties for display
+  const transformPropertyForCard = (property) => {
+    const images = property.image_urls 
+      ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]'))
+      : [];
+    
+    return {
+      id: property.id,
+      title: property.title,
+      location: property.address_line_1 || `${property.city || ''} ${property.postcode || ''}`.trim() || 'UK',
+      price: property.price,
+      type: property.property_type === 'rent' ? 'Rent' : property.property_type === 'sale' ? 'Sale' : 'Property',
+      property_type: property.property_type,
+      beds: property.bedrooms,
+      baths: property.bathrooms,
+      image: images[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+      images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'],
+      description: property.description,
+      is_saved: property.is_saved || false,
+      is_applied: property.is_applied || false,
+      application_status: property.application_status || null,
+      view_count: property.view_count || 0,
+      latitude: property.latitude,
+      longitude: property.longitude,
+      listedDate: property.created_at ? new Date(property.created_at) : new Date(),
+    };
+  };
+
+  // Transform for map
+  const mapProperties = properties
+    .filter(p => p.latitude && p.longitude)
+    .map(p => ({
+      id: p.id,
+      name: p.title,
+      lat: parseFloat(p.latitude),
+      lng: parseFloat(p.longitude),
+      price: `£${(p.price / 1000).toFixed(0)}k`,
+      address: p.address_line_1 || p.city || 'UK',
+    }));
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setLocationQuery('');
+    setPropertyType('all');
+    setPriceRange({ min: null, max: null });
+    setBeds(null);
+    setBaths(null);
+    setShowSuggestions(false);
+    setPostcodeSuggestions([]);
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+    fetchProperties(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Mock properties for fallback (if Supabase is not configured)
+  const mockProperties = [
     { 
       id: 1, 
       title: 'Modern Apartment', 
@@ -100,27 +253,43 @@ const DashboardDiscover = () => {
     },
   ];
 
-  const filteredProperties = properties.filter(property => {
-    const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          property.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = property.location.toLowerCase().includes(locationQuery.toLowerCase());
-    const matchesType = propertyType === 'All Types' || property.type === propertyType;
-    const matchesPrice = property.price >= priceRange.min && property.price <= priceRange.max;
-    const matchesBeds = beds === 'Any' || property.beds >= parseInt(beds);
-    const matchesBaths = baths === 'Any' || property.baths >= parseInt(baths);
-
-    return matchesSearch && matchesLocation && matchesType && matchesPrice && matchesBeds && matchesBaths;
-  });
+  const displayProperties = properties.length > 0 ? properties : [];
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   return (
     <div className="p-4 lg:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Discover Properties</h1>
-        <p className="text-gray-600">Find your perfect property with our smart search</p>
+      {/* View Mode Toggle */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Discover Properties</h1>
+          <p className="text-gray-600 dark:text-gray-400">Find your perfect UK property</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-orange-500 text-white'
+                : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            <Grid size={20} />
+          </button>
+          <button
+            onClick={() => setViewMode('map')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'map'
+                ? 'bg-orange-500 text-white'
+                : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            <MapIcon size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Smart Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6 mb-6">
         {/* Main Search Bar */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -128,24 +297,57 @@ const DashboardDiscover = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search properties by keyword, title, or description..."
-            className="w-full pl-10 pr-4 py-3 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg"
+            placeholder="Search by postcode, street, address, keyword, or property title..."
+            className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Location Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Location</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                placeholder="Enter location"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                onChange={(e) => {
+                  setLocationQuery(e.target.value);
+                  if (e.target.value.length >= 2) {
+                    setShowSuggestions(true);
+                  } else {
+                    setShowSuggestions(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (locationQuery.length >= 2 && postcodeSuggestions.length > 0) {
+                    setShowSuggestions(true);
+                  }
+                }}
+                onBlur={() => {
+                  // Delay hiding suggestions to allow click on suggestion
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
+                placeholder="Postcode, street, or address"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
+              
+              {/* Postcode Suggestions Dropdown */}
+              {showSuggestions && postcodeSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  {postcodeSuggestions.map((postcode, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handlePostcodeSelect(postcode)}
+                      className="w-full text-left px-4 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors flex items-center gap-2"
+                    >
+                      <MapPin size={14} className="text-orange-500" />
+                      <span className="font-medium">{postcode}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -157,13 +359,11 @@ const DashboardDiscover = () => {
               <select 
                 value={propertyType}
                 onChange={(e) => setPropertyType(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                <option>All Types</option>
-                <option>Apartment</option>
-                <option>House</option>
-                <option>Condo</option>
-                <option>Studio</option>
+                <option value="all">All Types</option>
+                <option value="rent">For Rent</option>
+                <option value="sale">For Sale</option>
               </select>
             </div>
           </div>
@@ -176,21 +376,21 @@ const DashboardDiscover = () => {
                 <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
                 <input
                   type="number"
-                  value={priceRange.min}
-                  onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) || 0 })}
-                  placeholder="Min"
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                  value={priceRange.min || ''}
+                  onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="Min £"
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
-              <span className="text-gray-400">-</span>
+              <span className="text-gray-400 dark:text-gray-500">-</span>
               <div className="relative flex-1">
                 <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
                 <input
                   type="number"
-                  value={priceRange.max}
-                  onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) || 100000 })}
-                  placeholder="Max"
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                  value={priceRange.max || ''}
+                  onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="Max £"
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
@@ -203,11 +403,29 @@ const DashboardDiscover = () => {
               <div className="relative">
                 <Bed className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <select 
-                  value={beds}
-                  onChange={(e) => setBeds(e.target.value)}
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm"
+                  value={beds || ''}
+                  onChange={(e) => setBeds(e.target.value ? e.target.value : null)}
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Any">Any</option>
+                  <option value="">Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                  <option value="5">5+</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Baths</label>
+              <div className="relative">
+                <Bath className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <select 
+                  value={baths || ''}
+                  onChange={(e) => setBaths(e.target.value ? e.target.value : null)}
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Any</option>
                   <option value="1">1+</option>
                   <option value="2">2+</option>
                   <option value="3">3+</option>
@@ -215,58 +433,98 @@ const DashboardDiscover = () => {
                 </select>
               </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Baths</label>
-              <div className="relative">
-                <Bath className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <select 
-                  value={baths}
-                  onChange={(e) => setBaths(e.target.value)}
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm"
-                >
-                  <option value="Any">Any</option>
-                  <option value="1">1+</option>
-                  <option value="2">2+</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Properties Grid */}
+      {/* Properties Display */}
+      {viewMode === 'map' ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="h-[600px] lg:h-[700px]">
+            {mapProperties.length > 0 ? (
+              <MapView houses={mapProperties} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">No properties with location data available</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {loading ? (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProperties.map((property) => (
-          <PropertyCard
-            key={property.id}
-            property={property}
-            onViewDetails={(p) => navigate(`/dashboard/property/${p.id}`)}
-          />
-        ))}
-        {filteredProperties.length === 0 && (
-          <div className="col-span-full text-center py-10">
-             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <PropertyCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+              <p className="text-red-700 dark:text-red-400 mb-4">{error}</p>
+              <button
+                onClick={() => fetchProperties(true)}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : displayProperties.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
                 <Search className="text-gray-400" size={32} />
              </div>
-             <h3 className="text-lg font-medium text-gray-900">No properties found</h3>
-             <p className="text-gray-500 mt-1">Try adjusting your search or filters to find what you're looking for.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No properties found</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">Try adjusting your search or filters to find what you're looking for.</p>
              <button 
-               onClick={() => {
-                 setSearchQuery('');
-                 setLocationQuery('');
-                 setPropertyType('All Types');
-                 setPriceRange({ min: 0, max: 10000 });
-                 setBeds('Any');
-                 setBaths('Any');
-               }}
-               className="mt-4 text-orange-600 hover:text-orange-700 font-medium"
+                onClick={handleClearFilters}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
              >
                Clear all filters
              </button>
           </div>
-        )}
-      </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                {displayProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={transformPropertyForCard(property)}
+                    onViewDetails={(p) => navigate(`/user/dashboard/property/${p.id}`)}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} properties
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page === 1}
+                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Page {pagination.page} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page >= totalPages || !pagination.hasMore}
+                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   MapPin,
   Bed,
@@ -16,97 +16,138 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Phone,
+  Mail,
+  Building2,
+  User,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
+import { useProperties } from '../contexts/PropertiesContext';
+import * as propertyDataService from '../services/propertyDataService';
+import ShareModal from '../components/Dashboard/ShareModal';
 
 const PropertyDetail = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toggleProperty, isPropertySaved } = useSavedProperties();
+  const { currentUser, saveProperty, unsaveProperty, trackPropertyView } = useProperties();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
-  // Mock property data - In production, fetch from API using the id
-  const property = {
-    id: parseInt(id) || 1,
-    title: 'Modern Downtown Apartment',
-    address: '123 Main St, Downtown, City, State 12345',
-    location: '123 Main St, Downtown',
-    price: 450000,
-    type: 'Apartment',
-    beds: 2,
-    baths: 2,
-    parking: 1,
-    area: 1200,
-    rating: 4.8,
-    reviews: 24,
-    listedDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    tags: ['Apartment', 'Balcony', 'Gym', 'Parking'],
-    description: 'Snap Up This Great Investment. This stunning modern apartment offers the perfect blend of comfort and style. Located in the heart of downtown, this property features spacious rooms, modern amenities, and breathtaking views. The open-plan living area flows seamlessly into a gourmet kitchen with stainless steel appliances. The master bedroom boasts a walk-in closet and ensuite bathroom. With easy access to shopping, dining, and entertainment, this is the perfect place to call home.',
-    images: [
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
-      'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800',
-      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800',
-    ],
-    agent: {
-      name: 'Helen Bond',
-      agency: 'Ray White Inner North',
-      phone: '+61 2 1234 5678',
-      email: 'helen.bond@raywhite.com',
-    },
-    inspectionTimes: [
-      { date: 'Saturday, 7 Aug', time: '1:00pm - 1:40pm' },
-      { date: 'Sunday, 8 Aug', time: '2:00pm - 2:30pm' },
-    ],
-  };
+  // Fetch real property data
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!id) {
+        setError('Property ID is required');
+        setLoading(false);
+        return;
+      }
 
-  const marketInsights = {
-    medianPrice: 410000,
-    weeklyRent: 390,
-    cashflow: 20280,
-    grossYield: 5.2,
-    vacancyRate: 0.6,
-    daysListed: 14,
-    priceHistory: [
-      { year: 2017, price: 320000, growth: 3.2 },
-      { year: 2018, price: 350000, growth: 4.1 },
-      { year: 2019, price: 375000, growth: 4.8 },
-      { year: 2020, price: 395000, growth: 5.0 },
-      { year: 2021, price: 410000, growth: 5.2 },
-    ],
-    avgBedrooms: 4,
-    bedroomDistribution: [
-      { beds: 1, percentage: 10 },
-      { beds: 2, percentage: 25 },
-      { beds: 3, percentage: 15 },
-      { beds: 4, percentage: 7.8 },
-      { beds: 5, percentage: 6.2 },
-      { beds: '6+', percentage: 30 },
-    ],
-    grossYieldHistory: [
-      { year: 2017, yield: 4.8, vacancy: 2.1 },
-      { year: 2018, yield: 4.2, vacancy: 3.5 },
-      { year: 2019, yield: 4.0, vacancy: 4.2 },
-      { year: 2020, yield: 4.3, vacancy: 3.8 },
-      { year: 2021, yield: 4.5, vacancy: 2.5 },
-    ],
-    avgAge: 29,
-    ageDistribution: [
-      { range: '0-14', percentage: 28 },
-      { range: '15-65', percentage: 8 },
-      { range: '65+', percentage: 64 },
-    ],
-    valueRange: {
-      low: 340000,
-      med: 365000,
-      high: 395000,
-      confidence: 'High Confidence',
-    },
-  };
+      setLoading(true);
+      setError(null);
 
-  const isSaved = isPropertySaved(property.id);
-  const images = property.images || [];
+      try {
+        const result = await propertyDataService.getPropertyById(id, currentUser?.id);
+        
+        if (result.error) {
+          setError(result.error.message || 'Failed to load property');
+          setLoading(false);
+          return;
+        }
+
+        if (result.data) {
+          setProperty(result.data);
+          // Track view is already handled in getPropertyById
+        } else {
+          setError('Property not found');
+        }
+      } catch (err) {
+        console.error('Error fetching property:', err);
+        setError(err.message || 'Failed to load property');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperty();
+  }, [id, currentUser]);
+
+  // Check if purchase action is requested
+  useEffect(() => {
+    if (searchParams.get('action') === 'buy' && property) {
+      setShowPurchaseModal(true);
+    }
+  }, [searchParams, property]);
+
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
+          <p className="text-gray-600 dark:text-gray-400">Loading property details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !property) {
+    return (
+      <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center max-w-md">
+          <AlertCircle className="mx-auto mb-4 text-red-600 dark:text-red-400" size={48} />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Property Not Found</h3>
+          <p className="text-red-700 dark:text-red-400 mb-4">{error || 'The property you are looking for does not exist.'}</p>
+          <button
+            onClick={() => navigate('/user/dashboard/discover')}
+            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+          >
+            Browse Properties
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Transform property data
+  const images = property.image_urls 
+    ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]'))
+    : [];
   const hasMultipleImages = images.length > 1;
+  const isSaved = isPropertySaved(property.id);
+  
+  // Get property features
+  const propertyFeatures = property.property_features 
+    ? (Array.isArray(property.property_features) ? property.property_features : JSON.parse(property.property_features || '[]'))
+    : [];
+
+  // Calculate financial metrics
+  const calculateFinancialMetrics = () => {
+    const price = parseFloat(property.price) || 0;
+    const monthlyRent = price * 0.004; // Estimate 0.4% of property value as monthly rent
+    const annualRent = monthlyRent * 12;
+    const grossYield = price > 0 ? ((annualRent / price) * 100).toFixed(2) : 0;
+    const estimatedValue = {
+      low: price * 0.85,
+      med: price,
+      high: price * 1.15,
+    };
+    
+    return {
+      monthlyRent: monthlyRent.toFixed(0),
+      annualRent: annualRent.toFixed(0),
+      grossYield: parseFloat(grossYield),
+      estimatedValue,
+    };
+  };
+
+  const financialMetrics = calculateFinancialMetrics();
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -117,7 +158,33 @@ const PropertyDetail = () => {
   };
 
   const formatPrice = (price) => {
-    return `$${price.toLocaleString()}`;
+    if (typeof price === 'number') {
+      return `£${price.toLocaleString('en-GB')}`;
+    }
+    return price || 'Price on request';
+  };
+
+  const handleSave = async () => {
+    if (!currentUser) {
+      // Show login prompt
+      return;
+    }
+    if (isSaved) {
+      await unsaveProperty(property.id);
+      toggleProperty(property);
+    } else {
+      await saveProperty(property.id);
+      toggleProperty(property);
+    }
+  };
+
+  const handlePurchase = () => {
+    if (!currentUser) {
+      // Show login prompt or navigate to login
+      navigate('/user/dashboard/profile');
+      return;
+    }
+    setShowPurchaseModal(true);
   };
 
   return (
@@ -136,45 +203,64 @@ const PropertyDetail = () => {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Property</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{property.title || 'Property'}</h1>
               <button
-                onClick={() => toggleProperty(property)}
+                onClick={handleSave}
                 className={`p-2 rounded-full transition-all ${
                   isSaved
                     ? 'bg-red-500 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
+                title={isSaved ? 'Remove from saved' : 'Save property'}
               >
                 <Heart size={20} className={isSaved ? 'fill-current' : ''} />
               </button>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                title="Share property"
+              >
+                <Share2 size={20} />
+              </button>
             </div>
-            <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">{property.address}</p>
-            <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4">
-              Offers from {formatPrice(property.price)}
+            <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
+              {property.address_line_1 || property.address || `${property.city || ''} ${property.postcode || ''}`.trim() || 'UK'}
+            </p>
+            <p className="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4">
+              {property.property_type === 'rent' ? `${formatPrice(property.price)}/month` : formatPrice(property.price)}
             </p>
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <Bed size={18} />
-                <span>{property.beds} Beds</span>
+                <span>{property.bedrooms || 0} Beds</span>
               </div>
               <div className="flex items-center gap-2">
                 <Bath size={18} />
-                <span>{property.baths} Baths</span>
+                <span>{property.bathrooms || 0} Baths</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Car size={18} />
-                <span>{property.parking} Parks</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Maximize size={18} />
-                <span>{property.area} sqft</span>
-              </div>
+              {property.property_size_sqm && (
+                <div className="flex items-center gap-2">
+                  <Maximize size={18} />
+                  <span>{property.property_size_sqm} sqm</span>
+                </div>
+              )}
+              {property.year_built && (
+                <div className="flex items-center gap-2">
+                  <Home size={18} />
+                  <span>Built {property.year_built}</span>
+                </div>
+              )}
             </div>
           </div>
-          <button className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors">
-            PURCHASE THIS PROPERTY
-            <span>→</span>
-          </button>
+          {(property.property_type === 'sale' || property.type?.toLowerCase() === 'sale') && (
+            <button 
+              onClick={handlePurchase}
+              className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+            >
+              PURCHASE THIS PROPERTY
+              <span>→</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -235,29 +321,56 @@ const PropertyDetail = () => {
         <div className="space-y-6">
           {/* Description */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-              Snap Up This Great Investment
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Property Description</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-              {property.description}
+              {property.description || 'No description available for this property.'}
             </p>
-            <div className="mb-4">
+            
+            {/* Real Property Features */}
+            {propertyFeatures.length > 0 && (
+              <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Property Features</h3>
                 <div className="flex flex-wrap gap-2">
-                    {property.tags.map((tag, index) => (
+                  {propertyFeatures.map((feature, index) => (
                     <span 
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium flex items-center gap-1"
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium flex items-center gap-1"
                     >
-                        <CheckCircle size={14} className="text-orange-600 dark:text-orange-400" />
-                        {tag}
+                      <CheckCircle size={14} className="text-orange-600 dark:text-orange-400" />
+                      {feature}
                     </span>
-                    ))}
+                  ))}
                 </div>
+              </div>
+            )}
+
+            {/* Additional Property Details */}
+            <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {property.energy_rating && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Energy Rating</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{property.energy_rating}</p>
+                </div>
+              )}
+              {property.council_tax_band && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Council Tax Band</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{property.council_tax_band}</p>
+                </div>
+              )}
+              {property.deposit_amount && property.property_type === 'rent' && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Deposit</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatPrice(property.deposit_amount)}</p>
+                </div>
+              )}
+              {property.viewing_available && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Viewing Available</p>
+                  <p className="text-lg font-semibold text-green-600 dark:text-green-400">Yes</p>
+                </div>
+              )}
             </div>
-            <button className="text-orange-600 dark:text-orange-400 font-medium hover:underline">
-              Read more
-            </button>
           </div>
 
           {/* Financial Metrics */}
@@ -265,87 +378,124 @@ const PropertyDetail = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Financial Metrics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Median Price</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {formatPrice(marketInsights.medianPrice)}
+                <p className="text-sm text-gray-600 dark:text-gray-400">Property Price</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {formatPrice(property.price)}
                 </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Weekly median rent</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  ${marketInsights.weeklyRent}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Potential cashflow</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {formatPrice(marketInsights.cashflow)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Potential gross yield</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {marketInsights.grossYield}%
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Vacancy rate</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {marketInsights.vacancyRate}%
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Listed</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {property.listedDate ? `${Math.floor((new Date() - new Date(property.listedDate)) / (1000 * 60 * 60 * 24))} DAYS AGO` : 'N/A'}
-                </p>
-              </div>
+              {property.property_type === 'rent' && (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Rent</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {formatPrice(property.price)}/month
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Annual Rent</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {formatPrice(property.price * 12)}
+                    </p>
+                  </div>
+                </>
+              )}
+              {property.property_type === 'sale' && (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Estimated Monthly Rent</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {formatPrice(parseFloat(financialMetrics.monthlyRent))}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Potential Gross Yield</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {financialMetrics.grossYield}%
+                    </p>
+                  </div>
+                </>
+              )}
+              {property.created_at && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Listed</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {Math.floor((new Date() - new Date(property.created_at)) / (1000 * 60 * 60 * 24))} days ago
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Potential Value */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Potential value</h3>
-            <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
-              {marketInsights.valueRange.confidence}
-            </span>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Low Range</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(marketInsights.valueRange.low)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Med Range</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(marketInsights.valueRange.med)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">High Range</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(marketInsights.valueRange.high)}</span>
+          {/* Potential Value (for sale properties) */}
+          {property.property_type === 'sale' && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Estimated Property Value</h3>
+              <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
+                Market Estimate
+              </span>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Low Estimate</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(financialMetrics.estimatedValue.low)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Market Value</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">{formatPrice(financialMetrics.estimatedValue.med)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">High Estimate</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(financialMetrics.estimatedValue.high)}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Agent Information */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Agent Information</h3>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-500">
-                {property.agent.name.charAt(0)}
+          {/* Real Agent Information */}
+          {(property.agent_name || property.agent_email || property.agent_phone || property.agent_company) && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Contact Agent</h3>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-xl font-semibold text-orange-600 dark:text-orange-400">
+                  {property.agent_name ? property.agent_name.charAt(0).toUpperCase() : <User size={24} />}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{property.agent_name || 'Agent'}</p>
+                  {property.agent_company && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      <Building2 size={14} />
+                      {property.agent_company}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-gray-900 dark:text-gray-100">{property.agent.name}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{property.agent.agency}</p>
+              <div className="space-y-3">
+                {property.agent_phone && (
+                  <a
+                    href={`tel:${property.agent_phone}`}
+                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <Phone className="text-orange-600 dark:text-orange-400" size={20} />
+                    <span className="text-gray-900 dark:text-gray-100">{property.agent_phone}</span>
+                  </a>
+                )}
+                {property.agent_email && (
+                  <a
+                    href={`mailto:${property.agent_email}`}
+                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <Mail className="text-orange-600 dark:text-orange-400" size={20} />
+                    <span className="text-gray-900 dark:text-gray-100">{property.agent_email}</span>
+                  </a>
+                )}
+                <button
+                  onClick={() => navigate(`/user/dashboard/messages?property=${property.id}`)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors mt-2"
+                >
+                  Message Agent
+                </button>
               </div>
             </div>
-            <div className="mt-4 space-y-2">
-              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <span className="font-medium">Phone:</span> {property.agent.phone}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <span className="font-medium">Email:</span> {property.agent.email}
-              </p>
-            </div>
-          </div>
+          )}
 
         </div>
       </div>

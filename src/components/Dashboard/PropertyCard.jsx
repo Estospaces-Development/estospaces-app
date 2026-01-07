@@ -10,25 +10,70 @@ import {
   Star, 
   Share2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle,
+  Eye
 } from 'lucide-react';
 import VirtualTourModal from './VirtualTourModal';
+import ShareModal from './ShareModal';
 import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
+import { useProperties } from '../../contexts/PropertiesContext';
 
 const PropertyCard = ({ property, onViewDetails }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toggleProperty, isPropertySaved } = useSavedProperties();
+  const { saveProperty, unsaveProperty, applyToProperty, trackPropertyView, currentUser } = useProperties();
   const navigate = useNavigate();
-  const isSaved = isPropertySaved(property.id);
+  
+  // Check saved status from both contexts
+  const isSaved = property.is_saved !== undefined ? property.is_saved : isPropertySaved(property.id);
+  const isApplied = property.is_applied || false;
+  const applicationStatus = property.application_status || null;
+  const viewCount = property.view_count || 0;
 
   const handleViewDetails = (e) => {
     e?.stopPropagation();
+    // Track view if user is authenticated
+    if (currentUser) {
+      trackPropertyView(property.id);
+    }
     if (onViewDetails) {
       onViewDetails(property);
     } else {
       navigate(`/user/dashboard/property/${property.id}`);
     }
+  };
+
+  const handleSave = async (e) => {
+    e.stopPropagation();
+    if (!currentUser) {
+      // Show login prompt or navigate to login
+      return;
+    }
+
+    setIsSaving(true);
+    if (isSaved) {
+      await unsaveProperty(property.id);
+      toggleProperty(property); // Also update SavedPropertiesContext
+    } else {
+      await saveProperty(property.id);
+      toggleProperty(property); // Also update SavedPropertiesContext
+    }
+    setIsSaving(false);
+  };
+
+  const handleBuy = async (e) => {
+    e.stopPropagation();
+    if (!currentUser) {
+      // Show login prompt
+      return;
+    }
+
+    // Navigate to property detail page with buy action
+    navigate(`/user/dashboard/property/${property.id}?action=buy`);
   };
 
   const images = property.images || [property.image].filter(Boolean).slice(0, 4);
@@ -46,7 +91,12 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
   const formatPrice = (price) => {
     if (typeof price === 'number') {
-      return `$${price.toLocaleString()}${property.rent ? '/month' : ''}`;
+      const formatted = `£${price.toLocaleString('en-GB')}`;
+      // Check if it's a rent property (property_type === 'rent')
+      if (property.property_type === 'rent' || property.type?.toLowerCase() === 'rent') {
+        return `${formatted}/month`;
+      }
+      return formatted;
     }
     return price;
   };
@@ -122,7 +172,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
           {/* Property Type Badge */}
           {property.type && (
             <div className="absolute top-3 left-3">
-              <span className="bg-white/90 backdrop-blur-sm text-gray-800 px-2.5 py-1 rounded-md text-xs font-medium">
+              <span className="bg-white/90 backdrop-blur-sm text-gray-800 px-2.5 py-1 rounded-md text-sm font-medium">
                 {property.type}
               </span>
             </div>
@@ -131,38 +181,37 @@ const PropertyCard = ({ property, onViewDetails }) => {
           {/* Action Buttons */}
           <div className="absolute top-3 right-3 flex gap-2">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleProperty(property);
-              }}
+              onClick={handleSave}
+              disabled={isSaving}
               className={`p-2 rounded-full backdrop-blur-sm transition-all ${
                 isSaved
                   ? 'bg-red-500 text-white'
                   : 'bg-white/90 dark:bg-gray-900/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900'
-              }`}
+              } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label={isSaved ? 'Remove from saved' : 'Save property'}
+              title={isSaved ? 'Saved' : 'Save property'}
             >
               <Heart size={16} className={isSaved ? 'fill-current' : ''} />
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleProperty(property);
-              }}
-              className={`p-2 rounded-full backdrop-blur-sm transition-all ${
-                isSaved
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white/90 dark:bg-gray-900/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900'
-              }`}
-              aria-label={isSaved ? 'Remove bookmark' : 'Bookmark property'}
-            >
-              <Bookmark size={16} className={isSaved ? 'fill-current' : ''} />
-            </button>
+            {isApplied && (
+              <button
+                className="p-2 rounded-full backdrop-blur-sm bg-green-500 text-white"
+                title={`Applied - ${applicationStatus}`}
+              >
+                <CheckCircle size={16} className="fill-current" />
+              </button>
+            )}
+            {viewCount > 0 && (
+              <div className="p-2 rounded-full backdrop-blur-sm bg-blue-500 text-white flex items-center gap-1" title={`Viewed ${viewCount} time${viewCount > 1 ? 's' : ''}`}>
+                <Eye size={14} />
+                <span className="text-xs font-medium">{viewCount}</span>
+              </div>
+            )}
           </div>
 
           {/* Price */}
           <div className="absolute bottom-3 left-3">
-            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-bold text-base">
+            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-semibold text-lg">
               {formatPrice(property.price)}
             </span>
           </div>
@@ -170,14 +219,14 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">{property.title}</h3>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">{property.title}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
             <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
             <span className="line-clamp-1">{property.location}</span>
           </p>
 
           {/* Specs */}
-          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mb-3">
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
             {property.beds && (
               <div className="flex items-center gap-1">
                 <Bed size={16} className="text-gray-400 dark:text-gray-500" />
@@ -231,16 +280,32 @@ const PropertyCard = ({ property, onViewDetails }) => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onViewDetails) onViewDetails(property);
-              }}
+              onClick={handleViewDetails}
               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
             >
               View Details
             </button>
+            
+            {/* Buy Now button for all properties */}
+            {!isApplied && (
+              <button
+                onClick={handleBuy}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Buy Now
+              </button>
+            )}
+            {isApplied && (
+              <button
+                onClick={() => navigate('/user/dashboard/applications')}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                View Application
+              </button>
+            )}
+            
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -253,9 +318,10 @@ const PropertyCard = ({ property, onViewDetails }) => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                // Handle share
+                setShowShareModal(true);
               }}
               className="p-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+              title="Share property"
             >
               <Share2 size={16} />
             </button>
@@ -268,6 +334,14 @@ const PropertyCard = ({ property, onViewDetails }) => {
         <VirtualTourModal
           property={property}
           onClose={() => setShowVirtualTour(false)}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          property={property}
+          onClose={() => setShowShareModal(false)}
         />
       )}
     </>

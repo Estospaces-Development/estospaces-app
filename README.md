@@ -6,13 +6,20 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 
 ### Recent Updates
 
-- **✅ Smart Search Filtering**: Enhanced "Discover Properties" page with multi-criteria filtering (Location, Type, Price, Beds, Baths).
+- **✅ Typography System**: Updated to Inter font family matching modern chat interface standards
+  - Consistent font sizes across all components (H1: 20px, H2: 18px, H3: 16px, Body: 14px, Captions: 12px)
+  - Optimized letter-spacing and line-height for readability
+  - Applied globally via Tailwind config and CSS base styles
+- **✅ Smart Search Filtering**: Enhanced "Discover Properties" page with multi-criteria filtering (Location, Type, Price, Beds, Baths)
+- **✅ Postcode Autocomplete**: Real-time postcode suggestions when searching for properties
+- **✅ Location-Based Dashboard**: Dynamic property filtering based on user location (profile, geolocation, or search input)
+- **✅ Real Property Integration**: Integration with Zoopla API for real-time UK property listings
 - **✅ Enhanced Help Center**: Interactive "Help & Support" page with:
   - **Documentation Modal**: Quick access to getting started guides and resources.
   - **Live Chat**: Direct email integration for support requests.
   - **Email Support**: One-click email composition.
 - **✅ Property Detail Page**: Comprehensive property information with market insights and analytics (orange theme)
-- **✅ Welcome Card**: Personalized welcome message with user name and email integrated into Discover Your Dream Home banner
+- **✅ Welcome Card**: Personalized welcome message with user name integrated into dashboard header
 - **✅ Smart Search Navigation**: Search bars navigate to relevant pages based on keywords
 - **✅ User Verification Badge**: Verified indicator displayed in sidebar for authenticated users
 - **✅ Global Chatbot Access**: Lakshmi AI Assistant available on all dashboard pages
@@ -131,7 +138,11 @@ yarn preview
 - **Tailwind CSS**: Utility-first CSS framework
 - **React Router DOM**: Client-side routing
 - **Lucide React**: Icon library
-- **Context API**: State management (Theme, Saved Properties)
+- **Inter Font**: Modern typography system for consistent, readable UI
+- **Context API**: State management (Theme, Saved Properties, Messages, Applications, Location)
+- **Supabase**: Backend services (authentication, database, real-time subscriptions)
+- **Mapbox**: Interactive maps for property locations
+- **Zoopla API**: Real-time UK property listings integration
 
 ## 📁 Project Structure
 
@@ -169,13 +180,31 @@ estospaces-app/
 └── package.json                       # Dependencies and scripts
 ```
 
-## 🎨 Theme System
+## 🎨 Theme & Typography System
+
+### Theme System
 
 The dashboard supports two themes:
 - **Light**: Default light theme
 - **Deep Dark**: Dark theme with gray-900 background
 
-Theme preference is saved in localStorage and persists across sessions. The theme switcher is available in the header on the main dashboard page (`/user/dashboard`).
+Theme preference is saved in localStorage and persists across sessions. The theme switcher is available in the header on all dashboard pages.
+
+### Typography System
+
+The dashboard uses a consistent typography system matching modern chat interface standards:
+
+- **Font Family**: Inter (with system font fallbacks)
+- **Base Font Size**: 14px (optimized for readability)
+- **Heading Sizes**:
+  - H1: 20px (semibold, 600)
+  - H2: 18px (semibold, 600)
+  - H3: 16px (semibold, 600)
+- **Body Text**: 14px (normal, 400)
+- **Captions/Labels**: 12px (normal/medium, 400/500)
+- **Buttons**: 14px (medium, 500)
+
+All typography uses optimized letter-spacing and line-height for enhanced readability. Typography utilities are available in `src/utils/typography.js`.
 
 ## 🗺️ Map Integration
 

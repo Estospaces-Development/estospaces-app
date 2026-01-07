@@ -1,55 +1,159 @@
-import React from 'react';
-import { FileText, Clock, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, AlertCircle, Clock, Plus } from 'lucide-react';
+import { useApplications } from '../contexts/ApplicationsContext';
+import ApplicationCard from '../components/Dashboard/Applications/ApplicationCard';
+import ApplicationDetail from '../components/Dashboard/Applications/ApplicationDetail';
+import ApplicationFilters from '../components/Dashboard/Applications/ApplicationFilters';
+import ApplicationCardSkeleton from '../components/Dashboard/Applications/ApplicationCardSkeleton';
 
 const DashboardApplications = () => {
-  const applications = [
-    { id: 1, property: 'Modern Downtown Apartment', date: '1/15/2025', status: 'under review' },
-    { id: 2, property: 'Luxury Condo with Ocean View', date: '1/15/2025', status: 'scheduled' },
-    { id: 3, property: 'Spacious Family Home', date: '1/15/2025', status: 'pending' },
-  ];
+  const {
+    applications,
+    selectedApplicationId,
+    setSelectedApplicationId,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    propertyTypeFilter,
+    setPropertyTypeFilter,
+    dateRangeFilter,
+    setDateRangeFilter,
+    isLoading,
+    getApplicationsRequiringAction,
+    getApplicationsWithDeadlineWarnings,
+  } = useApplications();
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'scheduled':
-        return 'bg-green-100 text-green-700';
-      case 'under review':
-        return 'bg-yellow-100 text-yellow-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail'
+
+  const applicationsRequiringAction = getApplicationsRequiringAction();
+  const deadlineWarnings = getApplicationsWithDeadlineWarnings();
+
+  const handleApplicationClick = (applicationId) => {
+    setSelectedApplicationId(applicationId);
+    setViewMode('detail');
   };
 
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedApplicationId(null);
+  };
+
+  // Show detail view if application is selected
+  if (viewMode === 'detail' && selectedApplicationId) {
+    return (
+      <ApplicationDetail
+        applicationId={selectedApplicationId}
+        onClose={handleBackToList}
+      />
+    );
+  }
+
   return (
-    <div className="p-4 lg:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">My Applications</h1>
-        <p className="text-gray-600">Track your property applications</p>
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 lg:p-6 flex-shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              My Applications
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Track your property applications
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              // Navigate to property discovery to create new application
+              window.location.href = '/user/dashboard/discover';
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+          >
+            <Plus size={20} />
+            <span className="hidden sm:inline">New Application</span>
+          </button>
+        </div>
+
+        {/* Alerts */}
+        {applicationsRequiringAction.length > 0 && (
+          <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-400">
+              <AlertCircle size={16} />
+              <span>
+                {applicationsRequiringAction.length} application{applicationsRequiringAction.length !== 1 ? 's' : ''} require{applicationsRequiringAction.length === 1 ? 's' : ''} your action
+              </span>
+            </div>
+          </div>
+        )}
+
+        {deadlineWarnings.length > 0 && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+              <Clock size={16} />
+              <span>
+                {deadlineWarnings.length} application{deadlineWarnings.length !== 1 ? 's' : ''} {deadlineWarnings.length === 1 ? 'has' : 'have'} an approaching deadline
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <ApplicationFilters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          propertyTypeFilter={propertyTypeFilter}
+          setPropertyTypeFilter={setPropertyTypeFilter}
+          dateRangeFilter={dateRangeFilter}
+          setDateRangeFilter={setDateRangeFilter}
+        />
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">Your Applications</h2>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {applications.map((app) => (
-            <div key={app.id} className="p-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
-                    <FileText className="text-orange-600" size={24} />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{app.property}</p>
-                    <p className="text-sm text-gray-600">Applied on {app.date}</p>
-                  </div>
-                </div>
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(app.status)}`}>
-                  {app.status}
-                </span>
-              </div>
+      {/* Applications List */}
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {isLoading ? (
+          <div className="max-w-7xl mx-auto space-y-4">
+            {[1, 2, 3].map((i) => (
+              <ApplicationCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : applications.length === 0 ? (
+          <div className="max-w-2xl mx-auto text-center py-12">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FileText size={48} className="text-gray-400" />
             </div>
-          ))}
-        </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              No applications found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {searchQuery || statusFilter !== 'all' || propertyTypeFilter !== 'all'
+                ? 'Try adjusting your filters to see more results.'
+                : 'You haven\'t submitted any applications yet. Start by browsing properties and applying for ones you\'re interested in.'}
+            </p>
+            {!searchQuery && statusFilter === 'all' && propertyTypeFilter === 'all' && (
+              <button
+                onClick={() => {
+                  window.location.href = '/user/dashboard/discover';
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+              >
+                <Plus size={20} />
+                <span>Browse Properties</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto space-y-4">
+            {applications.map((application) => (
+              <ApplicationCard
+                key={application.id}
+                application={application}
+                onClick={() => handleApplicationClick(application.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

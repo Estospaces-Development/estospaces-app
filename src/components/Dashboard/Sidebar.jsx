@@ -16,6 +16,26 @@ import {
   CreditCard,
   CheckCircle
 } from 'lucide-react';
+import { useMessages } from '../../contexts/MessagesContext';
+
+// Helper component to get unread count badge
+const UnreadCountBadge = ({ isOpen }) => {
+  const { totalUnreadCount } = useMessages();
+  
+  if (totalUnreadCount === 0) return null;
+  
+  if (isOpen) {
+    return (
+      <span className="ml-auto bg-orange-500 text-white text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">
+        {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+      </span>
+    );
+  } else {
+    return (
+      <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white dark:border-gray-900" />
+    );
+  }
+};
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation();
@@ -26,7 +46,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     { icon: Search, label: 'Browse Properties', path: '/user/dashboard/discover' },
     { icon: FileText, label: 'My Applications', path: '/user/dashboard/applications' },
     { icon: Calendar, label: 'Viewings', path: '/user/dashboard/viewings' },
-    { icon: MessageSquare, label: 'Messages', path: '/user/dashboard/messages' },
+    { icon: MessageSquare, label: 'Messages', path: '/user/dashboard/messages', showBadge: true },
     { icon: CreditCard, label: 'Payments', path: '/user/dashboard/payments' },
     { icon: FileText, label: 'Contracts', path: '/user/dashboard/contracts' },
   ];
@@ -107,7 +127,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                       active
                         ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
@@ -120,6 +140,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                       }`}
                     />
                     {isOpen && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
+                    {item.showBadge && <UnreadCountBadge isOpen={isOpen} />}
                   </Link>
                 );
               })}

@@ -2,6 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
+import { MessagesProvider } from './contexts/MessagesContext';
+import { ApplicationsProvider } from './contexts/ApplicationsContext';
+import { PropertiesProvider } from './contexts/PropertiesContext';
+import { LocationProvider } from './contexts/LocationContext';
 import Home from './pages/Home';
 import Terms from './pages/Terms';
 import About from './pages/About';
@@ -9,12 +13,15 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiePolicy from './pages/CookiePolicy';
 import AdminLogin from './pages/AdminLogin';
 import AdminChatDashboard from './pages/AdminChatDashboard';
+import AdminPropertyManagement from './pages/AdminPropertyManagement';
 import UserAnalytics from './pages/UserAnalytics';
 import ProtectedRoute from './components/Admin/ProtectedRoute';
 import ChatWidget from './components/LiveChat/ChatWidget';
 import CookieConsent from './components/CookieConsent';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import Dashboard from './pages/Dashboard';
+import DashboardLocationBased from './pages/DashboardLocationBased';
+import ErrorBoundary from './components/ErrorBoundary';
 import DashboardDiscover from './pages/DashboardDiscover';
 import DashboardMessages from './pages/DashboardMessages';
 import DashboardPayments from './pages/DashboardPayments';
@@ -47,7 +54,11 @@ function App() {
   return (
     <ThemeProvider>
       <SavedPropertiesProvider>
-        <Router>
+        <MessagesProvider>
+          <ApplicationsProvider>
+            <PropertiesProvider>
+              <LocationProvider>
+                <Router>
           <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -65,6 +76,14 @@ function App() {
             }
           />
           <Route
+            path="/admin/properties"
+            element={
+              <ProtectedRoute>
+                <AdminPropertyManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/user-analytics"
             element={
               <ProtectedRoute>
@@ -77,7 +96,9 @@ function App() {
             path="/user/dashboard"
             element={
               <DashboardLayout>
-                <Dashboard />
+                <ErrorBoundary>
+                  <DashboardLocationBased />
+                </ErrorBoundary>
               </DashboardLayout>
             }
           />
@@ -180,7 +201,11 @@ function App() {
           />
         </Routes>
         </Layout>
-      </Router>
+              </Router>
+              </LocationProvider>
+            </PropertiesProvider>
+          </ApplicationsProvider>
+        </MessagesProvider>
       </SavedPropertiesProvider>
     </ThemeProvider>
   );

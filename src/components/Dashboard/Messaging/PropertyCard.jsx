@@ -1,0 +1,70 @@
+import React from 'react';
+import { MapPin, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+const PropertyCard = ({ property }) => {
+  const navigate = useNavigate();
+
+  if (!property || !property.propertyId) {
+    return null;
+  }
+
+  const formatPrice = (price) => {
+    if (!price) return 'Price on request';
+    return `$${price.toLocaleString()}`;
+  };
+
+  const handleViewDetails = () => {
+    if (property.propertyId) {
+      navigate(`/user/dashboard/property/${property.propertyId}`);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
+      <div className="flex gap-3">
+        {/* Property Image */}
+        {property.propertyImage && (
+          <div className="flex-shrink-0">
+            <img
+              src={property.propertyImage}
+              alt={property.propertyTitle || 'Property'}
+              className="w-20 h-20 rounded-lg object-cover"
+              onError={(e) => {
+                e.target.src = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200';
+              }}
+            />
+          </div>
+        )}
+
+        {/* Property Info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1 truncate">
+            {property.propertyTitle || 'Property'}
+          </h3>
+          {property.propertyAddress && (
+            <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 mb-2">
+              <MapPin size={12} />
+              <span className="truncate">{property.propertyAddress}</span>
+            </div>
+          )}
+          {property.propertyPrice && (
+            <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-2">
+              {formatPrice(property.propertyPrice)}
+            </p>
+          )}
+          <button
+            onClick={handleViewDetails}
+            className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+          >
+            <span>View Details</span>
+            <ExternalLink size={12} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PropertyCard;
+
