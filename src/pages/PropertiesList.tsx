@@ -152,7 +152,7 @@ const PropertiesList = () => {
   const handleDuplicate = (id: string) => {
     const duplicate = duplicateProperty(id);
     if (duplicate) {
-      navigate(`/properties/edit/${duplicate.id}`);
+      navigate(`/manager/dashboard/properties/edit/${duplicate.id}`);
     }
   };
 
@@ -248,7 +248,7 @@ const PropertiesList = () => {
             </span>
           </div>
           <button
-            onClick={() => navigate('/properties/add')}
+            onClick={() => navigate('/manager/dashboard/properties/add')}
             className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all shadow-lg hover:shadow-xl"
           >
             <Plus className="w-5 h-5" />
@@ -636,7 +636,7 @@ const PropertiesList = () => {
               </button>
             )}
             <button
-              onClick={() => navigate('/properties/add')}
+              onClick={() => navigate('/manager/dashboard/properties/add')}
               className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-all"
             >
               <Plus className="w-5 h-5" />
@@ -678,7 +678,7 @@ const PropertiesList = () => {
               {/* Image */}
               <div 
                 className="relative h-48 bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 cursor-pointer"
-                onClick={() => navigate(`/properties/${property.id}`)}
+                onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
               >
                 {property.media?.images?.[0]?.url || (property.images && property.images[0]) ? (
                   <img
@@ -728,7 +728,7 @@ const PropertiesList = () => {
                   <div className="flex-1 min-w-0">
                     <h3 
                       className="font-semibold text-gray-800 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => navigate(`/properties/${property.id}`)}
+                      onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
                     >
                       {property.title}
                     </h3>
@@ -757,7 +757,7 @@ const PropertiesList = () => {
                         >
                           <button
                             onClick={() => {
-                              navigate(`/properties/${property.id}`);
+                              navigate(`/manager/dashboard/properties/${property.id}`);
                               setActivePropertyMenu(null);
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-t-lg"
@@ -766,7 +766,7 @@ const PropertiesList = () => {
                           </button>
                           <button
                             onClick={() => {
-                              navigate(`/properties/edit/${property.id}`);
+                              navigate(`/manager/dashboard/properties/edit/${property.id}`);
                               setActivePropertyMenu(null);
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -875,7 +875,7 @@ const PropertiesList = () => {
 
                   <div 
                     className="h-full bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 cursor-pointer"
-                    onClick={() => navigate(`/properties/${property.id}`)}
+                    onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
                   >
                     {property.media?.images?.[0]?.url || (property.images && property.images[0]) ? (
                       <img
@@ -899,7 +899,7 @@ const PropertiesList = () => {
                         <div className="flex items-center gap-3 mb-1">
                           <h3 
                             className="text-lg font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => navigate(`/properties/${property.id}`)}
+                            onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
                           >
                             {property.title}
                           </h3>
@@ -952,14 +952,14 @@ const PropertiesList = () => {
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/properties/${property.id}`)}
+                        onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
                         className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         title="View"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => navigate(`/properties/edit/${property.id}`)}
+                        onClick={() => navigate(`/manager/dashboard/properties/edit/${property.id}`)}
                         className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         title="Edit"
                       >

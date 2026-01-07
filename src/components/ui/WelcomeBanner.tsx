@@ -13,7 +13,7 @@ const WelcomeBanner = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/properties/add')}
+          onClick={() => navigate('/manager/dashboard/properties/add')}
           className="btn-primary bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
         >
           <Plus className="w-5 h-5" />

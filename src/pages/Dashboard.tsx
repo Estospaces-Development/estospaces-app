@@ -360,7 +360,7 @@ const Dashboard = () => {
                     <span>Export</span>
                   </button>
                   <button
-                    onClick={() => navigate('/properties/add')}
+                    onClick={() => navigate('/manager/dashboard/properties/add')}
                     className="btn-primary bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -379,7 +379,7 @@ const Dashboard = () => {
                   <div className="col-span-full text-center py-12">
                     <p className="text-gray-500 dark:text-gray-400 mb-4">No properties yet</p>
                     <button
-                      onClick={() => navigate('/properties/add')}
+                      onClick={() => navigate('/manager/dashboard/properties/add')}
                       className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg font-medium"
                     >
                       Add Your First Property
@@ -671,7 +671,7 @@ const Dashboard = () => {
               <h3 className="section-heading text-gray-800 dark:text-white">Your Properties</h3>
             </div>
             <button
-              onClick={() => navigate('/properties/add')}
+              onClick={() => navigate('/manager/dashboard/properties/add')}
               className="btn-primary bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
             >
               <Plus className="w-4 h-4" />

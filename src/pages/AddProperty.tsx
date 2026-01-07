@@ -725,7 +725,7 @@ const AddProperty = () => {
       } else {
         addProperty({ ...propertyData, draft: true, published: false });
       }
-      navigate('/properties');
+      navigate('/manager/dashboard/properties');
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save draft. Please try again.');
@@ -746,7 +746,7 @@ const AddProperty = () => {
       } else {
         addProperty({ ...propertyData, published: true, draft: false });
       }
-      navigate('/properties');
+      navigate('/manager/dashboard/properties');
     } catch (error) {
       console.error('Error publishing:', error);
       alert('Failed to publish property. Please try again.');
