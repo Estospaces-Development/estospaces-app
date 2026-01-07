@@ -44,7 +44,7 @@ const SocialProof = () => {
     };
 
     return (
-        <section className="py-32 bg-gradient-to-br from-secondary via-gray-900 to-secondary text-white relative overflow-hidden">
+        <section className="py-32 bg-gradient-to-br from-gray-900 via-secondary to-gray-900 text-white relative overflow-hidden">
             {/* Decorative Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[20%] left-[10%] w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
@@ -67,7 +67,7 @@ const SocialProof = () => {
                         transition={{ duration: 1.0, ease: [0.2, 0.8, 0.2, 1] }}
                         className="text-5xl md:text-6xl font-bold mb-6 tracking-tight leading-tight"
                     >
-                        Built for the Future of{' '}
+                        <span className="text-white">Built for the Future of</span>{' '}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-400 to-orange-600">
                             Real Estate
                         </span>
@@ -77,7 +77,7 @@ const SocialProof = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 1.0, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="text-xl text-gray-300 leading-relaxed"
+                        className="text-xl text-gray-200 leading-relaxed"
                     >
                         Estospaces brings together cutting-edge virtual technology, verified brokers, and a trusted ecosystem.
                     </motion.p>
@@ -112,7 +112,7 @@ const SocialProof = () => {
                             <div className="text-4xl md:text-5xl font-bold mb-3 text-white">
                                 {stat.value}
                             </div>
-                            <div className="text-lg text-gray-300">
+                            <div className="text-lg text-gray-100">
                                 {stat.label}
                             </div>
                         </motion.div>

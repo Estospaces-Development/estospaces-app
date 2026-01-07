@@ -45,7 +45,7 @@ const FinalCTA = () => {
                                 className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full border border-white/20 flex items-center gap-2 hover:bg-white/20 transition-all duration-300"
                             >
                                 <CheckCircle2 className="text-primary" size={18} />
-                                <span className="text-sm font-medium">{benefit}</span>
+                                <span className="text-sm font-medium text-gray-200">{benefit}</span>
                             </div>
                         ))}
                     </div>

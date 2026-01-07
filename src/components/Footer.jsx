@@ -1,8 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Twitter, Instagram, Linkedin, Send } from 'lucide-react';
 import logoIcon from '../assets/logo-icon.png';
 
 const Footer = () => {
+    const [email, setEmail] = useState('');
+    const [submitted, setSubmitted] = useState(false);
+
+    const handleSubmit = () => {
+        if (email.trim() && email.includes('@')) {
+            // Here you can add your email submission logic (e.g., API call)
+            console.log('Email submitted:', email);
+            setSubmitted(true);
+            setEmail('');
+
+            // Reset the submitted message after 3 seconds
+            setTimeout(() => {
+                setSubmitted(false);
+            }, 3000);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSubmit();
+        }
+    };
+
     return (
         <footer className="bg-secondary text-white">
             {/* Main Footer */}
@@ -76,12 +99,23 @@ const Footer = () => {
                             <input
                                 type="email"
                                 placeholder="Your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 className="flex-1 px-4 py-2 rounded bg-white bg-opacity-10 border border-gray-600 outline-none focus:border-primary transition-colors placeholder-gray-500"
                             />
-                            <button className="bg-primary p-2 rounded hover:bg-opacity-90 transition-colors">
+                            <button
+                                onClick={handleSubmit}
+                                className="bg-primary p-2 rounded hover:bg-opacity-90 transition-colors"
+                            >
                                 <Send size={20} />
                             </button>
                         </div>
+                        {submitted && (
+                            <p className="text-green-400 text-sm mt-2 animate-fade-in">
+                                ✓ Message sent! We'll keep you updated.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
