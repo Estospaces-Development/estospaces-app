@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Mail, Facebook, Twitter, Instagram, Linkedin, Search, User, Menu, X } from 'lucide-react';
+import { Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import logoIcon from '../assets/logo-icon.png';
 import { useChat } from '../contexts/ChatContext';
 
@@ -7,6 +8,7 @@ const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { closeChat } = useChat();
+    const navigate = useNavigate();
 
     useEffect(() => {
         let ticking = false;
@@ -66,9 +68,28 @@ const Navbar = () => {
                     </nav>
 
                     {/* Actions */}
-                    <div className="hidden md:flex items-center space-x-4">
-                        <button className={`px-6 py-2 rounded-full font-medium transition-all duration-1000 flex items-center gap-2 shadow-lg hover:shadow-xl cursor-default ${isScrolled ? 'bg-white text-primary' : 'bg-primary text-white'}`}>
-                            Coming Soon
+                    <div className="hidden md:flex items-center space-x-3">
+                        <button 
+                            onClick={() => navigate('/auth/login')}
+                            className={`px-5 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 ${
+                                isScrolled 
+                                    ? 'text-white hover:bg-white/10' 
+                                    : 'text-white hover:bg-white/20'
+                            }`}
+                        >
+                            <LogIn size={18} />
+                            Login
+                        </button>
+                        <button 
+                            onClick={() => navigate('/auth/signup')}
+                            className={`px-5 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl ${
+                                isScrolled 
+                                    ? 'bg-white text-primary hover:bg-gray-100' 
+                                    : 'bg-primary text-white hover:bg-opacity-90'
+                            }`}
+                        >
+                            <UserPlus size={18} />
+                            Sign Up
                         </button>
                     </div>
 
@@ -94,9 +115,28 @@ const Navbar = () => {
                                 {item}
                             </a>
                         ))}
-                        <button className="bg-primary text-white px-6 py-2 rounded-full font-medium w-full flex items-center justify-center gap-2 cursor-default">
-                            Coming Soon
-                        </button>
+                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                            <button 
+                                onClick={() => {
+                                    handleNavClick();
+                                    navigate('/auth/login');
+                                }}
+                                className="text-secondary font-medium hover:text-primary flex items-center gap-2"
+                            >
+                                <LogIn size={18} />
+                                Login
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    handleNavClick();
+                                    navigate('/auth/signup');
+                                }}
+                                className="bg-primary text-white px-6 py-2 rounded-full font-medium w-full flex items-center justify-center gap-2 hover:bg-opacity-90"
+                            >
+                                <UserPlus size={18} />
+                                Sign Up
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
