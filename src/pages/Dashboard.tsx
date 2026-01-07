@@ -830,14 +830,14 @@ const Dashboard = () => {
                       {/* Management Actions Overlay */}
                       <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => navigate(`/properties/${property.id}`)}
+                          onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
                           className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           title="View"
                         >
                           <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         </button>
                         <button
-                          onClick={() => navigate(`/properties/edit/${property.id}`)}
+                          onClick={() => navigate(`/manager/dashboard/properties/edit/${property.id}`)}
                           className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           title="Edit"
                         >
