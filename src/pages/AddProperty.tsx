@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useProperties, Property } from '../contexts/PropertyContext';
+import { 
+  useProperties, 
+  Property, 
+  CurrencyCode, 
+  AreaUnit, 
+  PropertyType, 
+  ListingType, 
+  PropertyStatus,
+  FurnishingStatus,
+  PropertyCondition,
+  FacingDirection,
+} from '../contexts/PropertyContext';
 import {
   ChevronRight,
   ChevronLeft,
@@ -12,95 +23,411 @@ import {
   List,
   Link as LinkIcon,
   CheckCircle,
+  MapPin,
+  DollarSign,
+  Home,
+  Building,
+  Bed,
+  Bath,
+  Car,
+  Maximize,
+  Calendar,
+  Shield,
+  Wifi,
+  Dumbbell,
+  Waves,
+  TreePine,
+  Camera,
+  Video,
+  Globe,
+  Phone,
+  Mail,
+  User,
+  FileText,
+  Settings,
+  Star,
+  AlertCircle,
 } from 'lucide-react';
+import BackButton from '../components/ui/BackButton';
+
+// Countries list
+const countries = [
+  { code: 'US', name: 'United States', currency: 'USD' as CurrencyCode },
+  { code: 'IN', name: 'India', currency: 'INR' as CurrencyCode },
+  { code: 'GB', name: 'United Kingdom', currency: 'GBP' as CurrencyCode },
+  { code: 'AE', name: 'United Arab Emirates', currency: 'AED' as CurrencyCode },
+  { code: 'CA', name: 'Canada', currency: 'CAD' as CurrencyCode },
+  { code: 'AU', name: 'Australia', currency: 'AUD' as CurrencyCode },
+  { code: 'SG', name: 'Singapore', currency: 'SGD' as CurrencyCode },
+  { code: 'DE', name: 'Germany', currency: 'EUR' as CurrencyCode },
+  { code: 'FR', name: 'France', currency: 'EUR' as CurrencyCode },
+  { code: 'JP', name: 'Japan', currency: 'JPY' as CurrencyCode },
+  { code: 'CN', name: 'China', currency: 'CNY' as CurrencyCode },
+];
+
+// Property types with icons
+const propertyTypes: { value: PropertyType; label: string; icon: React.ReactNode }[] = [
+  { value: 'apartment', label: 'Apartment', icon: <Building className="w-5 h-5" /> },
+  { value: 'house', label: 'House', icon: <Home className="w-5 h-5" /> },
+  { value: 'condo', label: 'Condo', icon: <Building className="w-5 h-5" /> },
+  { value: 'townhouse', label: 'Townhouse', icon: <Home className="w-5 h-5" /> },
+  { value: 'villa', label: 'Villa', icon: <Home className="w-5 h-5" /> },
+  { value: 'penthouse', label: 'Penthouse', icon: <Building className="w-5 h-5" /> },
+  { value: 'studio', label: 'Studio', icon: <Home className="w-5 h-5" /> },
+  { value: 'duplex', label: 'Duplex', icon: <Home className="w-5 h-5" /> },
+  { value: 'land', label: 'Land', icon: <MapPin className="w-5 h-5" /> },
+  { value: 'commercial', label: 'Commercial', icon: <Building className="w-5 h-5" /> },
+  { value: 'industrial', label: 'Industrial', icon: <Building className="w-5 h-5" /> },
+  { value: 'office', label: 'Office', icon: <Building className="w-5 h-5" /> },
+];
+
+const listingTypes: { value: ListingType; label: string }[] = [
+  { value: 'sale', label: 'For Sale' },
+  { value: 'rent', label: 'For Rent' },
+  { value: 'lease', label: 'For Lease' },
+  { value: 'short_term', label: 'Short Term Rental' },
+  { value: 'vacation', label: 'Vacation Rental' },
+];
+
+const statusOptions: { value: PropertyStatus; label: string; color: string }[] = [
+  { value: 'available', label: 'Available', color: 'bg-green-100 text-green-700' },
+  { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'sold', label: 'Sold', color: 'bg-blue-100 text-blue-700' },
+  { value: 'rented', label: 'Rented', color: 'bg-purple-100 text-purple-700' },
+  { value: 'under_contract', label: 'Under Contract', color: 'bg-orange-100 text-orange-700' },
+  { value: 'off_market', label: 'Off Market', color: 'bg-gray-100 text-gray-700' },
+  { value: 'coming_soon', label: 'Coming Soon', color: 'bg-indigo-100 text-indigo-700' },
+];
+
+const furnishingOptions: { value: FurnishingStatus; label: string }[] = [
+  { value: 'furnished', label: 'Fully Furnished' },
+  { value: 'semi_furnished', label: 'Semi Furnished' },
+  { value: 'unfurnished', label: 'Unfurnished' },
+];
+
+const conditionOptions: { value: PropertyCondition; label: string }[] = [
+  { value: 'new', label: 'Brand New' },
+  { value: 'excellent', label: 'Excellent' },
+  { value: 'good', label: 'Good' },
+  { value: 'fair', label: 'Fair' },
+  { value: 'needs_renovation', label: 'Needs Renovation' },
+];
+
+const facingOptions: { value: FacingDirection; label: string }[] = [
+  { value: 'north', label: 'North' },
+  { value: 'south', label: 'South' },
+  { value: 'east', label: 'East' },
+  { value: 'west', label: 'West' },
+  { value: 'northeast', label: 'North East' },
+  { value: 'northwest', label: 'North West' },
+  { value: 'southeast', label: 'South East' },
+  { value: 'southwest', label: 'South West' },
+];
+
+const areaUnits: { value: AreaUnit; label: string }[] = [
+  { value: 'sqft', label: 'Square Feet (sq ft)' },
+  { value: 'sqm', label: 'Square Meters (sq m)' },
+  { value: 'acres', label: 'Acres' },
+  { value: 'hectares', label: 'Hectares' },
+];
+
+// Amenities grouped by category
+const amenitiesGroups = {
+  interior: [
+    { id: 'ac', label: 'Air Conditioning', icon: <Wifi className="w-4 h-4" /> },
+    { id: 'heating', label: 'Central Heating', icon: <Home className="w-4 h-4" /> },
+    { id: 'fireplace', label: 'Fireplace', icon: <Home className="w-4 h-4" /> },
+    { id: 'walk_in_closet', label: 'Walk-in Closet', icon: <Home className="w-4 h-4" /> },
+    { id: 'hardwood_floors', label: 'Hardwood Floors', icon: <Home className="w-4 h-4" /> },
+    { id: 'high_ceiling', label: 'High Ceilings', icon: <Home className="w-4 h-4" /> },
+  ],
+  exterior: [
+    { id: 'balcony', label: 'Balcony', icon: <Building className="w-4 h-4" /> },
+    { id: 'garden', label: 'Garden', icon: <TreePine className="w-4 h-4" /> },
+    { id: 'terrace', label: 'Terrace', icon: <Building className="w-4 h-4" /> },
+    { id: 'patio', label: 'Patio', icon: <Home className="w-4 h-4" /> },
+    { id: 'deck', label: 'Deck', icon: <Home className="w-4 h-4" /> },
+    { id: 'rooftop', label: 'Rooftop Access', icon: <Building className="w-4 h-4" /> },
+  ],
+  community: [
+    { id: 'pool', label: 'Swimming Pool', icon: <Waves className="w-4 h-4" /> },
+    { id: 'gym', label: 'Gym / Fitness Center', icon: <Dumbbell className="w-4 h-4" /> },
+    { id: 'clubhouse', label: 'Clubhouse', icon: <Building className="w-4 h-4" /> },
+    { id: 'playground', label: 'Playground', icon: <TreePine className="w-4 h-4" /> },
+    { id: 'tennis_court', label: 'Tennis Court', icon: <Dumbbell className="w-4 h-4" /> },
+    { id: 'sports_facility', label: 'Sports Facility', icon: <Dumbbell className="w-4 h-4" /> },
+  ],
+  security: [
+    { id: '24hr_security', label: '24/7 Security', icon: <Shield className="w-4 h-4" /> },
+    { id: 'cctv', label: 'CCTV Surveillance', icon: <Camera className="w-4 h-4" /> },
+    { id: 'gated_community', label: 'Gated Community', icon: <Shield className="w-4 h-4" /> },
+    { id: 'intercom', label: 'Intercom System', icon: <Phone className="w-4 h-4" /> },
+    { id: 'fire_alarm', label: 'Fire Alarm', icon: <AlertCircle className="w-4 h-4" /> },
+    { id: 'smart_locks', label: 'Smart Locks', icon: <Shield className="w-4 h-4" /> },
+  ],
+  utilities: [
+    { id: 'wifi', label: 'WiFi Included', icon: <Wifi className="w-4 h-4" /> },
+    { id: 'cable_tv', label: 'Cable TV', icon: <Video className="w-4 h-4" /> },
+    { id: 'water_supply', label: '24/7 Water Supply', icon: <Waves className="w-4 h-4" /> },
+    { id: 'power_backup', label: 'Power Backup', icon: <Settings className="w-4 h-4" /> },
+    { id: 'gas_pipeline', label: 'Gas Pipeline', icon: <Settings className="w-4 h-4" /> },
+    { id: 'waste_disposal', label: 'Waste Disposal', icon: <Settings className="w-4 h-4" /> },
+  ],
+};
+
+interface FormData {
+  // Basic Info
+  title: string;
+  propertyType: PropertyType;
+  listingType: ListingType;
+  status: PropertyStatus;
+  
+  // Price
+  priceAmount: number;
+  currency: CurrencyCode;
+  negotiable: boolean;
+  
+  // Location
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  countryCode: string;
+  neighborhood: string;
+  landmark: string;
+  
+  // Property Details
+  totalArea: number;
+  carpetArea: number;
+  areaUnit: AreaUnit;
+  bedrooms: number;
+  bathrooms: number;
+  balconies: number;
+  parkingSpaces: number;
+  floors: number;
+  floorNumber: number;
+  totalFloors: number;
+  
+  // Features
+  yearBuilt: number;
+  furnishing: FurnishingStatus;
+  condition: PropertyCondition;
+  facing: FacingDirection;
+  amenities: {
+    interior: string[];
+    exterior: string[];
+    community: string[];
+    security: string[];
+    utilities: string[];
+  };
+  
+  // Description
+  description: string;
+  shortDescription: string;
+  
+  // Media
+  images: (File | string)[];
+  videos: (File | string)[];
+  virtualTourUrl: string;
+  
+  // Contact
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  alternatePhone: string;
+  preferredContactMethod: 'email' | 'phone' | 'whatsapp' | 'any';
+  company: string;
+  licenseNumber: string;
+  
+  // Availability & Terms
+  availableFrom: string;
+  minimumLease: number;
+  deposit: number;
+  maintenanceCharges: number;
+  inclusions: string;
+  exclusions: string;
+  
+  // Settings
+  featured: boolean;
+  published: boolean;
+  draft: boolean;
+}
+
+const initialFormData: FormData = {
+  title: '',
+  propertyType: 'apartment',
+  listingType: 'sale',
+  status: 'available',
+  
+  priceAmount: 0,
+  currency: 'USD',
+  negotiable: false,
+  
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: 'United States',
+  countryCode: 'US',
+  neighborhood: '',
+  landmark: '',
+  
+  totalArea: 0,
+  carpetArea: 0,
+  areaUnit: 'sqft',
+  bedrooms: 1,
+  bathrooms: 1,
+  balconies: 0,
+  parkingSpaces: 0,
+  floors: 1,
+  floorNumber: 0,
+  totalFloors: 1,
+  
+  yearBuilt: new Date().getFullYear(),
+  furnishing: 'unfurnished',
+  condition: 'good',
+  facing: 'north',
+  amenities: {
+    interior: [],
+    exterior: [],
+    community: [],
+    security: [],
+    utilities: [],
+  },
+  
+  description: '',
+  shortDescription: '',
+  
+  images: [],
+  videos: [],
+  virtualTourUrl: '',
+  
+  contactName: '',
+  contactEmail: '',
+  contactPhone: '',
+  alternatePhone: '',
+  preferredContactMethod: 'any',
+  company: '',
+  licenseNumber: '',
+  
+  availableFrom: new Date().toISOString().split('T')[0],
+  minimumLease: 12,
+  deposit: 0,
+  maintenanceCharges: 0,
+  inclusions: '',
+  exclusions: '',
+  
+  featured: false,
+  published: false,
+  draft: true,
+};
 
 const AddProperty = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const { addProperty, updateProperty, getProperty } = useProperties();
+  const { addProperty, updateProperty, getProperty, formatPrice, formatArea } = useProperties();
   const isEditMode = !!id;
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<Partial<Property>>({
-    // Basic Info
-    title: '',
-    propertyType: '',
-    rentalType: '',
-    price: '',
-    status: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    // Property Details
-    bedrooms: 0,
-    bathrooms: 0,
-    area: 0,
-    yearBuilt: 0,
-    propertyId: '',
-    description: '',
-    // Media & Features
-    images: [],
-    virtualTourUrl: '',
-    videos: [],
-    features: [],
-    // Contact & Publish
-    availableDate: '',
-    deposit: '',
-    inclusions: '',
-    exclusions: '',
-    contactName: '',
-    phoneNumber: '',
-    emailAddress: '',
-    published: false,
-    draft: false,
-  });
-
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
+  // Load existing property for edit mode
   useEffect(() => {
     if (isEditMode && id) {
       const property = getProperty(id);
       if (property) {
-        setFormData(property);
-        // Convert image/video URLs to previews if they exist
-        if (property.images && property.images.length > 0) {
-          setImagePreviews(property.images as string[]);
-        }
-        if (property.videos && property.videos.length > 0) {
-          setVideoPreviews(property.videos as string[]);
+        setFormData({
+          title: property.title || '',
+          propertyType: property.propertyType || 'apartment',
+          listingType: property.listingType || 'sale',
+          status: property.status || 'available',
+          
+          priceAmount: property.price?.amount || 0,
+          currency: property.price?.currency || 'USD',
+          negotiable: property.price?.negotiable || false,
+          
+          addressLine1: property.location?.addressLine1 || property.address || '',
+          addressLine2: property.location?.addressLine2 || '',
+          city: property.location?.city || property.city || '',
+          state: property.location?.state || property.state || '',
+          postalCode: property.location?.postalCode || property.zipCode || '',
+          country: property.location?.country || 'United States',
+          countryCode: property.location?.countryCode || 'US',
+          neighborhood: property.location?.neighborhood || '',
+          landmark: property.location?.landmark || '',
+          
+          totalArea: property.dimensions?.totalArea || property.area || 0,
+          carpetArea: property.dimensions?.carpetArea || 0,
+          areaUnit: property.dimensions?.areaUnit || 'sqft',
+          bedrooms: property.rooms?.bedrooms || property.bedrooms || 1,
+          bathrooms: property.rooms?.bathrooms || property.bathrooms || 1,
+          balconies: property.rooms?.balconies || 0,
+          parkingSpaces: property.rooms?.parkingSpaces || 0,
+          floors: property.dimensions?.floors || 1,
+          floorNumber: property.dimensions?.floorNumber || 0,
+          totalFloors: property.dimensions?.totalFloors || 1,
+          
+          yearBuilt: property.yearBuilt || new Date().getFullYear(),
+          furnishing: property.furnishing || 'unfurnished',
+          condition: property.condition || 'good',
+          facing: property.facing || 'north',
+          amenities: property.amenities || {
+            interior: [],
+            exterior: [],
+            community: [],
+            security: [],
+            utilities: [],
+          },
+          
+          description: property.description || '',
+          shortDescription: property.shortDescription || '',
+          
+          images: property.images || [],
+          videos: property.videos || [],
+          virtualTourUrl: property.virtualTourUrl || property.media?.virtualTourUrl || '',
+          
+          contactName: property.contact?.name || property.contactName || '',
+          contactEmail: property.contact?.email || property.emailAddress || '',
+          contactPhone: property.contact?.phone || property.phoneNumber || '',
+          alternatePhone: property.contact?.alternatePhone || '',
+          preferredContactMethod: property.contact?.preferredContactMethod || 'any',
+          company: property.contact?.company || '',
+          licenseNumber: property.contact?.licenseNumber || '',
+          
+          availableFrom: property.availableFrom || new Date().toISOString().split('T')[0],
+          minimumLease: property.minimumLease || 12,
+          deposit: property.financial?.deposit || 0,
+          maintenanceCharges: property.financial?.maintenanceCharges || 0,
+          inclusions: property.inclusions || '',
+          exclusions: property.exclusions || '',
+          
+          featured: property.featured || false,
+          published: property.published || false,
+          draft: property.draft ?? true,
+        });
+
+        // Load image previews
+        if (property.images?.length) {
+          const previews = property.images.filter((img): img is string => typeof img === 'string');
+          setImagePreviews(previews);
         }
       }
     }
   }, [id, isEditMode, getProperty]);
 
   const steps = [
-    { number: 1, title: 'Basic Info' },
-    { number: 2, title: 'Property Details' },
-    { number: 3, title: 'Media & Features' },
-    { number: 4, title: 'Contact & Publish' },
-  ];
-
-  const propertyTypes = ['Apartment', 'House', 'Condo', 'Townhouse', 'Villa', 'Penthouse'];
-  const rentalTypes = ['Rent', 'Sale', 'Lease'];
-  const statusOptions = ['Available', 'Pending', 'Sold', 'Rented'];
-  const featuresList = [
-    'Balcony',
-    'Garden',
-    'Swimming pool',
-    'Gym / Fitness Center',
-    'Parking',
-    'Security',
-    'Elevator',
-    'AC',
-    'Central heating',
-    'Wifi included',
-    'Near shopping',
-    'Near school',
-    'Near Hospital',
-    'Near Airport',
+    { number: 1, title: 'Basic Info', icon: <Home className="w-5 h-5" /> },
+    { number: 2, title: 'Location', icon: <MapPin className="w-5 h-5" /> },
+    { number: 3, title: 'Property Details', icon: <Settings className="w-5 h-5" /> },
+    { number: 4, title: 'Media & Features', icon: <Camera className="w-5 h-5" /> },
+    { number: 5, title: 'Contact & Publish', icon: <FileText className="w-5 h-5" /> },
   ];
 
   const validateStep = (step: number): boolean => {
@@ -108,31 +435,27 @@ const AddProperty = () => {
 
     if (step === 1) {
       if (!formData.title?.trim()) newErrors.title = 'Property title is required';
-      if (!formData.propertyType) newErrors.propertyType = 'Property type is required';
-      if (!formData.rentalType) newErrors.rentalType = 'Rental type is required';
-      if (!formData.price?.trim()) newErrors.price = 'Price is required';
-      if (!formData.status) newErrors.status = 'Status is required';
-      if (!formData.address?.trim()) newErrors.address = 'Address is required';
-      if (!formData.city) newErrors.city = 'City is required';
-      if (!formData.state) newErrors.state = 'State is required';
-      if (!formData.zipCode?.trim()) newErrors.zipCode = 'Zip code is required';
+      if (formData.priceAmount <= 0) newErrors.priceAmount = 'Price is required';
     } else if (step === 2) {
-      if (!formData.bedrooms || formData.bedrooms <= 0) newErrors.bedrooms = 'Bedrooms is required';
-      if (!formData.bathrooms || formData.bathrooms <= 0) newErrors.bathrooms = 'Bathrooms is required';
-      if (!formData.area || formData.area <= 0) newErrors.area = 'Area is required';
-      if (!formData.yearBuilt || formData.yearBuilt <= 0) newErrors.yearBuilt = 'Year built is required';
-      if (!formData.description?.trim()) newErrors.description = 'Description is required';
+      if (!formData.addressLine1?.trim()) newErrors.addressLine1 = 'Address is required';
+      if (!formData.city?.trim()) newErrors.city = 'City is required';
+      if (!formData.state?.trim()) newErrors.state = 'State/Region is required';
+      if (!formData.postalCode?.trim()) newErrors.postalCode = 'Postal code is required';
     } else if (step === 3) {
-      if (!formData.images || (formData.images as any[]).length === 0) {
+      if (formData.totalArea <= 0) newErrors.totalArea = 'Area is required';
+      if (formData.bedrooms < 0) newErrors.bedrooms = 'Invalid bedrooms';
+      if (formData.bathrooms < 0) newErrors.bathrooms = 'Invalid bathrooms';
+    } else if (step === 4) {
+      if (formData.images.length === 0 && imagePreviews.length === 0) {
         newErrors.images = 'At least one image is required';
       }
-    } else if (step === 4) {
+    } else if (step === 5) {
       if (!formData.contactName?.trim()) newErrors.contactName = 'Contact name is required';
-      if (!formData.phoneNumber?.trim()) newErrors.phoneNumber = 'Phone number is required';
-      if (!formData.emailAddress?.trim()) {
-        newErrors.emailAddress = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailAddress)) {
-        newErrors.emailAddress = 'Please enter a valid email';
+      if (!formData.contactPhone?.trim()) newErrors.contactPhone = 'Phone number is required';
+      if (!formData.contactEmail?.trim()) {
+        newErrors.contactEmail = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
+        newErrors.contactEmail = 'Please enter a valid email';
       }
     }
 
@@ -142,7 +465,7 @@ const AddProperty = () => {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      if (currentStep < 4) {
+      if (currentStep < 5) {
         setCurrentStep(currentStep + 1);
       }
     }
@@ -154,7 +477,7 @@ const AddProperty = () => {
     }
   };
 
-  const handleInputChange = (field: keyof Property, value: any) => {
+  const handleInputChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -165,28 +488,51 @@ const AddProperty = () => {
     }
   };
 
+  const handleCountryChange = (countryCode: string) => {
+    const country = countries.find(c => c.code === countryCode);
+    if (country) {
+      setFormData(prev => ({
+        ...prev,
+        country: country.name,
+        countryCode: country.code,
+        currency: country.currency,
+      }));
+    }
+  };
+
+  const toggleAmenity = (category: keyof typeof amenitiesGroups, amenityId: string) => {
+    setFormData(prev => {
+      const current = prev.amenities[category] || [];
+      const updated = current.includes(amenityId)
+        ? current.filter(a => a !== amenityId)
+        : [...current, amenityId];
+      return {
+        ...prev,
+        amenities: {
+          ...prev.amenities,
+          [category]: updated,
+        },
+      };
+    });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const newPreviews: string[] = [];
-    const newFiles: File[] = [];
-
+    
     files.forEach((file) => {
       if (file.size > 10 * 1024 * 1024) {
         alert(`${file.name} is too large. Maximum size is 10MB.`);
         return;
       }
-      newFiles.push(file);
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          newPreviews.push(event.target.result as string);
-          if (newPreviews.length === files.length) {
-            setImagePreviews((prev) => [...prev, ...newPreviews]);
-            setFormData((prev) => ({
-              ...prev,
-              images: [...(prev.images as any[]), ...newFiles],
-            }));
-          }
+          setImagePreviews(prev => [...prev, event.target!.result as string]);
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, file],
+          }));
         }
       };
       reader.readAsDataURL(file);
@@ -195,26 +541,21 @@ const AddProperty = () => {
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const newPreviews: string[] = [];
-    const newFiles: File[] = [];
-
+    
     files.forEach((file) => {
       if (file.size > 50 * 1024 * 1024) {
         alert(`${file.name} is too large. Maximum size is 50MB.`);
         return;
       }
-      newFiles.push(file);
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          newPreviews.push(event.target.result as string);
-          if (newPreviews.length === files.length) {
-            setVideoPreviews((prev) => [...prev, ...newPreviews]);
-            setFormData((prev) => ({
-              ...prev,
-              videos: [...(prev.videos as any[]), ...newFiles],
-            }));
-          }
+          setVideoPreviews(prev => [...prev, event.target!.result as string]);
+          setFormData(prev => ({
+            ...prev,
+            videos: [...prev.videos, file],
+          }));
         }
       };
       reader.readAsDataURL(file);
@@ -222,160 +563,265 @@ const AddProperty = () => {
   };
 
   const removeImage = (index: number) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    setFormData((prev) => ({
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setFormData(prev => ({
       ...prev,
-      images: (prev.images as any[]).filter((_, i) => i !== index),
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
   const removeVideo = (index: number) => {
-    setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
-    setFormData((prev) => ({
+    setVideoPreviews(prev => prev.filter((_, i) => i !== index));
+    setFormData(prev => ({
       ...prev,
-      videos: (prev.videos as any[]).filter((_, i) => i !== index),
+      videos: prev.videos.filter((_, i) => i !== index),
     }));
   };
 
-  const toggleFeature = (feature: string) => {
-    setFormData((prev) => {
-      const currentFeatures = prev.features || [];
-      const newFeatures = currentFeatures.includes(feature)
-        ? currentFeatures.filter((f) => f !== feature)
-        : [...currentFeatures, feature];
-      return { ...prev, features: newFeatures };
-    });
+  const convertFilesToBase64 = async (files: (File | string)[]): Promise<string[]> => {
+    const results: string[] = [];
+    
+    for (const file of files) {
+      if (typeof file === 'string') {
+        results.push(file);
+      } else {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        results.push(base64);
+      }
+    }
+    
+    return results;
   };
 
-  const convertFilesToBase64 = async (files: File[]): Promise<string[]> => {
-    const promises = files.map((file) => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-    return Promise.all(promises);
+  const buildPropertyData = async (): Promise<Partial<Property>> => {
+    const images = await convertFilesToBase64(formData.images);
+    const videos = await convertFilesToBase64(formData.videos);
+
+    return {
+      title: formData.title,
+      propertyType: formData.propertyType,
+      listingType: formData.listingType,
+      status: formData.status,
+      description: formData.description,
+      shortDescription: formData.shortDescription,
+      
+      location: {
+        addressLine1: formData.addressLine1,
+        addressLine2: formData.addressLine2,
+        city: formData.city,
+        state: formData.state,
+        postalCode: formData.postalCode,
+        country: formData.country,
+        countryCode: formData.countryCode,
+        neighborhood: formData.neighborhood,
+        landmark: formData.landmark,
+      },
+      address: formData.addressLine1,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.postalCode,
+      
+      price: {
+        amount: formData.priceAmount,
+        currency: formData.currency,
+        negotiable: formData.negotiable,
+      },
+      priceString: formatPrice({ amount: formData.priceAmount, currency: formData.currency, negotiable: formData.negotiable }),
+      
+      dimensions: {
+        totalArea: formData.totalArea,
+        carpetArea: formData.carpetArea,
+        areaUnit: formData.areaUnit,
+        floors: formData.floors,
+        floorNumber: formData.floorNumber,
+        totalFloors: formData.totalFloors,
+      },
+      rooms: {
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        balconies: formData.balconies,
+        parkingSpaces: formData.parkingSpaces,
+      },
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      area: formData.totalArea,
+      
+      yearBuilt: formData.yearBuilt,
+      furnishing: formData.furnishing,
+      condition: formData.condition,
+      facing: formData.facing,
+      amenities: formData.amenities,
+      features: [
+        ...formData.amenities.interior,
+        ...formData.amenities.exterior,
+        ...formData.amenities.community,
+        ...formData.amenities.security,
+        ...formData.amenities.utilities,
+      ],
+      
+      images,
+      videos,
+      virtualTourUrl: formData.virtualTourUrl,
+      media: {
+        images: images.map((url, i) => ({
+          id: `img-${i}`,
+          url,
+          type: 'image' as const,
+          isPrimary: i === 0,
+          order: i,
+          uploadedAt: new Date().toISOString(),
+        })),
+        videos: videos.map((url, i) => ({
+          id: `vid-${i}`,
+          url,
+          type: 'video' as const,
+          order: i,
+          uploadedAt: new Date().toISOString(),
+        })),
+        floorPlans: [],
+        virtualTourUrl: formData.virtualTourUrl,
+      },
+      
+      contact: {
+        name: formData.contactName,
+        email: formData.contactEmail,
+        phone: formData.contactPhone,
+        alternatePhone: formData.alternatePhone,
+        preferredContactMethod: formData.preferredContactMethod,
+        company: formData.company,
+        licenseNumber: formData.licenseNumber,
+      },
+      contactName: formData.contactName,
+      phoneNumber: formData.contactPhone,
+      emailAddress: formData.contactEmail,
+      
+      availableFrom: formData.availableFrom,
+      minimumLease: formData.minimumLease,
+      inclusions: formData.inclusions,
+      exclusions: formData.exclusions,
+      
+      financial: {
+        deposit: formData.deposit,
+        maintenanceCharges: formData.maintenanceCharges,
+        maintenanceFrequency: 'monthly',
+      },
+      
+      featured: formData.featured,
+    };
   };
 
   const handleSaveDraft = async () => {
-    let processedData = { ...formData };
-    
-    // Convert File objects to base64 strings for storage
-    if (processedData.images && Array.isArray(processedData.images)) {
-      const fileImages = processedData.images.filter((img): img is File => img instanceof File);
-      const stringImages = processedData.images.filter((img): img is string => typeof img === 'string');
-      if (fileImages.length > 0) {
-        const base64Images = await convertFilesToBase64(fileImages);
-        processedData.images = [...stringImages, ...base64Images];
+    setSaving(true);
+    try {
+      const propertyData = await buildPropertyData();
+      
+      if (isEditMode && id) {
+        updateProperty(id, { ...propertyData, draft: true, published: false });
+      } else {
+        addProperty({ ...propertyData, draft: true, published: false });
       }
+      navigate('/properties');
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('Failed to save draft. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    
-    if (processedData.videos && Array.isArray(processedData.videos)) {
-      const fileVideos = processedData.videos.filter((vid): vid is File => vid instanceof File);
-      const stringVideos = processedData.videos.filter((vid): vid is string => typeof vid === 'string');
-      if (fileVideos.length > 0) {
-        const base64Videos = await convertFilesToBase64(fileVideos);
-        processedData.videos = [...stringVideos, ...base64Videos];
-      }
-    }
-
-    if (isEditMode && id) {
-      updateProperty(id, { ...processedData, draft: true, published: false });
-    } else {
-      addProperty({ ...processedData, draft: true, published: false } as any);
-    }
-    navigate('/properties');
   };
 
   const handlePublish = async () => {
-    if (validateStep(4)) {
-      let processedData = { ...formData };
+    if (!validateStep(5)) return;
+    
+    setSaving(true);
+    try {
+      const propertyData = await buildPropertyData();
       
-      // Convert File objects to base64 strings for storage
-      if (processedData.images && Array.isArray(processedData.images)) {
-        const fileImages = processedData.images.filter((img): img is File => img instanceof File);
-        const stringImages = processedData.images.filter((img): img is string => typeof img === 'string');
-        if (fileImages.length > 0) {
-          const base64Images = await convertFilesToBase64(fileImages);
-          processedData.images = [...stringImages, ...base64Images];
-        }
-      }
-      
-      if (processedData.videos && Array.isArray(processedData.videos)) {
-        const fileVideos = processedData.videos.filter((vid): vid is File => vid instanceof File);
-        const stringVideos = processedData.videos.filter((vid): vid is string => typeof vid === 'string');
-        if (fileVideos.length > 0) {
-          const base64Videos = await convertFilesToBase64(fileVideos);
-          processedData.videos = [...stringVideos, ...base64Videos];
-        }
-      }
-
       if (isEditMode && id) {
-        updateProperty(id, { ...processedData, published: true, draft: false });
+        updateProperty(id, { ...propertyData, published: true, draft: false });
       } else {
-        addProperty({ ...processedData, published: true, draft: false } as any);
+        addProperty({ ...propertyData, published: true, draft: false });
       }
       navigate('/properties');
+    } catch (error) {
+      console.error('Error publishing:', error);
+      alert('Failed to publish property. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto font-sans">
+    <div className="max-w-6xl mx-auto font-sans pb-8">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-1">
+            <div className="mb-4">
+              <BackButton />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
               {isEditMode ? 'Edit Property' : 'Add New Property'}
             </h1>
-            <p className="text-gray-600">Create and manage your property listing</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              {isEditMode ? 'Update your property listing' : 'Create a new property listing with all the details'}
+            </p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={handleSaveDraft}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              disabled={saving}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
-              Save Draft
+              {saving ? 'Saving...' : 'Save Draft'}
             </button>
             <button
               onClick={handlePublish}
-              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+              disabled={saving}
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              Publish Property
+              {formData.featured && <Star className="w-4 h-4" />}
+              {saving ? 'Publishing...' : 'Publish Property'}
             </button>
           </div>
         </div>
 
         {/* Progress Bar */}
         <div className="mt-6">
-          <div className="flex items-center justify-between overflow-x-auto">
+          <div className="flex items-center justify-between overflow-x-auto pb-2">
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-center flex-1 min-w-0">
                 <div className="flex flex-col items-center flex-1 min-w-0">
-                  <div
-                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-semibold text-sm md:text-base flex-shrink-0 ${
+                  <button
+                    onClick={() => currentStep > step.number && setCurrentStep(step.number)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
                       currentStep >= step.number
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
+                        ? 'bg-primary text-white shadow-lg'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                    } ${currentStep > step.number ? 'cursor-pointer hover:scale-110' : ''}`}
                   >
-                    {step.number}
-                  </div>
+                    {currentStep > step.number ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      step.icon
+                    )}
+                  </button>
                   <span
-                    className={`mt-2 text-xs font-medium text-center ${
-                      currentStep >= step.number ? 'text-primary' : 'text-gray-500'
+                    className={`mt-2 text-xs font-medium text-center hidden md:block ${
+                      currentStep >= step.number ? 'text-primary' : 'text-gray-500 dark:text-gray-400'
                     }`}
                   >
-                    <span className="hidden md:inline">{step.title}</span>
-                    <span className="md:hidden">{step.number}</span>
+                    {step.title}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`flex-1 h-1 mx-1 md:mx-2 hidden sm:block ${
-                      currentStep > step.number ? 'bg-primary' : 'bg-gray-200'
+                    className={`flex-1 h-1 mx-2 rounded hidden sm:block ${
+                      currentStep > step.number ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
                     }`}
                   />
                 )}
@@ -386,346 +832,631 @@ const AddProperty = () => {
       </div>
 
       {/* Form Content */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        
         {/* Step 1: Basic Info */}
         {currentStep === 1 && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Basic Property Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Property Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title || ''}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.title ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter property title"
-                  />
-                  {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-                </div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Home className="w-5 h-5 text-primary" />
+                Basic Property Information
+              </h2>
+              
+              {/* Title */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Property Title *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 ${
+                    errors.title ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                  placeholder="e.g., Luxurious 3BR Apartment with Ocean View"
+                />
+                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+              </div>
 
+              {/* Property Type */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Property Type *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {propertyTypes.map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => handleInputChange('propertyType', type.value)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                        formData.propertyType === type.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      {type.icon}
+                      <span className="text-sm font-medium">{type.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Listing Type & Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Property Type *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Listing Type *
                   </label>
-                  <select
-                    value={formData.propertyType || ''}
-                    onChange={(e) => handleInputChange('propertyType', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.propertyType ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select property type</option>
-                    {propertyTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
+                  <div className="flex flex-wrap gap-2">
+                    {listingTypes.map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => handleInputChange('listingType', type.value)}
+                        className={`px-4 py-2 rounded-lg border transition-all ${
+                          formData.listingType === type.value
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        {type.label}
+                      </button>
                     ))}
-                  </select>
-                  {errors.propertyType && (
-                    <p className="text-red-500 text-xs mt-1">{errors.propertyType}</p>
-                  )}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rental Type *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status *
                   </label>
                   <select
-                    value={formData.rentalType || ''}
-                    onChange={(e) => handleInputChange('rentalType', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.rentalType ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value as PropertyStatus)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
                   >
-                    <option value="">Select rental type</option>
-                    {rentalTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.rentalType && (
-                    <p className="text-red-500 text-xs mt-1">{errors.rentalType}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price *</label>
-                  <input
-                    type="text"
-                    value={formData.price || ''}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.price ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter price"
-                  />
-                  {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
-                  <select
-                    value={formData.status || ''}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.status ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select status</option>
                     {statusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
+                      <option key={status.value} value={status.value}>
+                        {status.label}
                       </option>
                     ))}
                   </select>
-                  {errors.status && <p className="text-red-500 text-xs mt-1">{errors.status}</p>}
                 </div>
               </div>
             </div>
 
+            {/* Pricing */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Location Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Address *
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-primary" />
+                Pricing
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Country
                   </label>
-                  <input
-                    type="text"
-                    value={formData.address || ''}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.address ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter address"
-                  />
-                  {errors.address && (
-                    <p className="text-red-500 text-xs mt-1">{errors.address}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
                   <select
-                    value={formData.city || ''}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.city ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    value={formData.countryCode}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
                   >
-                    <option value="">Select city</option>
-                    <option value="New York">New York</option>
-                    <option value="Los Angeles">Los Angeles</option>
-                    <option value="Chicago">Chicago</option>
-                    <option value="Houston">Houston</option>
-                    <option value="Phoenix">Phoenix</option>
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name} ({country.currency})
+                      </option>
+                    ))}
                   </select>
-                  {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-                  <select
-                    value={formData.state || ''}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.state ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select state</option>
-                    <option value="NY">New York</option>
-                    <option value="CA">California</option>
-                    <option value="IL">Illinois</option>
-                    <option value="TX">Texas</option>
-                    <option value="AZ">Arizona</option>
-                  </select>
-                  {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Price *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      {formData.currency}
+                    </span>
+                    <input
+                      type="number"
+                      value={formData.priceAmount || ''}
+                      onChange={(e) => handleInputChange('priceAmount', parseFloat(e.target.value) || 0)}
+                      className={`w-full pl-16 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                        errors.priceAmount ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                      }`}
+                      placeholder="0"
+                    />
+                  </div>
+                  {errors.priceAmount && <p className="text-red-500 text-xs mt-1">{errors.priceAmount}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Zip Code *</label>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.negotiable}
+                      onChange={(e) => handleInputChange('negotiable', e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Price is Negotiable
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Featured Toggle */}
+              <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
-                    type="text"
-                    value={formData.zipCode || ''}
-                    onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.zipCode ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter zip code"
+                    type="checkbox"
+                    checked={formData.featured}
+                    onChange={(e) => handleInputChange('featured', e.target.checked)}
+                    className="w-5 h-5 rounded border-yellow-400 text-yellow-600 focus:ring-yellow-500"
                   />
-                  {errors.zipCode && (
-                    <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>
-                  )}
-                </div>
+                  <div>
+                    <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                      <Star className="w-4 h-4" />
+                      Mark as Featured Property
+                    </span>
+                    <p className="text-xs text-yellow-600 dark:text-yellow-300 mt-1">
+                      Featured properties get more visibility and appear at the top of search results
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 2: Property Details */}
+        {/* Step 2: Location */}
         {currentStep === 2 && (
           <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Location Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Address Line 1 *
+                </label>
+                <input
+                  type="text"
+                  value={formData.addressLine1}
+                  onChange={(e) => handleInputChange('addressLine1', e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                    errors.addressLine1 ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                  placeholder="Street address, building number"
+                />
+                {errors.addressLine1 && <p className="text-red-500 text-xs mt-1">{errors.addressLine1}</p>}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Address Line 2
+                </label>
+                <input
+                  type="text"
+                  value={formData.addressLine2}
+                  onChange={(e) => handleInputChange('addressLine2', e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  placeholder="Apartment, suite, unit number (optional)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  City *
+                </label>
+                <input
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                    errors.city ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                  placeholder="Enter city"
+                />
+                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  State / Region *
+                </label>
+                <input
+                  type="text"
+                  value={formData.state}
+                  onChange={(e) => handleInputChange('state', e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                    errors.state ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                  placeholder="Enter state or region"
+                />
+                {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Postal / ZIP Code *
+                </label>
+                <input
+                  type="text"
+                  value={formData.postalCode}
+                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                    errors.postalCode ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                  placeholder="Enter postal code"
+                />
+                {errors.postalCode && <p className="text-red-500 text-xs mt-1">{errors.postalCode}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Neighborhood
+                </label>
+                <input
+                  type="text"
+                  value={formData.neighborhood}
+                  onChange={(e) => handleInputChange('neighborhood', e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  placeholder="Enter neighborhood (optional)"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nearby Landmark
+                </label>
+                <input
+                  type="text"
+                  value={formData.landmark}
+                  onChange={(e) => handleInputChange('landmark', e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  placeholder="e.g., Near Central Park, 5 min from Airport (optional)"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Property Details */}
+        {currentStep === 3 && (
+          <div className="space-y-8">
+            {/* Area & Dimensions */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Specification</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Maximize className="w-5 h-5 text-primary" />
+                Area & Dimensions
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bedrooms *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Total Area *
+                  </label>
                   <input
                     type="number"
-                    min="0"
-                    value={formData.bedrooms || ''}
-                    onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.bedrooms ? 'border-red-500' : 'border-gray-300'
+                    value={formData.totalArea || ''}
+                    onChange={(e) => handleInputChange('totalArea', parseFloat(e.target.value) || 0)}
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                      errors.totalArea ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                     }`}
+                    placeholder="0"
                   />
-                  {errors.bedrooms && (
-                    <p className="text-red-500 text-xs mt-1">{errors.bedrooms}</p>
-                  )}
+                  {errors.totalArea && <p className="text-red-500 text-xs mt-1">{errors.totalArea}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bathrooms *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Carpet Area
+                  </label>
                   <input
                     type="number"
-                    min="0"
-                    value={formData.bathrooms || ''}
-                    onChange={(e) => handleInputChange('bathrooms', parseInt(e.target.value) || 0)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.bathrooms ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    value={formData.carpetArea || ''}
+                    onChange={(e) => handleInputChange('carpetArea', parseFloat(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="0"
                   />
-                  {errors.bathrooms && (
-                    <p className="text-red-500 text-xs mt-1">{errors.bathrooms}</p>
-                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Area (Sqft) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.area || ''}
-                    onChange={(e) => handleInputChange('area', parseInt(e.target.value) || 0)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.area ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.area && <p className="text-red-500 text-xs mt-1">{errors.area}</p>}
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Area Unit
+                  </label>
+                  <select
+                    value={formData.areaUnit}
+                    onChange={(e) => handleInputChange('areaUnit', e.target.value as AreaUnit)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  >
+                    {areaUnits.map((unit) => (
+                      <option key={unit.value} value={unit.value}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Year Built *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Year Built
+                  </label>
                   <input
                     type="number"
                     min="1800"
                     max={new Date().getFullYear()}
                     value={formData.yearBuilt || ''}
                     onChange={(e) => handleInputChange('yearBuilt', parseInt(e.target.value) || 0)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.yearBuilt ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.yearBuilt && (
-                    <p className="text-red-500 text-xs mt-1">{errors.yearBuilt}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Property ID</label>
-                  <input
-                    type="text"
-                    value={formData.propertyId || ''}
-                    onChange={(e) => handleInputChange('propertyId', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Enter property ID"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
             </div>
 
+            {/* Rooms */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Description</h2>
-              <div className="border border-gray-300 rounded-lg">
-                {/* Rich Text Editor Toolbar */}
-                <div className="border-b border-gray-300 p-2 flex gap-2 flex-wrap">
-                  <button className="p-2 hover:bg-gray-100 rounded">
-                    <Bold className="w-4 h-4" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded">
-                    <Italic className="w-4 h-4" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded">
-                    <Underline className="w-4 h-4" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded">
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded">
-                    <LinkIcon className="w-4 h-4" />
-                  </button>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Bed className="w-5 h-5 text-primary" />
+                Rooms & Spaces
+              </h2>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Bed className="w-4 h-4 inline mr-1" /> Bedrooms *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.bedrooms}
+                    onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
                 </div>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  className={`w-full p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-primary ${
-                    errors.description ? 'border-red-500' : ''
-                  }`}
-                  placeholder="Enter property description..."
-                />
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Bath className="w-4 h-4 inline mr-1" /> Bathrooms *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.bathrooms}
+                    onChange={(e) => handleInputChange('bathrooms', parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Balconies
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.balconies}
+                    onChange={(e) => handleInputChange('balconies', parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Car className="w-4 h-4 inline mr-1" /> Parking Spaces
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.parkingSpaces}
+                    onChange={(e) => handleInputChange('parkingSpaces', parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
+                </div>
               </div>
-              {errors.description && (
-                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-              )}
+
+              {/* Floor Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Floor Number
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.floorNumber}
+                    onChange={(e) => handleInputChange('floorNumber', parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Total Floors
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.totalFloors}
+                    onChange={(e) => handleInputChange('totalFloors', parseInt(e.target.value) || 1)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Facing Direction
+                  </label>
+                  <select
+                    value={formData.facing}
+                    onChange={(e) => handleInputChange('facing', e.target.value as FacingDirection)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  >
+                    {facingOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Condition & Furnishing */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                Condition & Furnishing
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Furnishing Status
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {furnishingOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleInputChange('furnishing', option.value)}
+                        className={`px-4 py-2 rounded-lg border transition-all ${
+                          formData.furnishing === option.value
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Property Condition
+                  </label>
+                  <select
+                    value={formData.condition}
+                    onChange={(e) => handleInputChange('condition', e.target.value as PropertyCondition)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  >
+                    {conditionOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Description
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Short Description (for cards)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.shortDescription}
+                    onChange={(e) => handleInputChange('shortDescription', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="A brief summary of the property (max 150 chars)"
+                    maxLength={150}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Full Description
+                  </label>
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div className="border-b border-gray-200 dark:border-gray-700 p-2 flex gap-2 flex-wrap bg-gray-50 dark:bg-gray-800">
+                      <button type="button" className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
+                        <Bold className="w-4 h-4" />
+                      </button>
+                      <button type="button" className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
+                        <Italic className="w-4 h-4" />
+                      </button>
+                      <button type="button" className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
+                        <Underline className="w-4 h-4" />
+                      </button>
+                      <button type="button" className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
+                        <List className="w-4 h-4" />
+                      </button>
+                      <button type="button" className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
+                        <LinkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      className="w-full p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      placeholder="Enter a detailed property description..."
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Step 3: Media & Features */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
+        {/* Step 4: Media & Features */}
+        {currentStep === 4 && (
+          <div className="space-y-8">
+            {/* Images */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Images</h2>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-primary" />
+                Property Images
+              </h2>
+
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center hover:border-primary transition-colors">
                 <input
                   type="file"
                   id="image-upload"
                   multiple
-                  accept="image/png,image/jpg,image/jpeg"
+                  accept="image/png,image/jpg,image/jpeg,image/webp"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
-                <label
-                  htmlFor="image-upload"
-                  className="cursor-pointer flex flex-col items-center"
-                >
+                <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center">
                   <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                  <p className="text-gray-700 font-medium mb-1">Click to upload images</p>
-                  <p className="text-sm text-gray-500">PNG, JPG, JPEG up to 10MB each</p>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Click to upload images</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">PNG, JPG, JPEG, WEBP up to 10MB each</p>
                 </label>
               </div>
-              {errors.images && (
-                <p className="text-red-500 text-xs mt-1">{errors.images}</p>
-              )}
+              {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
 
-              {/* Image Previews */}
               {imagePreviews.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
+                    <div key={index} className="relative group rounded-lg overflow-hidden">
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-32 object-cover"
                       />
+                      {index === 0 && (
+                        <span className="absolute top-2 left-2 px-2 py-1 bg-primary text-white text-xs rounded">
+                          Primary
+                        </span>
+                      )}
                       <button
+                        type="button"
                         onClick={() => removeImage(index)}
                         className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -737,22 +1468,14 @@ const AddProperty = () => {
               )}
             </div>
 
+            {/* Videos */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Virtual Tour URL (Optional)
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Video className="w-5 h-5 text-primary" />
+                Property Videos
               </h2>
-              <input
-                type="url"
-                value={formData.virtualTourUrl || ''}
-                onChange={(e) => handleInputChange('virtualTourUrl', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="https://yourwebsite.com/virtual-tour"
-              />
-            </div>
 
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Videos</h2>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center hover:border-primary transition-colors">
                 <input
                   type="file"
                   id="video-upload"
@@ -761,27 +1484,20 @@ const AddProperty = () => {
                   onChange={handleVideoUpload}
                   className="hidden"
                 />
-                <label
-                  htmlFor="video-upload"
-                  className="cursor-pointer flex flex-col items-center"
-                >
-                  <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                  <p className="text-gray-700 font-medium mb-1">Click to upload videos</p>
-                  <p className="text-sm text-gray-500">MP4, MOV, AVI up to 50MB each</p>
+                <label htmlFor="video-upload" className="cursor-pointer flex flex-col items-center">
+                  <Video className="w-12 h-12 text-gray-400 mb-4" />
+                  <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Click to upload videos</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">MP4, MOV, AVI up to 50MB each</p>
                 </label>
               </div>
 
-              {/* Video Previews */}
               {videoPreviews.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {videoPreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
-                      <video
-                        src={preview}
-                        className="w-full h-48 object-cover rounded-lg"
-                        controls
-                      />
+                    <div key={index} className="relative group rounded-lg overflow-hidden">
+                      <video src={preview} className="w-full h-48 object-cover" controls />
                       <button
+                        type="button"
                         onClick={() => removeVideo(index)}
                         className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -793,217 +1509,316 @@ const AddProperty = () => {
               )}
             </div>
 
+            {/* Virtual Tour */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Features</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {featuresList.map((feature) => (
-                  <button
-                    key={feature}
-                    type="button"
-                    onClick={() => toggleFeature(feature)}
-                    className={`px-4 py-2 rounded-lg border transition-colors ${
-                      formData.features?.includes(feature)
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary'
-                    }`}
-                  >
-                    {feature}
-                  </button>
-                ))}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-primary" />
+                Virtual Tour
+              </h2>
+
+              <input
+                type="url"
+                value={formData.virtualTourUrl}
+                onChange={(e) => handleInputChange('virtualTourUrl', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                placeholder="https://your-virtual-tour-url.com"
+              />
+            </div>
+
+            {/* Amenities */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary" />
+                Amenities & Features
+              </h2>
+
+              {Object.entries(amenitiesGroups).map(([category, amenities]) => (
+                <div key={category} className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 capitalize">
+                    {category.replace('_', ' ')} Features
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {amenities.map((amenity) => (
+                      <button
+                        key={amenity.id}
+                        type="button"
+                        onClick={() => toggleAmenity(category as keyof typeof amenitiesGroups, amenity.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                          formData.amenities[category as keyof typeof amenitiesGroups]?.includes(amenity.id)
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                        }`}
+                      >
+                        {amenity.icon}
+                        {amenity.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Step 4: Contact & Publish */}
-        {currentStep === 4 && (
-          <div className="space-y-6">
+        {/* Step 5: Contact & Publish */}
+        {currentStep === 5 && (
+          <div className="space-y-8">
+            {/* Contact Information */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Additional Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Available Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.availableDate || ''}
-                    onChange={(e) => handleInputChange('availableDate', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Contact Information
+              </h2>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Deposit</label>
-                  <input
-                    type="text"
-                    value={formData.deposit || ''}
-                    onChange={(e) => handleInputChange('deposit', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Enter deposit amount"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Property Inclusions
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.inclusions || ''}
-                    onChange={(e) => handleInputChange('inclusions', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Enter inclusions"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Property Exclusions
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.exclusions || ''}
-                    onChange={(e) => handleInputChange('exclusions', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Enter exclusions"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Contact Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Contact Name *
                   </label>
                   <input
                     type="text"
-                    value={formData.contactName || ''}
+                    value={formData.contactName}
                     onChange={(e) => handleInputChange('contactName', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.contactName ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                      errors.contactName ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                     }`}
                     placeholder="Enter contact name"
                   />
-                  {errors.contactName && (
-                    <p className="text-red-500 text-xs mt-1">{errors.contactName}</p>
-                  )}
+                  {errors.contactName && <p className="text-red-500 text-xs mt-1">{errors.contactName}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phoneNumber || ''}
-                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter phone number"
-                  />
-                  {errors.phoneNumber && (
-                    <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email Address *
                   </label>
                   <input
                     type="email"
-                    value={formData.emailAddress || ''}
-                    onChange={(e) => handleInputChange('emailAddress', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.emailAddress ? 'border-red-500' : 'border-gray-300'
+                    value={formData.contactEmail}
+                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                      errors.contactEmail ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                     }`}
                     placeholder="Enter email address"
                   />
-                  {errors.emailAddress && (
-                    <p className="text-red-500 text-xs mt-1">{errors.emailAddress}</p>
-                  )}
+                  {errors.contactEmail && <p className="text-red-500 text-xs mt-1">{errors.contactEmail}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.contactPhone}
+                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                      errors.contactPhone ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                    }`}
+                    placeholder="+1 (555) 000-0000"
+                  />
+                  {errors.contactPhone && <p className="text-red-500 text-xs mt-1">{errors.contactPhone}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Alternate Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.alternatePhone}
+                    onChange={(e) => handleInputChange('alternatePhone', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="+1 (555) 000-0000 (optional)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="Real estate agency (optional)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    License Number
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.licenseNumber}
+                    onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="Agent license number (optional)"
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-green-800 font-medium">Ready to Publish?</p>
-                <p className="text-green-700 text-sm mt-1">
-                  Your property listing is ready to be published! Review your property details and
-                  publish when ready.
-                </p>
+            {/* Availability & Terms */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                Availability & Terms
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Available From
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.availableFrom}
+                    onChange={(e) => handleInputChange('availableFrom', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                {(formData.listingType === 'rent' || formData.listingType === 'lease') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Minimum Lease (months)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.minimumLease}
+                      onChange={(e) => handleInputChange('minimumLease', parseInt(e.target.value) || 1)}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Security Deposit ({formData.currency})
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.deposit || ''}
+                    onChange={(e) => handleInputChange('deposit', parseFloat(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Maintenance Charges ({formData.currency}/month)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.maintenanceCharges || ''}
+                    onChange={(e) => handleInputChange('maintenanceCharges', parseFloat(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Inclusions
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.inclusions}
+                    onChange={(e) => handleInputChange('inclusions', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="e.g., Appliances, furniture, utilities"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Exclusions
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.exclusions}
+                    onChange={(e) => handleInputChange('exclusions', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    placeholder="e.g., Parking fees, utility bills"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Ready to Publish */}
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-green-800 dark:text-green-200 font-medium text-lg">Ready to Publish!</p>
+                  <p className="text-green-700 dark:text-green-300 text-sm mt-1">
+                    Your property listing is complete. Review the details and publish when ready. 
+                    You can also save as draft and publish later.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8 pt-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
           <button
+            type="button"
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className={`px-4 sm:px-6 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 transition-colors ${
+            className={`px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center gap-2 transition-all ${
               currentStep === 1
                 ? 'opacity-50 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-gray-50'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">
-              {currentStep === 2 && 'Previous Basic Info'}
-              {currentStep === 3 && 'Previous Property Details'}
-              {currentStep === 4 && 'Previous Media & Features'}
-            </span>
-            <span className="sm:hidden">Previous</span>
+            <ChevronLeft className="w-5 h-5" />
+            Previous
           </button>
 
-          {currentStep < 4 ? (
+          {currentStep < 5 ? (
             <button
+              type="button"
               onClick={handleNext}
-              className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg flex items-center gap-2 transition-colors"
+              className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
             >
-              {currentStep === 1 && 'Next Property Details'}
-              {currentStep === 2 && 'Next Media & Features'}
-              {currentStep === 3 && 'Next Contact & Publish'}
-              <ChevronRight className="w-4 h-4" />
+              Next: {steps[currentStep]?.title}
+              <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={handleSaveDraft}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={saving}
+                className="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50"
               >
                 Save as Draft
               </button>
               <button
+                type="button"
                 onClick={handlePublish}
-                className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                disabled={saving}
+                className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all shadow-lg disabled:opacity-50 flex items-center gap-2"
               >
-                Publish Property
+                {formData.featured && <Star className="w-4 h-4" />}
+                {saving ? 'Publishing...' : 'Publish Property'}
               </button>
             </div>
           )}
         </div>
       </div>
-
-      {/* Preview Link */}
-      {currentStep === 4 && (
-        <div className="mt-4 text-center">
-          <a href="/properties" className="text-primary hover:underline text-sm">
-            Preview - manager dashboard
-          </a>
-        </div>
-      )}
     </div>
   );
 };
 
 export default AddProperty;
-
