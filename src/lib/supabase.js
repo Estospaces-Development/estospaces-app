@@ -3,14 +3,26 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Only create client if credentials are provided
+// Check if Supabase credentials are configured
+const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+
+// Create Supabase client
 let supabase = null;
 
-if (supabaseUrl && supabaseAnonKey) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (isSupabaseConfigured) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,
+        },
+    });
 } else {
-    console.warn('⚠️ Supabase credentials not found. Waitlist feature will not work until you add credentials to .env.local');
+    console.warn('⚠️ Supabase credentials not found. Authentication features will not work until you add credentials to .env.local');
     console.warn('📖 See SUPABASE_SETUP.md for setup instructions');
 }
+
+// Helper function to check if Supabase is available
+export const isSupabaseAvailable = () => isSupabaseConfigured && supabase !== null;
 
 export { supabase };

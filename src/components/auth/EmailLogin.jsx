@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const EmailLogin = () => {
     const navigate = useNavigate();
@@ -33,6 +33,12 @@ const EmailLogin = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
 
+        // Check if Supabase is configured
+        if (!isSupabaseAvailable()) {
+            setGeneralError('Authentication service is not configured. Please contact support.');
+            return;
+        }
+
         const emailErr = validateEmail(email);
         const passErr = validatePassword(password);
 
@@ -45,22 +51,27 @@ const EmailLogin = () => {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) {
                 const msg = error.message.toLowerCase();
-                if (msg.includes('email')) setEmailError(error.message);
-                else if (msg.includes('password') || msg.includes('credentials')) 
+                if (msg.includes('email') && !msg.includes('credentials')) {
+                    setEmailError(error.message);
+                } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
                     setPasswordError('Invalid email or password');
-                else setGeneralError(error.message);
-            } else {
+                } else {
+                    setGeneralError(error.message);
+                }
+            } else if (data.session) {
+                // Successful login
                 navigate('/manager/dashboard');
             }
         } catch (error) {
-            setGeneralError('An unexpected error occurred');
+            console.error('Login error:', error);
+            setGeneralError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }

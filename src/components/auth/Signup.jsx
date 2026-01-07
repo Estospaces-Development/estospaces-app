@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -29,6 +29,12 @@ const Signup = () => {
     const handleSignup = async (e) => {
         e.preventDefault();
         
+        // Check if Supabase is configured
+        if (!isSupabaseAvailable()) {
+            setError('Authentication service is not configured. Please contact support.');
+            return;
+        }
+
         if (!name.trim()) {
             setError('Please enter your name');
             return;
@@ -48,7 +54,7 @@ const Signup = () => {
         setError('');
 
         try {
-            const { error: signUpError } = await supabase.auth.signUp({
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: { 
@@ -58,12 +64,18 @@ const Signup = () => {
             });
 
             if (signUpError) {
-                setError(signUpError.message);
-            } else {
+                // Handle specific error cases
+                if (signUpError.message.includes('already registered')) {
+                    setError('This email is already registered. Please sign in instead.');
+                } else {
+                    setError(signUpError.message);
+                }
+            } else if (data.user) {
                 setSuccess(true);
             }
         } catch (err) {
-            setError('An unexpected error occurred');
+            console.error('Signup error:', err);
+            setError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }

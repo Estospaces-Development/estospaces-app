@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -16,6 +16,12 @@ const ResetPassword = () => {
     const handleReset = async (e) => {
         e.preventDefault();
         
+        // Check if Supabase is configured
+        if (!isSupabaseAvailable()) {
+            setError('Authentication service is not configured. Please contact support.');
+            return;
+        }
+
         if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
             setError('Please enter a valid email');
             return;
@@ -35,7 +41,8 @@ const ResetPassword = () => {
                 setSuccess(true);
             }
         } catch (err) {
-            setError('An unexpected error occurred');
+            console.error('Password reset error:', err);
+            setError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }

@@ -1,26 +1,39 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
+import { AlertCircle } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
     const [active, setActive] = useState('google');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const signInWithGoogle = async () => {
+        if (!isSupabaseAvailable()) {
+            setError('Authentication service is not configured. Please contact support.');
+            return;
+        }
+
         setActive('google');
         setLoading(true);
+        setError('');
         
         try {
-            await supabase.auth.signInWithOAuth({
+            const { error: authError } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo: `${window.location.origin}/manager/dashboard` },
             });
-        } catch (error) {
-            console.error('Google sign-in error:', error);
+            
+            if (authError) {
+                setError(authError.message);
+            }
+        } catch (err) {
+            console.error('Google sign-in error:', err);
+            setError('Failed to sign in with Google. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -83,7 +96,7 @@ const Login = () => {
                 {/* Email Button */}
                 <button
                     onClick={goToEmail}
-                    className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-8 border ${
+                    className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-4 border ${
                         active === 'email'
                             ? 'bg-primary text-white border-primary'
                             : 'bg-orange-50 text-primary border-primary hover:bg-orange-100'
@@ -91,6 +104,14 @@ const Login = () => {
                 >
                     Sign in with Email
                 </button>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="w-full mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                        <AlertCircle className="text-red-500 flex-shrink-0" size={18} />
+                        <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                )}
 
                 <p className="text-sm text-gray-600">
                     Don't have an account?{' '}
