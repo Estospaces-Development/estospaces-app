@@ -53,3 +53,4 @@ const Toast = ({ message, type = 'success', isVisible, onClose, duration = 5000 
 
 export default Toast;
 
+

@@ -328,7 +328,7 @@ const initialFormData: FormData = {
 const AddProperty = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const { addProperty, updateProperty, getProperty, formatPrice, formatArea } = useProperties();
+  const { addProperty, updateProperty, getProperty, formatPrice, formatArea, uploadImages } = useProperties();
   const isEditMode = !!id;
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -578,29 +578,44 @@ const AddProperty = () => {
     }));
   };
 
-  const convertFilesToBase64 = async (files: (File | string)[]): Promise<string[]> => {
-    const results: string[] = [];
+  const processImages = async (files: (File | string)[]): Promise<string[]> => {
+    const existingUrls: string[] = [];
+    const newFiles: File[] = [];
     
     for (const file of files) {
       if (typeof file === 'string') {
-        results.push(file);
+        existingUrls.push(file);
       } else {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        results.push(base64);
+        newFiles.push(file);
       }
     }
     
-    return results;
+    // Upload new files to Supabase Storage
+    let uploadedUrls: string[] = [];
+    if (newFiles.length > 0) {
+      try {
+        uploadedUrls = await uploadImages(newFiles);
+      } catch (err) {
+        console.error('Failed to upload images:', err);
+        // Fallback to base64 if upload fails
+        for (const file of newFiles) {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          uploadedUrls.push(base64);
+        }
+      }
+    }
+    
+    return [...existingUrls, ...uploadedUrls];
   };
 
   const buildPropertyData = async (): Promise<Partial<Property>> => {
-    const images = await convertFilesToBase64(formData.images);
-    const videos = await convertFilesToBase64(formData.videos);
+    const images = await processImages(formData.images);
+    const videos: string[] = []; // Video upload not yet implemented
 
     return {
       title: formData.title,
@@ -721,9 +736,12 @@ const AddProperty = () => {
       const propertyData = await buildPropertyData();
       
       if (isEditMode && id) {
-        updateProperty(id, { ...propertyData, draft: true, published: false });
+        await updateProperty(id, { ...propertyData, draft: true, published: false });
       } else {
-        addProperty({ ...propertyData, draft: true, published: false });
+        const result = await addProperty({ ...propertyData, draft: true, published: false });
+        if (!result) {
+          throw new Error('Failed to save property');
+        }
       }
       navigate('/manager/dashboard/properties');
     } catch (error) {
@@ -742,9 +760,12 @@ const AddProperty = () => {
       const propertyData = await buildPropertyData();
       
       if (isEditMode && id) {
-        updateProperty(id, { ...propertyData, published: true, draft: false });
+        await updateProperty(id, { ...propertyData, published: true, draft: false });
       } else {
-        addProperty({ ...propertyData, published: true, draft: false });
+        const result = await addProperty({ ...propertyData, published: true, draft: false });
+        if (!result) {
+          throw new Error('Failed to publish property');
+        }
       }
       navigate('/manager/dashboard/properties');
     } catch (error) {

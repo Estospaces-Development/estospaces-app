@@ -1,263 +1,143 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
-// International currency codes (ISO 4217)
+// Type definitions
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR' | 'AED' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'SGD';
-
-// Area unit types
 export type AreaUnit = 'sqft' | 'sqm' | 'acres' | 'hectares';
-
-// Property status types
 export type PropertyStatus = 'available' | 'pending' | 'sold' | 'rented' | 'under_contract' | 'off_market' | 'coming_soon';
-
-// Property types
-export type PropertyType = 
-  | 'apartment' | 'house' | 'condo' | 'townhouse' | 'villa' | 'penthouse' 
-  | 'studio' | 'duplex' | 'triplex' | 'land' | 'commercial' | 'industrial' | 'office';
-
-// Listing types
+export type PropertyType = 'apartment' | 'house' | 'condo' | 'townhouse' | 'villa' | 'penthouse' | 'studio' | 'duplex' | 'triplex' | 'land' | 'commercial' | 'industrial' | 'office';
 export type ListingType = 'sale' | 'rent' | 'lease' | 'short_term' | 'vacation';
-
-// Furnishing status
 export type FurnishingStatus = 'furnished' | 'semi_furnished' | 'unfurnished';
-
-// Property condition
 export type PropertyCondition = 'new' | 'excellent' | 'good' | 'fair' | 'needs_renovation';
-
-// Facing direction
 export type FacingDirection = 'north' | 'south' | 'east' | 'west' | 'northeast' | 'northwest' | 'southeast' | 'southwest';
 
-// International location structure
-export interface PropertyLocation {
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  countryCode: string; // ISO 3166-1 alpha-2
-  latitude?: number;
-  longitude?: number;
-  neighborhood?: string;
-  landmark?: string;
-}
-
-// Price information with international support
 export interface PriceInfo {
   amount: number;
   currency: CurrencyCode;
-  pricePerUnit?: number; // Price per sqft/sqm
   negotiable: boolean;
-  priceHistory?: { date: string; amount: number }[];
-  displayPrice?: string; // Formatted display price
 }
 
-// Property dimensions
-export interface PropertyDimensions {
-  totalArea: number;
-  carpetArea?: number;
-  builtUpArea?: number;
-  plotArea?: number;
-  areaUnit: AreaUnit;
-  length?: number;
-  width?: number;
-  floors?: number;
-  floorNumber?: number;
-  totalFloors?: number;
-}
-
-// Room details
-export interface RoomDetails {
-  bedrooms: number;
-  bathrooms: number;
-  balconies?: number;
-  parkingSpaces?: number;
-  livingRooms?: number;
-  kitchens?: number;
-  studyRooms?: number;
-  servantQuarters?: number;
-  storeRooms?: number;
-}
-
-// Property amenities (grouped)
-export interface PropertyAmenities {
-  interior: string[];
-  exterior: string[];
-  community: string[];
-  security: string[];
-  utilities: string[];
-}
-
-// Media files
-export interface PropertyMedia {
-  images: MediaFile[];
-  videos: MediaFile[];
-  floorPlans: MediaFile[];
-  virtualTourUrl?: string;
-  brochureUrl?: string;
-  threeDModelUrl?: string;
-}
-
-export interface MediaFile {
-  id: string;
-  url: string;
-  type: 'image' | 'video' | 'document';
-  title?: string;
-  isPrimary?: boolean;
-  order?: number;
-  thumbnailUrl?: string;
-  size?: number;
-  uploadedAt: string;
-}
-
-// Contact information
-export interface ContactInfo {
-  name: string;
-  email: string;
-  phone: string;
-  alternatePhone?: string;
-  whatsapp?: string;
-  preferredContactMethod: 'email' | 'phone' | 'whatsapp' | 'any';
-  availableHours?: string;
-  company?: string;
-  designation?: string;
-  licenseNumber?: string;
-}
-
-// Property analytics
-export interface PropertyAnalytics {
-  views: number;
-  inquiries: number;
-  favorites: number;
-  shares: number;
-  lastViewed?: string;
-  averageViewDuration?: number;
-  conversionRate?: number;
-}
-
-// Legal and compliance
-export interface LegalInfo {
-  ownershipType?: 'freehold' | 'leasehold' | 'cooperative';
-  legalClearance?: boolean;
-  encumbrance?: boolean;
-  occupancyCertificate?: boolean;
-  reraRegistered?: boolean;
-  reraNumber?: string;
-  propertyTax?: number;
-  taxAssessmentYear?: string;
-}
-
-// Financial details
-export interface FinancialInfo {
-  deposit?: number;
-  maintenanceCharges?: number;
-  maintenanceFrequency?: 'monthly' | 'quarterly' | 'yearly';
-  stampDuty?: number;
-  registrationCharges?: number;
-  brokeragePercent?: number;
-  loanEligible?: boolean;
-  maxLoanAmount?: number;
-}
-
-// Main Property interface
 export interface Property {
   id: string;
-  
-  // Basic Information
   title: string;
-  slug: string;
-  description: string;
+  description?: string;
   shortDescription?: string;
+  price?: PriceInfo;
+  priceString?: string;
   propertyType: PropertyType;
   listingType: ListingType;
   status: PropertyStatus;
   
   // Location
-  location: PropertyLocation;
-  // Legacy fields for backward compatibility
+  location?: {
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    countryCode?: string;
+    latitude?: number;
+    longitude?: number;
+    neighborhood?: string;
+    landmark?: string;
+  };
   address?: string;
   city?: string;
   state?: string;
   zipCode?: string;
   
-  // Pricing
-  price: PriceInfo;
-  // Legacy field
-  priceString?: string;
-  
-  // Property Specifications
-  dimensions: PropertyDimensions;
-  rooms: RoomDetails;
-  // Legacy fields
-  bedrooms?: number;
-  bathrooms?: number;
+  // Dimensions
+  dimensions?: {
+    totalArea: number;
+    carpetArea?: number;
+    areaUnit: AreaUnit;
+    floors?: number;
+    floorNumber?: number;
+    totalFloors?: number;
+  };
   area?: number;
   
-  // Property Features
+  // Rooms
+  rooms?: {
+    bedrooms: number;
+    bathrooms: number;
+    balconies?: number;
+    parkingSpaces?: number;
+  };
+  bedrooms?: number;
+  bathrooms?: number;
+  
+  // Features
   yearBuilt?: number;
-  ageOfProperty?: number;
   furnishing: FurnishingStatus;
   condition: PropertyCondition;
   facing?: FacingDirection;
-  amenities: PropertyAmenities;
+  amenities: {
+    interior: string[];
+    exterior: string[];
+    community: string[];
+    security: string[];
+    utilities: string[];
+  };
   features?: string[];
   
   // Media
-  media: PropertyMedia;
+  media?: {
+    images: { id: string; url: string; type: string; isPrimary?: boolean; order?: number; uploadedAt: string }[];
+    videos: { id: string; url: string; type: string; order?: number; uploadedAt: string }[];
+    floorPlans: any[];
+    virtualTourUrl?: string;
+  };
   images?: (File | string)[];
   videos?: (File | string)[];
   virtualTourUrl?: string;
   
   // Contact
-  contact: ContactInfo;
-  // Legacy fields
+  contact?: {
+    name: string;
+    email: string;
+    phone: string;
+    alternatePhone?: string;
+    preferredContactMethod: 'email' | 'phone' | 'whatsapp' | 'any';
+    company?: string;
+    licenseNumber?: string;
+  };
   contactName?: string;
   phoneNumber?: string;
   emailAddress?: string;
   
-  // Availability
+  // Terms
   availableFrom: string;
   minimumLease?: number;
-  maximumLease?: number;
-  
-  // Additional Info
   inclusions?: string;
   exclusions?: string;
-  specialConditions?: string;
-  
-  // Legal & Financial
-  legal?: LegalInfo;
-  financial?: FinancialInfo;
+  financial?: {
+    deposit?: number;
+    maintenanceCharges?: number;
+    maintenanceFrequency?: string;
+  };
   
   // Analytics
-  analytics: PropertyAnalytics;
+  analytics: {
+    views: number;
+    inquiries: number;
+    favorites: number;
+    shares: number;
+  };
   
-  // Property identifiers
+  // Flags & Meta
   propertyId?: string;
-  referenceNumber?: string;
-  
-  // Metadata
   createdAt: string;
   updatedAt: string;
-  publishedAt?: string;
-  expiresAt?: string;
   published: boolean;
   draft: boolean;
   featured?: boolean;
   verified?: boolean;
   premium?: boolean;
-  
-  // SEO
-  metaTitle?: string;
-  metaDescription?: string;
-  keywords?: string[];
-  
-  // Audit
-  createdBy?: string;
-  updatedBy?: string;
   version?: number;
 }
 
-// Filter interface
 export interface PropertyFilters {
   search?: string;
   propertyType?: PropertyType[];
@@ -265,26 +145,18 @@ export interface PropertyFilters {
   status?: PropertyStatus[];
   priceMin?: number;
   priceMax?: number;
-  currency?: CurrencyCode;
   bedroomsMin?: number;
   bedroomsMax?: number;
   bathroomsMin?: number;
   areaMin?: number;
   areaMax?: number;
-  areaUnit?: AreaUnit;
-  country?: string;
   city?: string;
-  state?: string;
-  amenities?: string[];
+  country?: string;
   furnishing?: FurnishingStatus[];
-  condition?: PropertyCondition[];
-  yearBuiltMin?: number;
-  yearBuiltMax?: number;
   featured?: boolean;
   verified?: boolean;
 }
 
-// Sort options
 export type SortField = 'createdAt' | 'updatedAt' | 'price' | 'area' | 'bedrooms' | 'views' | 'title';
 export type SortOrder = 'asc' | 'desc';
 
@@ -293,7 +165,6 @@ export interface SortOption {
   order: SortOrder;
 }
 
-// Pagination
 export interface Pagination {
   page: number;
   limit: number;
@@ -301,7 +172,6 @@ export interface Pagination {
   totalPages: number;
 }
 
-// Context type
 interface PropertyContextType {
   properties: Property[];
   filteredProperties: Property[];
@@ -312,38 +182,30 @@ interface PropertyContextType {
   loading: boolean;
   error: string | null;
   
-  // CRUD operations
-  addProperty: (property: Partial<Property>) => Property;
-  updateProperty: (id: string, property: Partial<Property>) => void;
-  deleteProperty: (id: string) => void;
-  deleteProperties: (ids: string[]) => void;
-  duplicateProperty: (id: string) => Property | null;
+  fetchProperties: () => Promise<void>;
+  addProperty: (property: Partial<Property>) => Promise<Property | null>;
+  updateProperty: (id: string, property: Partial<Property>) => Promise<void>;
+  deleteProperty: (id: string) => Promise<void>;
+  deleteProperties: (ids: string[]) => Promise<void>;
+  duplicateProperty: (id: string) => Promise<Property | null>;
   getProperty: (id: string) => Property | undefined;
+  uploadImages: (files: File[]) => Promise<string[]>;
   
-  // Bulk operations
   selectProperty: (id: string) => void;
   deselectProperty: (id: string) => void;
   selectAllProperties: () => void;
   clearSelection: () => void;
-  bulkUpdateStatus: (ids: string[], status: PropertyStatus) => void;
+  bulkUpdateStatus: (ids: string[], status: PropertyStatus) => Promise<void>;
   
-  // Filtering and sorting
   setFilters: (filters: PropertyFilters) => void;
   clearFilters: () => void;
   setSort: (sort: SortOption) => void;
-  
-  // Pagination
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   
-  // Analytics
   incrementViews: (id: string) => void;
   incrementInquiries: (id: string) => void;
-  
-  // Export
   exportProperties: (format: 'csv' | 'json' | 'pdf', ids?: string[]) => void;
-  
-  // Utilities
   formatPrice: (price: PriceInfo) => string;
   formatArea: (area: number, unit: AreaUnit) => string;
   getPropertyStats: () => { total: number; available: number; sold: number; rented: number; pending: number };
@@ -359,7 +221,7 @@ export const useProperties = () => {
   return context;
 };
 
-// Currency formatting
+// Currency formatters
 const currencyFormatters: Record<CurrencyCode, Intl.NumberFormat> = {
   USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }),
   EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }),
@@ -373,120 +235,196 @@ const currencyFormatters: Record<CurrencyCode, Intl.NumberFormat> = {
   SGD: new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD', maximumFractionDigits: 0 }),
 };
 
-// Slug generator
-const generateSlug = (title: string): string => {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-};
-
-// Create default property structure
-const createDefaultProperty = (data: Partial<Property>): Property => {
-  const now = new Date().toISOString();
-  const id = Date.now().toString();
-  
+// Convert DB row to Property
+const dbRowToProperty = (row: any): Property => {
+  const imageUrls = row.image_urls || [];
   return {
-    id,
-    title: data.title || 'Untitled Property',
-    slug: data.slug || generateSlug(data.title || 'untitled-property'),
-    description: data.description || '',
-    shortDescription: data.shortDescription,
-    propertyType: data.propertyType || 'apartment',
-    listingType: data.listingType || 'sale',
-    status: data.status || 'available',
-    
-    location: data.location || {
-      addressLine1: data.address || '',
-      city: data.city || '',
-      state: data.state || '',
-      postalCode: data.zipCode || '',
-      country: 'United States',
-      countryCode: 'US',
+    id: row.id,
+    title: row.title || '',
+    description: row.description,
+    shortDescription: row.short_description,
+    price: {
+      amount: parseFloat(row.price) || 0,
+      currency: row.currency || 'USD',
+      negotiable: row.negotiable || false,
     },
-    address: data.address,
-    city: data.city,
-    state: data.state,
-    zipCode: data.zipCode,
-    
-    price: data.price || {
-      amount: parseFloat(data.priceString?.replace(/[^0-9.]/g, '') || '0') || 0,
-      currency: 'USD',
-      negotiable: false,
+    priceString: `${row.currency || 'USD'} ${row.price}`,
+    propertyType: row.property_type || 'apartment',
+    listingType: row.listing_type || 'sale',
+    status: row.status || 'available',
+    location: {
+      addressLine1: row.address_line_1,
+      addressLine2: row.address_line_2,
+      city: row.city,
+      state: row.state,
+      postalCode: row.postcode,
+      country: row.country,
+      countryCode: row.country === 'United Kingdom' ? 'GB' : 'US',
+      latitude: row.latitude ? parseFloat(row.latitude) : undefined,
+      longitude: row.longitude ? parseFloat(row.longitude) : undefined,
+      neighborhood: row.neighborhood,
+      landmark: row.landmark,
     },
-    priceString: data.priceString,
-    
-    dimensions: data.dimensions || {
-      totalArea: data.area || 0,
-      areaUnit: 'sqft',
+    address: row.address_line_1,
+    city: row.city,
+    state: row.state,
+    zipCode: row.postcode,
+    dimensions: {
+      totalArea: parseFloat(row.area) || 0,
+      areaUnit: row.area_unit || 'sqft',
+      floorNumber: row.floor_number,
+      totalFloors: row.total_floors,
     },
-    rooms: data.rooms || {
-      bedrooms: data.bedrooms || 0,
-      bathrooms: data.bathrooms || 0,
-      balconies: 0,
-      parkingSpaces: 0,
+    area: parseFloat(row.area) || 0,
+    rooms: {
+      bedrooms: row.bedrooms || 0,
+      bathrooms: row.bathrooms || 0,
+      balconies: row.balconies || 0,
+      parkingSpaces: row.parking_spaces || 0,
     },
-    bedrooms: data.bedrooms,
-    bathrooms: data.bathrooms,
-    area: data.area,
-    
-    yearBuilt: data.yearBuilt,
-    furnishing: data.furnishing || 'unfurnished',
-    condition: data.condition || 'good',
-    facing: data.facing,
-    amenities: data.amenities || {
-      interior: [],
-      exterior: [],
-      community: [],
-      security: [],
-      utilities: [],
-    },
-    features: data.features,
-    
-    media: data.media || {
-      images: [],
+    bedrooms: row.bedrooms || 0,
+    bathrooms: row.bathrooms || 0,
+    yearBuilt: row.year_built,
+    furnishing: row.furnishing || 'unfurnished',
+    condition: row.condition || 'good',
+    facing: row.facing,
+    amenities: row.amenities || { interior: [], exterior: [], community: [], security: [], utilities: [] },
+    features: [],
+    media: {
+      images: imageUrls.map((url: string, i: number) => ({
+        id: `img-${i}`,
+        url,
+        type: 'image',
+        isPrimary: i === 0,
+        order: i,
+        uploadedAt: row.created_at,
+      })),
       videos: [],
       floorPlans: [],
+      virtualTourUrl: row.virtual_tour_url,
     },
-    images: data.images,
-    videos: data.videos,
-    virtualTourUrl: data.virtualTourUrl,
-    
-    contact: data.contact || {
-      name: data.contactName || '',
-      email: data.emailAddress || '',
-      phone: data.phoneNumber || '',
+    images: imageUrls,
+    virtualTourUrl: row.virtual_tour_url,
+    contact: {
+      name: row.contact_name || '',
+      email: row.contact_email || '',
+      phone: row.contact_phone || '',
       preferredContactMethod: 'any',
+      company: row.company,
     },
-    contactName: data.contactName,
-    phoneNumber: data.phoneNumber,
-    emailAddress: data.emailAddress,
-    
-    availableFrom: data.availableFrom || data.availableDate || now,
-    inclusions: data.inclusions,
-    exclusions: data.exclusions,
-    
-    analytics: data.analytics || {
-      views: 0,
-      inquiries: 0,
-      favorites: 0,
+    contactName: row.contact_name,
+    phoneNumber: row.contact_phone,
+    emailAddress: row.contact_email,
+    availableFrom: row.available_from || new Date().toISOString(),
+    minimumLease: row.minimum_lease,
+    inclusions: row.inclusions,
+    exclusions: row.exclusions,
+    financial: {
+      deposit: row.deposit ? parseFloat(row.deposit) : undefined,
+      maintenanceCharges: row.maintenance_charges ? parseFloat(row.maintenance_charges) : undefined,
+    },
+    analytics: {
+      views: row.views || 0,
+      inquiries: row.inquiries || 0,
+      favorites: row.favorites || 0,
       shares: 0,
     },
-    
-    propertyId: data.propertyId || `PROP-${id.slice(-6)}`,
-    referenceNumber: data.referenceNumber,
-    
-    createdAt: data.createdAt || now,
-    updatedAt: now,
-    published: data.published ?? false,
-    draft: data.draft ?? true,
-    featured: data.featured ?? false,
-    verified: data.verified ?? false,
-    premium: data.premium ?? false,
-    
+    propertyId: `PROP-${row.id.slice(-6)}`,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    published: row.published ?? true,
+    draft: row.draft || false,
+    featured: row.featured || false,
+    verified: row.verified || false,
     version: 1,
-  } as Property;
+  };
+};
+
+// Convert Property to DB format
+const propertyToDbRow = (p: Partial<Property>): any => {
+  const row: any = {};
+  
+  if (p.title !== undefined) row.title = p.title;
+  if (p.description !== undefined) row.description = p.description;
+  if (p.shortDescription !== undefined) row.short_description = p.shortDescription;
+  if (p.price !== undefined) row.price = p.price.amount;
+  if (p.price?.currency !== undefined) row.currency = p.price.currency;
+  if (p.price?.negotiable !== undefined) row.negotiable = p.price.negotiable;
+  if (p.propertyType !== undefined) row.property_type = p.propertyType;
+  if (p.listingType !== undefined) row.listing_type = p.listingType;
+  if (p.status !== undefined) row.status = p.status;
+  
+  // Location
+  if (p.location?.addressLine1 !== undefined) row.address_line_1 = p.location.addressLine1;
+  if (p.location?.addressLine2 !== undefined) row.address_line_2 = p.location.addressLine2;
+  if (p.location?.city !== undefined) row.city = p.location.city;
+  if (p.location?.state !== undefined) row.state = p.location.state;
+  if (p.location?.postalCode !== undefined) row.postcode = p.location.postalCode;
+  if (p.location?.country !== undefined) row.country = p.location.country;
+  if (p.location?.latitude !== undefined) row.latitude = p.location.latitude;
+  if (p.location?.longitude !== undefined) row.longitude = p.location.longitude;
+  if (p.location?.neighborhood !== undefined) row.neighborhood = p.location.neighborhood;
+  if (p.location?.landmark !== undefined) row.landmark = p.location.landmark;
+  
+  // Legacy location fields
+  if (p.address !== undefined) row.address_line_1 = p.address;
+  if (p.city !== undefined) row.city = p.city;
+  if (p.state !== undefined) row.state = p.state;
+  if (p.zipCode !== undefined) row.postcode = p.zipCode;
+  
+  // Dimensions
+  if (p.dimensions?.totalArea !== undefined) row.area = p.dimensions.totalArea;
+  if (p.dimensions?.areaUnit !== undefined) row.area_unit = p.dimensions.areaUnit;
+  if (p.dimensions?.floorNumber !== undefined) row.floor_number = p.dimensions.floorNumber;
+  if (p.dimensions?.totalFloors !== undefined) row.total_floors = p.dimensions.totalFloors;
+  if (p.area !== undefined) row.area = p.area;
+  
+  // Rooms
+  if (p.rooms?.bedrooms !== undefined) row.bedrooms = p.rooms.bedrooms;
+  if (p.rooms?.bathrooms !== undefined) row.bathrooms = p.rooms.bathrooms;
+  if (p.rooms?.balconies !== undefined) row.balconies = p.rooms.balconies;
+  if (p.rooms?.parkingSpaces !== undefined) row.parking_spaces = p.rooms.parkingSpaces;
+  if (p.bedrooms !== undefined) row.bedrooms = p.bedrooms;
+  if (p.bathrooms !== undefined) row.bathrooms = p.bathrooms;
+  
+  // Features
+  if (p.yearBuilt !== undefined) row.year_built = p.yearBuilt;
+  if (p.furnishing !== undefined) row.furnishing = p.furnishing;
+  if (p.condition !== undefined) row.condition = p.condition;
+  if (p.facing !== undefined) row.facing = p.facing;
+  if (p.amenities !== undefined) row.amenities = p.amenities;
+  
+  // Media
+  if (p.images !== undefined) {
+    row.image_urls = p.images.filter((img): img is string => typeof img === 'string');
+  }
+  if (p.virtualTourUrl !== undefined) row.virtual_tour_url = p.virtualTourUrl;
+  if (p.media?.virtualTourUrl !== undefined) row.virtual_tour_url = p.media.virtualTourUrl;
+  
+  // Contact
+  if (p.contact?.name !== undefined) row.contact_name = p.contact.name;
+  if (p.contact?.email !== undefined) row.contact_email = p.contact.email;
+  if (p.contact?.phone !== undefined) row.contact_phone = p.contact.phone;
+  if (p.contact?.company !== undefined) row.company = p.contact.company;
+  if (p.contactName !== undefined) row.contact_name = p.contactName;
+  if (p.emailAddress !== undefined) row.contact_email = p.emailAddress;
+  if (p.phoneNumber !== undefined) row.contact_phone = p.phoneNumber;
+  
+  // Terms
+  if (p.availableFrom !== undefined) row.available_from = p.availableFrom;
+  if (p.minimumLease !== undefined) row.minimum_lease = p.minimumLease;
+  if (p.inclusions !== undefined) row.inclusions = p.inclusions;
+  if (p.exclusions !== undefined) row.exclusions = p.exclusions;
+  if (p.financial?.deposit !== undefined) row.deposit = p.financial.deposit;
+  if (p.financial?.maintenanceCharges !== undefined) row.maintenance_charges = p.financial.maintenanceCharges;
+  
+  // Flags
+  if (p.featured !== undefined) row.featured = p.featured;
+  if (p.verified !== undefined) row.verified = p.verified;
+  if (p.published !== undefined) row.published = p.published;
+  if (p.draft !== undefined) row.draft = p.draft;
+  
+  return row;
 };
 
 export const PropertyProvider = ({ children }: { children: ReactNode }) => {
@@ -498,65 +436,66 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load properties from localStorage on mount
-  useEffect(() => {
+  // Fetch properties from Supabase
+  const fetchProperties = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      const stored = localStorage.getItem('properties');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Migrate old properties to new structure
-        const migrated = parsed.map((p: any) => createDefaultProperty(p));
-        setProperties(migrated);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let query = supabase.from('properties').select('*');
+      
+      if (user) {
+        query = query.eq('agent_id', user.id);
       }
-    } catch (err) {
-      console.error('Error loading properties:', err);
-      setError('Failed to load properties');
+      
+      const sortColumn = sort.field === 'createdAt' ? 'created_at' : sort.field === 'updatedAt' ? 'updated_at' : sort.field;
+      query = query.order(sortColumn, { ascending: sort.order === 'asc' });
+      
+      const { data, error: fetchError } = await query;
+      
+      if (fetchError) throw fetchError;
+      
+      const mapped = (data || []).map(dbRowToProperty);
+      setProperties(mapped);
+    } catch (err: any) {
+      console.error('Error fetching properties:', err);
+      setError(err.message || 'Failed to fetch properties');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sort]);
 
-  // Save properties to localStorage whenever they change
   useEffect(() => {
-    if (properties.length > 0) {
-      localStorage.setItem('properties', JSON.stringify(properties));
-    }
-  }, [properties]);
+    fetchProperties();
+  }, [fetchProperties]);
 
-  // Apply filters and sorting
+  // Filter properties
   const filteredProperties = useCallback(() => {
     let result = [...properties];
 
-    // Search filter
     if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
+      const s = filters.search.toLowerCase();
       result = result.filter(p => 
-        p.title.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower) ||
-        p.location?.addressLine1?.toLowerCase().includes(searchLower) ||
-        p.location?.city?.toLowerCase().includes(searchLower) ||
-        p.address?.toLowerCase().includes(searchLower) ||
-        p.city?.toLowerCase().includes(searchLower)
+        p.title.toLowerCase().includes(s) ||
+        p.description?.toLowerCase().includes(s) ||
+        p.city?.toLowerCase().includes(s)
       );
     }
 
-    // Property type filter
     if (filters.propertyType?.length) {
       result = result.filter(p => filters.propertyType!.includes(p.propertyType));
     }
 
-    // Listing type filter
     if (filters.listingType?.length) {
       result = result.filter(p => filters.listingType!.includes(p.listingType));
     }
 
-    // Status filter
     if (filters.status?.length) {
       result = result.filter(p => filters.status!.includes(p.status));
     }
 
-    // Price range filter
     if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
       result = result.filter(p => {
         const price = p.price?.amount || 0;
@@ -566,94 +505,23 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       });
     }
 
-    // Bedrooms filter
     if (filters.bedroomsMin !== undefined) {
       result = result.filter(p => (p.rooms?.bedrooms || p.bedrooms || 0) >= filters.bedroomsMin!);
     }
-    if (filters.bedroomsMax !== undefined) {
-      result = result.filter(p => (p.rooms?.bedrooms || p.bedrooms || 0) <= filters.bedroomsMax!);
+
+    if (filters.city) {
+      result = result.filter(p => p.city?.toLowerCase().includes(filters.city!.toLowerCase()));
     }
 
-    // Bathrooms filter
-    if (filters.bathroomsMin !== undefined) {
-      result = result.filter(p => (p.rooms?.bathrooms || p.bathrooms || 0) >= filters.bathroomsMin!);
-    }
-
-    // Area filter
-    if (filters.areaMin !== undefined) {
-      result = result.filter(p => (p.dimensions?.totalArea || p.area || 0) >= filters.areaMin!);
-    }
-    if (filters.areaMax !== undefined) {
-      result = result.filter(p => (p.dimensions?.totalArea || p.area || 0) <= filters.areaMax!);
-    }
-
-    // Furnishing filter
-    if (filters.furnishing?.length) {
-      result = result.filter(p => filters.furnishing!.includes(p.furnishing));
-    }
-
-    // Featured filter
     if (filters.featured !== undefined) {
       result = result.filter(p => p.featured === filters.featured);
     }
 
-    // Verified filter
-    if (filters.verified !== undefined) {
-      result = result.filter(p => p.verified === filters.verified);
-    }
-
-    // City filter
-    if (filters.city) {
-      result = result.filter(p => 
-        (p.location?.city || p.city)?.toLowerCase().includes(filters.city!.toLowerCase())
-      );
-    }
-
-    // Country filter
-    if (filters.country) {
-      result = result.filter(p => 
-        p.location?.country?.toLowerCase().includes(filters.country!.toLowerCase())
-      );
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sort.field) {
-        case 'price':
-          comparison = (a.price?.amount || 0) - (b.price?.amount || 0);
-          break;
-        case 'area':
-          comparison = (a.dimensions?.totalArea || a.area || 0) - (b.dimensions?.totalArea || b.area || 0);
-          break;
-        case 'bedrooms':
-          comparison = (a.rooms?.bedrooms || a.bedrooms || 0) - (b.rooms?.bedrooms || b.bedrooms || 0);
-          break;
-        case 'views':
-          comparison = (a.analytics?.views || 0) - (b.analytics?.views || 0);
-          break;
-        case 'title':
-          comparison = a.title.localeCompare(b.title);
-          break;
-        case 'updatedAt':
-          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-          break;
-        case 'createdAt':
-        default:
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-      }
-      
-      return sort.order === 'asc' ? comparison : -comparison;
-    });
-
     return result;
-  }, [properties, filters, sort]);
+  }, [properties, filters]);
 
   const filtered = filteredProperties();
 
-  // Update pagination when filtered results change
   useEffect(() => {
     setPagination(prev => ({
       ...prev,
@@ -662,94 +530,149 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, [filtered.length, pagination.limit]);
 
-  // Get paginated results
   const paginatedProperties = filtered.slice(
     (pagination.page - 1) * pagination.limit,
     pagination.page * pagination.limit
   );
 
-  // CRUD Operations
-  const addProperty = (propertyData: Partial<Property>): Property => {
-    const newProperty = createDefaultProperty(propertyData);
-    setProperties(prev => [...prev, newProperty]);
-    return newProperty;
+  // Upload images
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Must be logged in to upload images');
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage.from('property-images').upload(fileName, file);
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        continue;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('property-images').getPublicUrl(fileName);
+      uploadedUrls.push(publicUrl);
+    }
+
+    return uploadedUrls;
   };
 
-  const updateProperty = (id: string, propertyData: Partial<Property>) => {
-    setProperties(prev =>
-      prev.map(prop =>
-        prop.id === id
-          ? { 
-              ...prop, 
-              ...propertyData, 
-              updatedAt: new Date().toISOString(),
-              version: (prop.version || 0) + 1,
-            }
-          : prop
-      )
-    );
+  // Add property
+  const addProperty = async (propertyData: Partial<Property>): Promise<Property | null> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Must be logged in to add a property');
+
+      const dbData = propertyToDbRow(propertyData);
+      dbData.agent_id = user.id;
+
+      const { data, error: insertError } = await supabase.from('properties').insert(dbData).select().single();
+      if (insertError) throw insertError;
+
+      const newProperty = dbRowToProperty(data);
+      setProperties(prev => [newProperty, ...prev]);
+      return newProperty;
+    } catch (err: any) {
+      console.error('Error adding property:', err);
+      setError(err.message || 'Failed to add property');
+      return null;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteProperty = (id: string) => {
-    setProperties(prev => prev.filter(prop => prop.id !== id));
-    setSelectedProperties(prev => prev.filter(pid => pid !== id));
+  // Update property
+  const updateProperty = async (id: string, propertyData: Partial<Property>) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const dbData = propertyToDbRow(propertyData);
+      dbData.updated_at = new Date().toISOString();
+
+      const { error: updateError } = await supabase.from('properties').update(dbData).eq('id', id);
+      if (updateError) throw updateError;
+
+      setProperties(prev => prev.map(p => p.id === id ? { ...p, ...propertyData, updatedAt: dbData.updated_at } : p));
+    } catch (err: any) {
+      console.error('Error updating property:', err);
+      setError(err.message || 'Failed to update property');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteProperties = (ids: string[]) => {
-    setProperties(prev => prev.filter(prop => !ids.includes(prop.id)));
-    setSelectedProperties(prev => prev.filter(pid => !ids.includes(pid)));
+  // Delete property
+  const deleteProperty = async (id: string) => {
+    try {
+      const { error } = await supabase.from('properties').delete().eq('id', id);
+      if (error) throw error;
+      setProperties(prev => prev.filter(p => p.id !== id));
+      setSelectedProperties(prev => prev.filter(pid => pid !== id));
+    } catch (err: any) {
+      console.error('Error deleting property:', err);
+      setError(err.message || 'Failed to delete property');
+    }
   };
 
-  const duplicateProperty = (id: string): Property | null => {
+  // Delete multiple
+  const deleteProperties = async (ids: string[]) => {
+    try {
+      const { error } = await supabase.from('properties').delete().in('id', ids);
+      if (error) throw error;
+      setProperties(prev => prev.filter(p => !ids.includes(p.id)));
+      setSelectedProperties(prev => prev.filter(pid => !ids.includes(pid)));
+    } catch (err: any) {
+      console.error('Error deleting properties:', err);
+      setError(err.message || 'Failed to delete properties');
+    }
+  };
+
+  // Duplicate property
+  const duplicateProperty = async (id: string): Promise<Property | null> => {
     const original = properties.find(p => p.id === id);
     if (!original) return null;
-    
-    const duplicate = createDefaultProperty({
+
+    const duplicateData: Partial<Property> = {
       ...original,
       title: `${original.title} (Copy)`,
       published: false,
       draft: true,
       analytics: { views: 0, inquiries: 0, favorites: 0, shares: 0 },
-    });
-    
-    setProperties(prev => [...prev, duplicate]);
-    return duplicate;
+    };
+    delete (duplicateData as any).id;
+    delete (duplicateData as any).createdAt;
+    delete (duplicateData as any).updatedAt;
+
+    return await addProperty(duplicateData);
   };
 
-  const getProperty = (id: string): Property | undefined => {
-    return properties.find(prop => prop.id === id);
+  // Get property
+  const getProperty = (id: string) => properties.find(p => p.id === id);
+
+  // Selection
+  const selectProperty = (id: string) => setSelectedProperties(prev => prev.includes(id) ? prev : [...prev, id]);
+  const deselectProperty = (id: string) => setSelectedProperties(prev => prev.filter(pid => pid !== id));
+  const selectAllProperties = () => setSelectedProperties(paginatedProperties.map(p => p.id));
+  const clearSelection = () => setSelectedProperties([]);
+
+  // Bulk status update
+  const bulkUpdateStatus = async (ids: string[], status: PropertyStatus) => {
+    try {
+      const { error } = await supabase.from('properties').update({ status, updated_at: new Date().toISOString() }).in('id', ids);
+      if (error) throw error;
+      setProperties(prev => prev.map(p => ids.includes(p.id) ? { ...p, status, updatedAt: new Date().toISOString() } : p));
+    } catch (err: any) {
+      console.error('Error updating statuses:', err);
+      setError(err.message || 'Failed to update statuses');
+    }
   };
 
-  // Selection operations
-  const selectProperty = (id: string) => {
-    setSelectedProperties(prev => 
-      prev.includes(id) ? prev : [...prev, id]
-    );
-  };
-
-  const deselectProperty = (id: string) => {
-    setSelectedProperties(prev => prev.filter(pid => pid !== id));
-  };
-
-  const selectAllProperties = () => {
-    setSelectedProperties(paginatedProperties.map(p => p.id));
-  };
-
-  const clearSelection = () => {
-    setSelectedProperties([]);
-  };
-
-  const bulkUpdateStatus = (ids: string[], status: PropertyStatus) => {
-    setProperties(prev =>
-      prev.map(prop =>
-        ids.includes(prop.id)
-          ? { ...prop, status, updatedAt: new Date().toISOString() }
-          : prop
-      )
-    );
-  };
-
-  // Filter operations
   const setFilters = (newFilters: PropertyFilters) => {
     setFiltersState(newFilters);
     setPagination(prev => ({ ...prev, page: 1 }));
@@ -760,94 +683,61 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  // Pagination operations
-  const setPage = (page: number) => {
-    setPagination(prev => ({ ...prev, page }));
+  const setPage = (page: number) => setPagination(prev => ({ ...prev, page }));
+  const setLimit = (limit: number) => setPagination(prev => ({ ...prev, limit, page: 1 }));
+
+  const incrementViews = async (id: string) => {
+    const p = properties.find(prop => prop.id === id);
+    if (!p) return;
+    try {
+      await supabase.from('properties').update({ views: (p.analytics?.views || 0) + 1 }).eq('id', id);
+      setProperties(prev => prev.map(prop => prop.id === id ? { ...prop, analytics: { ...prop.analytics, views: (prop.analytics?.views || 0) + 1 } } : prop));
+    } catch (err) {
+      console.error('Error incrementing views:', err);
+    }
   };
 
-  const setLimit = (limit: number) => {
-    setPagination(prev => ({ ...prev, limit, page: 1 }));
+  const incrementInquiries = async (id: string) => {
+    const p = properties.find(prop => prop.id === id);
+    if (!p) return;
+    try {
+      await supabase.from('properties').update({ inquiries: (p.analytics?.inquiries || 0) + 1 }).eq('id', id);
+      setProperties(prev => prev.map(prop => prop.id === id ? { ...prop, analytics: { ...prop.analytics, inquiries: (prop.analytics?.inquiries || 0) + 1 } } : prop));
+    } catch (err) {
+      console.error('Error incrementing inquiries:', err);
+    }
   };
 
-  // Analytics operations
-  const incrementViews = (id: string) => {
-    setProperties(prev =>
-      prev.map(prop =>
-        prop.id === id
-          ? { 
-              ...prop, 
-              analytics: { 
-                ...prop.analytics, 
-                views: (prop.analytics?.views || 0) + 1,
-                lastViewed: new Date().toISOString(),
-              } 
-            }
-          : prop
-      )
-    );
-  };
-
-  const incrementInquiries = (id: string) => {
-    setProperties(prev =>
-      prev.map(prop =>
-        prop.id === id
-          ? { 
-              ...prop, 
-              analytics: { 
-                ...prop.analytics, 
-                inquiries: (prop.analytics?.inquiries || 0) + 1,
-              } 
-            }
-          : prop
-      )
-    );
-  };
-
-  // Export functionality
   const exportProperties = (format: 'csv' | 'json' | 'pdf', ids?: string[]) => {
-    const toExport = ids 
-      ? properties.filter(p => ids.includes(p.id))
-      : paginatedProperties;
+    const toExport = ids ? properties.filter(p => ids.includes(p.id)) : paginatedProperties;
     
     if (format === 'json') {
       const dataStr = JSON.stringify(toExport, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
-      downloadBlob(blob, 'properties.json');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'properties.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } else if (format === 'csv') {
-      const headers = ['ID', 'Title', 'Type', 'Status', 'Price', 'Currency', 'Bedrooms', 'Bathrooms', 'Area', 'City', 'Country', 'Created At'];
-      const rows = toExport.map(p => [
-        p.id,
-        `"${p.title}"`,
-        p.propertyType,
-        p.status,
-        p.price?.amount || '',
-        p.price?.currency || 'USD',
-        p.rooms?.bedrooms || p.bedrooms || '',
-        p.rooms?.bathrooms || p.bathrooms || '',
-        p.dimensions?.totalArea || p.area || '',
-        p.location?.city || p.city || '',
-        p.location?.country || '',
-        p.createdAt,
-      ]);
+      const headers = ['ID', 'Title', 'Type', 'Status', 'Price', 'Bedrooms', 'Bathrooms', 'City'];
+      const rows = toExport.map(p => [p.id, `"${p.title}"`, p.propertyType, p.status, p.price?.amount || 0, p.bedrooms || 0, p.bathrooms || 0, p.city || '']);
       const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv' });
-      downloadBlob(blob, 'properties.csv');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'properties.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
-    // PDF export would require a library like jspdf - left as a placeholder
   };
 
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Utility functions
   const formatPrice = (price: PriceInfo): string => {
     const formatter = currencyFormatters[price.currency] || currencyFormatters.USD;
     return formatter.format(price.amount);
@@ -855,24 +745,17 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   const formatArea = (area: number, unit: AreaUnit): string => {
     const formatted = new Intl.NumberFormat().format(area);
-    const unitLabels: Record<AreaUnit, string> = {
-      sqft: 'sq ft',
-      sqm: 'sq m',
-      acres: 'acres',
-      hectares: 'ha',
-    };
+    const unitLabels: Record<AreaUnit, string> = { sqft: 'sq ft', sqm: 'sq m', acres: 'acres', hectares: 'ha' };
     return `${formatted} ${unitLabels[unit]}`;
   };
 
-  const getPropertyStats = () => {
-    return {
-      total: properties.length,
-      available: properties.filter(p => p.status === 'available').length,
-      sold: properties.filter(p => p.status === 'sold').length,
-      rented: properties.filter(p => p.status === 'rented').length,
-      pending: properties.filter(p => p.status === 'pending').length,
-    };
-  };
+  const getPropertyStats = () => ({
+    total: properties.length,
+    available: properties.filter(p => p.status === 'available').length,
+    sold: properties.filter(p => p.status === 'sold').length,
+    rented: properties.filter(p => p.status === 'rented').length,
+    pending: properties.filter(p => p.status === 'pending').length,
+  });
 
   return (
     <PropertyContext.Provider
@@ -885,12 +768,14 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         pagination,
         loading,
         error,
+        fetchProperties,
         addProperty,
         updateProperty,
         deleteProperty,
         deleteProperties,
         duplicateProperty,
         getProperty,
+        uploadImages,
         selectProperty,
         deselectProperty,
         selectAllProperties,

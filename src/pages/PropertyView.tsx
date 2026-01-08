@@ -47,16 +47,16 @@ const PropertyView = () => {
     );
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (id) {
-      deleteProperty(id);
+      await deleteProperty(id);
       navigate('/manager/dashboard/properties');
     }
   };
 
-  const handleDuplicate = () => {
+  const handleDuplicate = async () => {
     if (id) {
-      const duplicate = duplicateProperty(id);
+      const duplicate = await duplicateProperty(id);
       if (duplicate) {
         navigate(`/manager/dashboard/properties/edit/${duplicate.id}`);
       }

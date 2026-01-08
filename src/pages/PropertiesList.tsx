@@ -138,19 +138,19 @@ const PropertiesList = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleDelete = (id: string) => {
-    deleteProperty(id);
+  const handleDelete = async (id: string) => {
+    await deleteProperty(id);
     setShowDeleteConfirm(null);
   };
 
-  const handleBulkDelete = () => {
-    deleteProperties(selectedProperties);
+  const handleBulkDelete = async () => {
+    await deleteProperties(selectedProperties);
     setShowBulkDeleteConfirm(false);
     clearSelection();
   };
 
-  const handleDuplicate = (id: string) => {
-    const duplicate = duplicateProperty(id);
+  const handleDuplicate = async (id: string) => {
+    const duplicate = await duplicateProperty(id);
     if (duplicate) {
       navigate(`/manager/dashboard/properties/edit/${duplicate.id}`);
     }
@@ -195,8 +195,8 @@ const PropertiesList = () => {
     }
   };
 
-  const handleBulkStatusChange = (status: PropertyStatus) => {
-    bulkUpdateStatus(selectedProperties, status);
+  const handleBulkStatusChange = async (status: PropertyStatus) => {
+    await bulkUpdateStatus(selectedProperties, status);
     clearSelection();
     setShowBulkActions(false);
   };

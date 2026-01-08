@@ -1,14 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, LogIn, UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, X, LogIn, UserPlus, User, LayoutDashboard, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoIcon from '../assets/logo-icon.png';
 import { useChat } from '../contexts/ChatContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const profileMenuRef = useRef(null);
     const { closeChat } = useChat();
+    const { isAuthenticated, profile, getDisplayName, getAvatarUrl, getRole, signOut } = useAuth();
     const navigate = useNavigate();
+
+    // Close profile menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+                setIsProfileMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSignOut = async () => {
+        await signOut();
+        setIsProfileMenuOpen(false);
+        navigate('/');
+    };
+
+    const handleNavigateToDashboard = () => {
+        setIsProfileMenuOpen(false);
+        handleNavClick();
+        navigate('/manager/dashboard');
+    };
+
+    const handleNavigateToProfile = () => {
+        setIsProfileMenuOpen(false);
+        handleNavClick();
+        navigate('/manager/dashboard/profile');
+    };
 
     useEffect(() => {
         let ticking = false;
@@ -69,28 +102,104 @@ const Navbar = () => {
 
                     {/* Actions */}
                     <div className="hidden md:flex items-center space-x-3">
-                        <button 
-                            onClick={() => navigate('/auth/login')}
-                            className={`px-5 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 ${
-                                isScrolled 
-                                    ? 'text-white hover:bg-white/10' 
-                                    : 'text-white hover:bg-white/20'
-                            }`}
-                        >
-                            <LogIn size={18} />
-                            Login
-                        </button>
-                        <button 
-                            onClick={() => navigate('/auth/signup')}
-                            className={`px-5 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl ${
-                                isScrolled 
-                                    ? 'bg-white text-primary hover:bg-gray-100' 
-                                    : 'bg-primary text-white hover:bg-opacity-90'
-                            }`}
-                        >
-                            <UserPlus size={18} />
-                            Sign Up
-                        </button>
+                        {isAuthenticated ? (
+                            /* Profile Dropdown for Authenticated Users */
+                            <div className="relative" ref={profileMenuRef}>
+                                <button
+                                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 ${
+                                        isScrolled 
+                                            ? 'hover:bg-white/10' 
+                                            : 'hover:bg-white/20'
+                                    }`}
+                                >
+                                    {getAvatarUrl() ? (
+                                        <img 
+                                            src={getAvatarUrl()} 
+                                            alt={getDisplayName()} 
+                                            className="w-8 h-8 rounded-full object-cover border-2 border-white/50"
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/50">
+                                            <User size={16} className="text-white" />
+                                        </div>
+                                    )}
+                                    <span className="text-white font-medium text-sm max-w-[120px] truncate">
+                                        {getDisplayName()}
+                                    </span>
+                                    <ChevronDown 
+                                        size={16} 
+                                        className={`text-white transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {isProfileMenuOpen && (
+                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {/* User Info */}
+                                        <div className="px-4 py-3 border-b border-gray-100">
+                                            <p className="text-sm font-semibold text-gray-900 truncate">{getDisplayName()}</p>
+                                            <p className="text-xs text-gray-500 capitalize">{getRole()}</p>
+                                        </div>
+
+                                        {/* Menu Items */}
+                                        <div className="py-1">
+                                            <button
+                                                onClick={handleNavigateToDashboard}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <LayoutDashboard size={18} className="text-gray-400" />
+                                                Dashboard
+                                            </button>
+                                            <button
+                                                onClick={handleNavigateToProfile}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <Settings size={18} className="text-gray-400" />
+                                                Profile Settings
+                                            </button>
+                                        </div>
+
+                                        {/* Sign Out */}
+                                        <div className="border-t border-gray-100 pt-1">
+                                            <button
+                                                onClick={handleSignOut}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <LogOut size={18} />
+                                                Sign Out
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* Login/Sign Up Buttons for Unauthenticated Users */
+                            <>
+                                <button 
+                                    onClick={() => navigate('/auth/login')}
+                                    className={`px-5 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 ${
+                                        isScrolled 
+                                            ? 'text-white hover:bg-white/10' 
+                                            : 'text-white hover:bg-white/20'
+                                    }`}
+                                >
+                                    <LogIn size={18} />
+                                    Login
+                                </button>
+                                <button 
+                                    onClick={() => navigate('/auth/signup')}
+                                    className={`px-5 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl ${
+                                        isScrolled 
+                                            ? 'bg-white text-primary hover:bg-gray-100' 
+                                            : 'bg-primary text-white hover:bg-opacity-90'
+                                    }`}
+                                >
+                                    <UserPlus size={18} />
+                                    Sign Up
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -115,28 +224,84 @@ const Navbar = () => {
                                 {item}
                             </a>
                         ))}
-                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
-                            <button 
-                                onClick={() => {
-                                    handleNavClick();
-                                    navigate('/auth/login');
-                                }}
-                                className="text-secondary font-medium hover:text-primary flex items-center gap-2"
-                            >
-                                <LogIn size={18} />
-                                Login
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    handleNavClick();
-                                    navigate('/auth/signup');
-                                }}
-                                className="bg-primary text-white px-6 py-2 rounded-full font-medium w-full flex items-center justify-center gap-2 hover:bg-opacity-90"
-                            >
-                                <UserPlus size={18} />
-                                Sign Up
-                            </button>
-                        </div>
+                        {isAuthenticated ? (
+                            /* Authenticated Mobile Menu */
+                            <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                                {/* User Info */}
+                                <div className="flex items-center gap-3 pb-2">
+                                    {getAvatarUrl() ? (
+                                        <img 
+                                            src={getAvatarUrl()} 
+                                            alt={getDisplayName()} 
+                                            className="w-10 h-10 rounded-full object-cover border-2 border-primary/20"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <User size={20} className="text-primary" />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="font-semibold text-gray-900">{getDisplayName()}</p>
+                                        <p className="text-xs text-gray-500 capitalize">{getRole()}</p>
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => {
+                                        handleNavClick();
+                                        navigate('/manager/dashboard');
+                                    }}
+                                    className="text-secondary font-medium hover:text-primary flex items-center gap-2 py-2"
+                                >
+                                    <LayoutDashboard size={18} />
+                                    Dashboard
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        handleNavClick();
+                                        navigate('/manager/dashboard/profile');
+                                    }}
+                                    className="text-secondary font-medium hover:text-primary flex items-center gap-2 py-2"
+                                >
+                                    <Settings size={18} />
+                                    Profile Settings
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        handleNavClick();
+                                        handleSignOut();
+                                    }}
+                                    className="text-red-600 font-medium hover:text-red-700 flex items-center gap-2 py-2"
+                                >
+                                    <LogOut size={18} />
+                                    Sign Out
+                                </button>
+                            </div>
+                        ) : (
+                            /* Unauthenticated Mobile Menu */
+                            <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                                <button 
+                                    onClick={() => {
+                                        handleNavClick();
+                                        navigate('/auth/login');
+                                    }}
+                                    className="text-secondary font-medium hover:text-primary flex items-center gap-2"
+                                >
+                                    <LogIn size={18} />
+                                    Login
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        handleNavClick();
+                                        navigate('/auth/signup');
+                                    }}
+                                    className="bg-primary text-white px-6 py-2 rounded-full font-medium w-full flex items-center justify-center gap-2 hover:bg-opacity-90"
+                                >
+                                    <UserPlus size={18} />
+                                    Sign Up
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

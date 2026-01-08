@@ -30,3 +30,4 @@ CREATE POLICY "Allow authenticated read" ON newsletter_subscribers
 -- Success message
 SELECT 'newsletter_subscribers table created successfully!' as status;
 
+

@@ -94,3 +94,4 @@ GRANT ALL ON profiles TO authenticated;
 -- Verification
 SELECT 'Profiles table created successfully!' as status;
 
+
