@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, Bot } from 'lucide-react';
 import ChatWindow from './ChatWindow';
 
 const ChatWidget = () => {
@@ -11,10 +11,11 @@ const ChatWidget = () => {
             {/* Floating button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-gradient-to-r from-primary to-orange-600 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300"
-                aria-label="Open chat"
+                className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                aria-label="Ask Lakshmi"
             >
-                <MessageCircle size={28} />
+                <Bot size={20} className="flex-shrink-0" />
+                <span className="font-medium text-sm whitespace-nowrap">Ask Lakshmi</span>
             </button>
 
             {/* Chat window */}

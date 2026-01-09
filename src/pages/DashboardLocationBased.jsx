@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, Home, Heart, FileText, Map as MapIcon, 
   ArrowRight, MapPin, AlertCircle, TrendingUp, Star,
-  Loader2
+  Loader2, X, Compass, Clock, Zap, Eye
 } from 'lucide-react';
+import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import NearbyPropertiesMap from '../components/Dashboard/NearbyPropertiesMap';
+import PropertyDiscoverySection from '../components/Dashboard/PropertyDiscoverySection';
+import NearestBrokerWidget from '../components/Dashboard/NearestBrokerWidget';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import { useLocation } from '../contexts/LocationContext';
 import { useProperties } from '../contexts/PropertiesContext';
@@ -16,14 +19,42 @@ import * as propertiesService from '../services/propertiesService';
 
 const DashboardLocationBased = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { savedProperties } = useSavedProperties();
   const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useLocation();
   const { currentUser, fetchProperties: fetchSupabaseProperties } = useProperties();
+  const { activeTab, setActiveTab } = usePropertyFilter();
   
-  const [searchInput, setSearchInput] = useState('');
-  const [featuredProperties, setFeaturedProperties] = useState([]);
+  // Redirect if URL has invalid path segments
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/user/dashboard/') && currentPath !== '/user/dashboard' && 
+        !currentPath.match(/^\/user\/dashboard\/(discover|saved|applications|viewings|messages|reviews|payments|contracts|settings|help|profile|property\/[^/]+)$/)) {
+      // Invalid path, redirect to main dashboard
+      navigate('/user/dashboard', { replace: true });
+    }
+  }, [navigate]);
+  
+  // Initialize search input from URL params if available
+  const [searchInput, setSearchInput] = useState(() => {
+    return searchParams.get('location') || '';
+  });
+  
+  // Discovery sections state
+  const [discoveryProperties, setDiscoveryProperties] = useState([]);
   const [mostViewedProperties, setMostViewedProperties] = useState([]);
+  const [trendingProperties, setTrendingProperties] = useState([]);
+  const [recentlyAddedProperties, setRecentlyAddedProperties] = useState([]);
+  const [highDemandProperties, setHighDemandProperties] = useState([]);
+  
+  // Loading states for each section
   const [loading, setLoading] = useState(true);
+  const [loadingDiscovery, setLoadingDiscovery] = useState(false);
+  const [loadingMostViewed, setLoadingMostViewed] = useState(false);
+  const [loadingTrending, setLoadingTrending] = useState(false);
+  const [loadingRecentlyAdded, setLoadingRecentlyAdded] = useState(false);
+  const [loadingHighDemand, setLoadingHighDemand] = useState(false);
+  
   const [error, setError] = useState(null);
   const [locationMessage, setLocationMessage] = useState(null);
   const [stats, setStats] = useState({
@@ -32,117 +63,128 @@ const DashboardLocationBased = () => {
     applicationsCount: 0,
   });
 
-  // Fetch featured and most viewed properties based on location
-  useEffect(() => {
-    const fetchProperties = async () => {
-      // Wait for location to be available
-      if (locationLoading) {
-        return;
-      }
+  // Fetch all discovery sections based on location
+  const fetchAllDiscoverySections = useCallback(async (location, showLoading = true) => {
+    if (!location) return;
 
-      // Use default location if activeLocation is not available
-      const location = activeLocation || {
-        type: 'default',
-        postcode: 'SW1A 1AA',
-        latitude: 51.5074,
-        longitude: -0.1278,
-        city: 'London',
-        source: 'default',
-      };
-
+    if (showLoading) {
       setLoading(true);
-      setError(null);
-      setLocationMessage(null);
+      setLoadingDiscovery(true);
+      setLoadingMostViewed(true);
+      setLoadingTrending(true);
+      setLoadingRecentlyAdded(true);
+      setLoadingHighDemand(true);
+    }
+    setError(null);
+    setLocationMessage(null);
 
-      try {
-        let fetchedFeatured = [];
-        let fetchedMostViewed = [];
-        let totalFetched = 0;
+    try {
+      // Fetch all sections in parallel for better performance
+      const [
+        discoveryResult,
+        mostViewedResult,
+        trendingResult,
+        recentlyAddedResult,
+        highDemandResult,
+      ] = await Promise.all([
+        propertyDataService.getPropertyDiscovery({ location, limit: 8, userId: currentUser?.id })
+          .catch(err => ({ properties: [], error: err.message })),
+        propertyDataService.getMostViewedProperties({ location, limit: 6, userId: currentUser?.id })
+          .catch(err => ({ properties: [], error: err.message })),
+        propertyDataService.getTrendingProperties({ location, limit: 6, userId: currentUser?.id })
+          .catch(err => ({ properties: [], error: err.message })),
+        propertyDataService.getRecentlyAddedProperties({ location, limit: 6, userId: currentUser?.id })
+          .catch(err => ({ properties: [], error: err.message })),
+        propertyDataService.getHighDemandProperties({ location, limit: 6, userId: currentUser?.id })
+          .catch(err => ({ properties: [], error: err.message })),
+      ]);
 
-        // Try Zoopla API first (if configured)
-        const zooplaApiKey = import.meta.env.VITE_ZOOPLA_API_KEY;
-        
-        if (zooplaApiKey) {
-          try {
-            const featuredResult = await propertyDataService.getFeaturedProperties({
-              location: location,
-              limit: 6,
-              userId: currentUser?.id,
-            });
+      // Update state for each section
+      setDiscoveryProperties(discoveryResult.properties || []);
+      setMostViewedProperties(mostViewedResult.properties || []);
+      setTrendingProperties(trendingResult.properties || []);
+      setRecentlyAddedProperties(recentlyAddedResult.properties || []);
+      setHighDemandProperties(highDemandResult.properties || []);
 
-            fetchedFeatured = featuredResult.properties || [];
+      // Calculate total properties count
+      const totalCount = 
+        (discoveryResult.properties?.length || 0) +
+        (mostViewedResult.properties?.length || 0) +
+        (trendingResult.properties?.length || 0) +
+        (recentlyAddedResult.properties?.length || 0) +
+        (highDemandResult.properties?.length || 0);
 
-            const mostViewedResult = await propertyDataService.getMostViewedProperties({
-              location: location,
-              limit: 3,
-              userId: currentUser?.id,
-            });
+      setStats(prev => ({
+        ...prev,
+        totalProperties: totalCount,
+      }));
 
-            fetchedMostViewed = mostViewedResult.properties || [];
+      // If no properties found, try fallback
+      if (totalCount === 0) {
+        const fallbackResult = await propertyDataService.fetchPropertiesWithFallback({
+          location,
+          radius: 5,
+          maxRadius: 20,
+          listingStatus: 'both',
+          userId: currentUser?.id,
+        });
 
-            // If no properties found, try nearby fallback
-            if (fetchedFeatured.length === 0 && fetchedMostViewed.length === 0) {
-              const fallbackResult = await propertyDataService.fetchPropertiesWithFallback({
-                location: location,
-                radius: 5,
-                maxRadius: 20,
-                listingStatus: 'both',
-              });
-
-              if (fallbackResult.properties && fallbackResult.properties.length > 0) {
-                fetchedFeatured = fallbackResult.properties.slice(0, 6);
-                setLocationMessage(fallbackResult.message);
-              }
-            }
-
-            totalFetched = fetchedFeatured.length + fetchedMostViewed.length;
-          } catch (zooplaError) {
-            console.warn('Zoopla API error, falling back to Supabase:', zooplaError);
-            // Fall through to Supabase fallback
-          }
+        if (fallbackResult.properties && fallbackResult.properties.length > 0) {
+          // Distribute fallback properties across sections
+          const fallbackProps = fallbackResult.properties;
+          setDiscoveryProperties(fallbackProps.slice(0, 8));
+          setMostViewedProperties(fallbackProps.slice(0, 6));
+          setTrendingProperties(fallbackProps.slice(0, 6));
+          setRecentlyAddedProperties(fallbackProps.slice(0, 6));
+          setHighDemandProperties(fallbackProps.slice(0, 6));
+          setLocationMessage(fallbackResult.message || 'Showing similar properties near your search area.');
+          setStats(prev => ({
+            ...prev,
+            totalProperties: fallbackProps.length,
+          }));
+        } else {
+          setLocationMessage('No properties found in this area or nearby. Please try a different location.');
         }
-
-        // Fallback to Supabase if Zoopla not configured or failed
-        if (fetchedFeatured.length === 0 && fetchedMostViewed.length === 0) {
-          try {
-            const supabaseResult = await propertiesService.getUKProperties({
-              country: 'UK',
-              status: 'online',
-              limit: 20,
-              offset: 0,
-              userId: currentUser?.id || null,
-            });
-
-            if (supabaseResult && supabaseResult.data && supabaseResult.data.length > 0) {
-              fetchedFeatured = supabaseResult.data.slice(0, 6);
-              fetchedMostViewed = supabaseResult.data.slice(0, 3);
-              totalFetched = supabaseResult.data.length;
-            }
-          } catch (supabaseError) {
-            console.error('Supabase fetch error:', supabaseError);
-          }
-        }
-
-        // Update state with fetched properties
-        setFeaturedProperties(fetchedFeatured);
-        setMostViewedProperties(fetchedMostViewed);
-        setStats(prev => ({
-          ...prev,
-          totalProperties: totalFetched,
-        }));
-      } catch (err) {
-        console.error('Error fetching properties:', err);
-        setError(err.message || 'Failed to load properties. Please check your connection and try again.');
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      // Log error (production: use proper error tracking)
+      if (import.meta.env.DEV) {
+        console.error('Error fetching discovery sections:', err);
+      }
+      setError(err.message || 'Failed to load properties. Please check your connection and try again.');
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+        setLoadingDiscovery(false);
+        setLoadingMostViewed(false);
+        setLoadingTrending(false);
+        setLoadingRecentlyAdded(false);
+        setLoadingHighDemand(false);
+      }
+    }
+  }, [currentUser]);
+
+  // Initial fetch based on location
+  useEffect(() => {
+    if (locationLoading) return;
+
+    const urlLocation = searchParams.get('location');
+    if (urlLocation && urlLocation.trim()) {
+      // URL location will be handled by search function
+      return;
+    }
+
+    const location = activeLocation || {
+      type: 'default',
+      postcode: 'SW1A 1AA',
+      latitude: 51.5074,
+      longitude: -0.1278,
+      city: 'London',
+      source: 'default',
     };
 
-    // Only fetch if location is not loading
-    if (!locationLoading) {
-      fetchProperties();
-    }
-  }, [activeLocation, currentUser, locationLoading]);
+    fetchAllDiscoverySections(location, true);
+  }, [activeLocation, locationLoading, searchParams, fetchAllDiscoverySections]);
 
   // Update stats
   useEffect(() => {
@@ -153,17 +195,64 @@ const DashboardLocationBased = () => {
   }, [savedProperties]);
 
   // Handle location search
-  const handleLocationSearch = async (e) => {
+  const handleLocationSearch = useCallback(async (e, searchQuery = null) => {
     e?.preventDefault();
-    if (!searchInput.trim()) return;
+    const query = (searchQuery || searchInput || '').trim();
+    
+    // Validate input
+    if (!query) {
+      setError('Please enter a postcode, street name, or address to search.');
+      return;
+    }
 
     setLoading(true);
-    const location = await updateLocationFromSearch(searchInput);
-    if (location) {
-      setSearchInput('');
+    setError(null);
+    setLocationMessage(null);
+    
+    try {
+      // Update location from search input
+      const location = await updateLocationFromSearch(query);
+      
+      if (location) {
+        // Update URL with search query for persistence
+        setSearchParams({ location: query });
+        
+        // Preserve search input (don't clear it)
+        if (searchQuery) {
+          setSearchInput(searchQuery);
+        }
+        
+        // Fetch all discovery sections for the new location
+        await fetchAllDiscoverySections(location, false);
+      } else {
+        setError('Could not find location. Please check the postcode, street name, or address and try again.');
+      }
+    } catch (err) {
+      console.error('Error searching location:', err);
+      setError(err.message || 'Failed to search location. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [searchInput, updateLocationFromSearch, setSearchParams, fetchAllDiscoverySections]);
+
+  // Listen for header search location events
+  useEffect(() => {
+    const handleHeaderLocationSearch = (event) => {
+      const { query } = event.detail;
+      if (query) {
+        setSearchInput(query);
+        // Trigger search after a short delay to ensure state is updated
+        setTimeout(() => {
+          handleLocationSearch({ preventDefault: () => {} }, query);
+        }, 100);
+      }
+    };
+
+    window.addEventListener('headerLocationSearch', handleHeaderLocationSearch);
+    return () => {
+      window.removeEventListener('headerLocationSearch', handleHeaderLocationSearch);
+    };
+  }, [handleLocationSearch]);
 
   // Transform property for PropertyCard
   const transformPropertyForCard = (property) => {
@@ -215,7 +304,13 @@ const DashboardLocationBased = () => {
   // Combine all properties for map view
   const allProperties = useMemo(() => {
     try {
-      const combined = [...(featuredProperties || []), ...(mostViewedProperties || [])];
+      const combined = [
+        ...(discoveryProperties || []),
+        ...(mostViewedProperties || []),
+        ...(trendingProperties || []),
+        ...(recentlyAddedProperties || []),
+        ...(highDemandProperties || []),
+      ];
       // Remove duplicates by ID
       const unique = combined.filter((p, index, self) => 
         p && p.id && index === self.findIndex(prop => prop && prop.id === p.id)
@@ -225,7 +320,7 @@ const DashboardLocationBased = () => {
       console.error('Error combining properties:', err);
       return [];
     }
-  }, [featuredProperties, mostViewedProperties]);
+  }, [discoveryProperties, mostViewedProperties, trendingProperties, recentlyAddedProperties, highDemandProperties]);
 
   // Map properties for map view (formatted for map component)
   const mapProperties = useMemo(() => {
@@ -266,65 +361,147 @@ const DashboardLocationBased = () => {
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen">
-      {/* Location Info */}
-      {mapLocation && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MapPin className="text-blue-600 dark:text-blue-400" size={20} />
-            <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Showing properties near {mapLocation.postcode || mapLocation.city || 'your location'}
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                Source: {mapLocation.source === 'search_input' ? 'Search' : 
-                         mapLocation.source === 'profile' ? 'Profile' : 
-                         mapLocation.source === 'browser_geolocation' ? 'Your Location' : 'Default'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/user/dashboard/discover')}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Change Location
-          </button>
+      {/* Location Search - Rebuilt with Modern Design */}
+      <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-800 rounded-xl shadow-lg border-2 border-orange-200 dark:border-orange-800 p-6 lg:p-8">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+            Find Your Perfect Property
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Search by postcode, street name, or full address
+          </p>
         </div>
-      )}
-
-      {/* Location Search */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <form onSubmit={handleLocationSearch} className="flex gap-3">
-          <div className="flex-1 relative">
-            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        <form 
+          onSubmit={handleLocationSearch} 
+          className="flex flex-col sm:flex-row gap-3"
+        >
+          <div className="flex-1 relative group">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+              <MapPin 
+                className={`transition-colors ${
+                  searchInput.trim() 
+                    ? 'text-orange-500 dark:text-orange-400' 
+                    : 'text-gray-400 dark:text-gray-500'
+                }`} 
+                size={22} 
+              />
+            </div>
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search by postcode, street, or address..."
-                  className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              onKeyDown={(e) => {
+                // Support Enter key submission
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (searchInput.trim() && !loading) {
+                    handleLocationSearch(e);
+                  }
+                }
+              }}
+              onClick={(e) => e.target.focus()}
+              placeholder="e.g., SW1A 1AA, Oxford Street, or 123 Main Street, London"
+              className="w-full pl-12 pr-4 py-4 text-base border-2 border-orange-300 dark:border-orange-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-500 dark:focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 cursor-text transition-all duration-200 shadow-sm hover:shadow-md"
+              disabled={loading}
+              aria-label="Search for properties by location"
             />
+            {searchInput.trim() && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                  setSearchParams({});
+                  setError(null);
+                  setLocationMessage(null);
+                }}
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                aria-label="Clear search"
+              >
+                <X size={18} />
+              </button>
+            )}
           </div>
           <button
             type="submit"
-            disabled={loading || !searchInput.trim()}
-            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            disabled={loading}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const query = searchInput.trim();
+              if (query && !loading) {
+                handleLocationSearch(e);
+              } else if (!query) {
+                // Show validation message if input is empty
+                setError('Please enter a postcode, street name, or address to search.');
+                // Focus the input field
+                const input = e.target.closest('form')?.querySelector('input[type="text"]');
+                if (input) {
+                  input.focus();
+                }
+              }
+            }}
+            className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-xl active:shadow-md transform hover:scale-[1.02] active:scale-[0.98] min-w-[140px] z-10 relative"
+            aria-label="Search for properties"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-            Search
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span className="hidden sm:inline">Searching...</span>
+                <span className="sm:hidden">Search...</span>
+              </>
+            ) : (
+              <>
+                <Search size={20} className="flex-shrink-0" />
+                <span>Search</span>
+              </>
+            )}
           </button>
         </form>
+        {searchInput.trim() && (
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <span>Press</span>
+            <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">
+              Enter
+            </kbd>
+            <span>to search</span>
+          </p>
+        )}
       </div>
 
-      {/* Location Message */}
-      {locationMessage && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="text-yellow-600 dark:text-yellow-400 mt-0.5" size={20} />
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">{locationMessage}</p>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5" size={20} />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="mt-2 text-xs text-red-600 dark:text-red-400 hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Location Message (Info/Warning) */}
+      {locationMessage && !error && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="text-yellow-600 dark:text-yellow-400 mt-0.5" size={20} />
+          <div className="flex-1">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">{locationMessage}</p>
+            <button
+              onClick={() => setLocationMessage(null)}
+              className="mt-2 text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats and Nearest Broker */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -363,6 +540,11 @@ const DashboardLocationBased = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400">Active Applications</p>
             </div>
           </div>
+        </div>
+        
+        {/* Nearest Broker Widget */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <NearestBrokerWidget />
         </div>
       </div>
 
@@ -440,38 +622,78 @@ const DashboardLocationBased = () => {
         )}
       </div>
 
-      {/* Featured Properties - Compact Grid Below Map */}
-      {featuredProperties.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Star className="text-orange-500" size={20} />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Featured Properties</h2>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Handpicked properties in your area
-              </p>
-            </div>
-            <button
-              onClick={() => navigate('/user/dashboard/discover')}
-              className="flex items-center gap-2 px-4 py-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 text-sm font-medium transition-colors"
-            >
-              <span>View All</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProperties.slice(0, 3).map((property) => (
-              <PropertyCard
-                key={property.id}
-                property={transformPropertyForCard(property)}
-                onViewDetails={handleViewDetails}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Property Discovery Sections */}
+      <div className="space-y-8 lg:space-y-12">
+        {/* 1. Property Discovery (Core) */}
+        <PropertyDiscoverySection
+          title="Property Discovery"
+          description="Curated properties based on your location and preferences"
+          icon={Compass}
+          properties={discoveryProperties}
+          loading={loadingDiscovery || loading}
+          error={null}
+          badge={{ type: 'featured' }}
+          viewAllLink="/user/dashboard/discover"
+          emptyMessage="No properties found in this area. Try searching for a different location."
+          limit={8}
+        />
+
+        {/* 2. Most Viewed Properties */}
+        <PropertyDiscoverySection
+          title="Most Viewed Properties"
+          description="Properties that are getting the most attention from other users"
+          icon={Eye}
+          properties={mostViewedProperties}
+          loading={loadingMostViewed || loading}
+          error={null}
+          badge={{ type: 'most-viewed' }}
+          viewAllLink="/user/dashboard/discover?filter=most-viewed"
+          emptyMessage="No most viewed properties found yet."
+          limit={6}
+        />
+
+        {/* 3. Trending Properties */}
+        <PropertyDiscoverySection
+          title="Trending Properties"
+          description="Properties with rapidly increasing engagement and interest"
+          icon={TrendingUp}
+          properties={trendingProperties}
+          loading={loadingTrending || loading}
+          error={null}
+          badge={{ type: 'trending' }}
+          viewAllLink="/user/dashboard/discover?filter=trending"
+          emptyMessage="No trending properties found at the moment."
+          limit={6}
+        />
+
+        {/* 4. Recently Added Properties */}
+        <PropertyDiscoverySection
+          title="Recently Added Properties"
+          description="Fresh listings just added to the platform"
+          icon={Clock}
+          properties={recentlyAddedProperties}
+          loading={loadingRecentlyAdded || loading}
+          error={null}
+          badge={{ type: 'new' }}
+          viewAllLink="/user/dashboard/discover?filter=recent"
+          emptyMessage="No recently added properties found."
+          limit={6}
+        />
+
+        {/* 5. High Demand Properties */}
+        <PropertyDiscoverySection
+          title="High Demand Properties"
+          description="Properties with high application rates and strong interest"
+          icon={Zap}
+          properties={highDemandProperties}
+          loading={loadingHighDemand || loading}
+          error={null}
+          badge={{ type: 'high-demand' }}
+          viewAllLink="/user/dashboard/discover?filter=high-demand"
+          emptyMessage="No high demand properties found at the moment."
+          limit={6}
+        />
+      </div>
     </div>
   );
 };

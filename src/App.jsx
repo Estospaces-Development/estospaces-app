@@ -6,6 +6,7 @@ import { MessagesProvider } from './contexts/MessagesContext';
 import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import { PropertiesProvider } from './contexts/PropertiesContext';
 import { LocationProvider } from './contexts/LocationContext';
+import { PropertyFilterProvider } from './contexts/PropertyFilterContext';
 import Home from './pages/Home';
 import Terms from './pages/Terms';
 import About from './pages/About';
@@ -58,7 +59,8 @@ function App() {
           <ApplicationsProvider>
             <PropertiesProvider>
               <LocationProvider>
-                <Router>
+                  <Router>
+                    <PropertyFilterProvider>
           <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -94,6 +96,17 @@ function App() {
           {/* Dashboard Routes */}
           <Route
             path="/user/dashboard"
+            element={
+              <DashboardLayout>
+                <ErrorBoundary>
+                  <DashboardLocationBased />
+                </ErrorBoundary>
+              </DashboardLayout>
+            }
+          />
+          {/* Catch-all route for invalid dashboard paths */}
+          <Route
+            path="/user/dashboard/*"
             element={
               <DashboardLayout>
                 <ErrorBoundary>
@@ -201,7 +214,8 @@ function App() {
           />
         </Routes>
         </Layout>
-              </Router>
+                    </PropertyFilterProvider>
+                  </Router>
               </LocationProvider>
             </PropertiesProvider>
           </ApplicationsProvider>

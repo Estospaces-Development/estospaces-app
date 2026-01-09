@@ -3,12 +3,12 @@
  * Combines data from Zoopla API and Supabase
  */
 
-import * as zooplaService from './zooplaService';
 import * as propertiesService from './propertiesService';
 import { supabase } from '../lib/supabase';
 
 /**
- * Fetch properties from Zoopla based on location
+ * Fetch properties from Global API (Zoopla + Supabase fallback)
+ * This calls the server-side API endpoint, never Zoopla directly
  */
 export const fetchPropertiesFromZoopla = async ({
   location,
@@ -17,26 +17,55 @@ export const fetchPropertiesFromZoopla = async ({
   ...filters
 }) => {
   try {
-    const zooplaResults = await zooplaService.searchProperties({
-      postcode: location?.postcode,
-      latitude: location?.latitude,
-      longitude: location?.longitude,
-      radius,
-      listingStatus,
-      ...filters,
-    });
+    // Build query params for internal API
+    const params = new URLSearchParams();
+    
+    if (location?.postcode) {
+      params.append('postcode', location.postcode);
+    } else if (location?.city) {
+      params.append('city', location.city);
+    }
+    
+    if (location?.latitude && location?.longitude) {
+      params.append('lat', location.latitude.toString());
+      params.append('lng', location.longitude.toString());
+    }
+    
+    params.append('radius', radius.toString());
+    params.append('type', listingStatus);
+    params.append('page', '1');
+    params.append('limit', '20');
+    
+    if (filters.minPrice) params.append('min_price', filters.minPrice.toString());
+    if (filters.maxPrice) params.append('max_price', filters.maxPrice.toString());
+    if (filters.minBedrooms) params.append('bedrooms', filters.minBedrooms.toString());
+
+    // Call internal API (server-side proxy)
+    const response = await fetch(`/api/properties/global?${params.toString()}`);
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
 
     return {
-      properties: zooplaResults.properties || [],
-      totalResults: zooplaResults.totalResults || 0,
-      source: 'zoopla',
+      properties: result.properties || [],
+      totalResults: result.totalResults || 0,
+      source: result.source || 'supabase',
+      fallbackUsed: result.fallbackUsed || false,
+      error: result.error,
     };
   } catch (error) {
-    console.error('Error fetching from Zoopla:', error);
+    // Log error (production: use proper error tracking)
+    if (import.meta.env.DEV) {
+      console.error('Error fetching from Global API:', error);
+    }
     return {
       properties: [],
       totalResults: 0,
-      source: 'zoopla',
+      source: 'error',
+      fallbackUsed: true,
       error: error.message,
     };
   }
@@ -100,7 +129,9 @@ export const getMostViewedProperties = async ({
 
     return { properties, error: null };
   } catch (error) {
-    console.error('Error fetching most viewed properties:', error);
+    if (import.meta.env.DEV) {
+      console.error('Error fetching most viewed properties:', error);
+    }
     return { properties: [], error: error.message };
   }
 };
@@ -181,7 +212,10 @@ export const getFeaturedProperties = async ({
       error: zooplaResults.error,
     };
   } catch (error) {
-    console.error('Error fetching featured properties:', error);
+    // Log error (production: use proper error tracking)
+    if (import.meta.env.DEV) {
+      console.error('Error fetching featured properties:', error);
+    }
     return { properties: [], source: 'error', error: error.message };
   }
 };
@@ -281,12 +315,16 @@ export const getPropertyById = async (propertyId, userId = null) => {
         return { data: transformed, error: null };
       }
     } catch (zooplaError) {
-      console.warn('Zoopla API error:', zooplaError);
+      if (import.meta.env.DEV) {
+        console.warn('Zoopla API error:', zooplaError);
+      }
     }
 
     return { data: null, error: { message: 'Property not found' } };
   } catch (error) {
-    console.error('Error fetching property by ID:', error);
+    if (import.meta.env.DEV) {
+      console.error('Error fetching property by ID:', error);
+    }
     return { data: null, error: { message: error.message || 'Failed to fetch property' } };
   }
 };
@@ -328,7 +366,413 @@ export const trackPropertyView = async (propertyId, userId) => {
         });
     }
   } catch (error) {
-    console.error('Error tracking property view:', error);
+    if (import.meta.env.DEV) {
+      console.error('Error tracking property view:', error);
+    }
+  }
+};
+
+/**
+ * Get trending properties
+ * Criteria: Rapid increase in views and high engagement in recent time window (last 7 days)
+ */
+export const getTrendingProperties = async ({
+  location,
+  limit = 6,
+  userId = null,
+  timeWindowDays = 7,
+}) => {
+  try {
+    if (!supabase) {
+      return { properties: [], error: 'Supabase not configured' };
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - timeWindowDays);
+
+    // Get properties with recent views and engagement
+    let query = supabase
+      .from('viewed_properties')
+      .select(`
+        property_id,
+        view_count,
+        viewed_at,
+        properties (*)
+      `)
+      .gte('viewed_at', cutoffDate.toISOString())
+      .order('view_count', { ascending: false })
+      .order('viewed_at', { ascending: false });
+
+    const { data: viewedData, error: viewedError } = await query;
+
+    if (viewedError) throw viewedError;
+
+    // Get properties with recent saves/applications
+    const { data: savedData } = await supabase
+      .from('saved_properties')
+      .select('property_id, created_at')
+      .gte('created_at', cutoffDate.toISOString());
+
+    const { data: appliedData } = await supabase
+      .from('applied_properties')
+      .select('property_id, created_at')
+      .gte('created_at', cutoffDate.toISOString());
+
+    // Aggregate engagement metrics per property
+    const engagementMap = new Map();
+
+    // Count views
+    (viewedData || []).forEach(item => {
+      if (!item.properties) return;
+      const propId = item.property_id;
+      if (!engagementMap.has(propId)) {
+        engagementMap.set(propId, {
+          property: item.properties,
+          viewCount: 0,
+          recentViews: 0,
+          saves: 0,
+          applications: 0,
+          trendingScore: 0,
+        });
+      }
+      const metrics = engagementMap.get(propId);
+      metrics.viewCount += item.view_count || 0;
+      metrics.recentViews += 1;
+    });
+
+    // Count saves
+    (savedData || []).forEach(item => {
+      if (engagementMap.has(item.property_id)) {
+        engagementMap.get(item.property_id).saves += 1;
+      }
+    });
+
+    // Count applications
+    (appliedData || []).forEach(item => {
+      if (engagementMap.has(item.property_id)) {
+        engagementMap.get(item.property_id).applications += 1;
+      }
+    });
+
+    // Calculate trending score (weighted: views * 1, saves * 2, applications * 3)
+    engagementMap.forEach((metrics, propId) => {
+      metrics.trendingScore =
+        metrics.recentViews * 1 +
+        metrics.saves * 2 +
+        metrics.applications * 3;
+    });
+
+    // Convert to array and sort by trending score
+    let properties = Array.from(engagementMap.values())
+      .filter(item => item.property && item.property.status === 'online' && item.property.country === 'UK')
+      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .slice(0, limit * 2) // Get more to filter by location
+      .map(item => ({
+        ...item.property,
+        view_count: item.viewCount,
+        recent_views: item.recentViews,
+        saves_count: item.saves,
+        applications_count: item.applications,
+        trending_score: item.trendingScore,
+        trending: true,
+      }));
+
+    // Filter by location if provided
+    if (location?.postcode) {
+      const exactMatches = properties.filter(p =>
+        p.postcode?.toLowerCase().includes(location.postcode.toLowerCase())
+      );
+      if (exactMatches.length > 0) {
+        properties = exactMatches;
+      }
+    } else if (location?.city) {
+      const cityMatches = properties.filter(p =>
+        p.city?.toLowerCase().includes(location.city.toLowerCase())
+      );
+      if (cityMatches.length > 0) {
+        properties = cityMatches;
+      }
+    }
+
+    properties = properties.slice(0, limit);
+
+    // Enrich with user status
+    if (userId && properties.length > 0) {
+      properties = await propertiesService.enrichPropertiesWithUserStatus(properties, userId);
+    }
+
+    return { properties, error: null };
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Error fetching trending properties:', error);
+    }
+    return { properties: [], error: error.message };
+  }
+};
+
+/**
+ * Get recently added properties
+ * Criteria: Latest properties sorted by created_at descending
+ */
+export const getRecentlyAddedProperties = async ({
+  location,
+  limit = 6,
+  userId = null,
+  days = 30, // Properties added in last N days
+}) => {
+  try {
+    if (!supabase) {
+      return { properties: [], error: 'Supabase not configured' };
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    let query = supabase
+      .from('properties')
+      .select('*')
+      .eq('country', 'UK')
+      .eq('status', 'online')
+      .gte('created_at', cutoffDate.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(limit * 2); // Get more to filter by location
+
+    // Filter by location if provided
+    if (location?.postcode) {
+      query = query.ilike('postcode', `%${location.postcode}%`);
+    } else if (location?.city) {
+      query = query.ilike('city', `%${location.city}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    let properties = (data || []).slice(0, limit);
+
+    // Mark as recently added
+    properties = properties.map(p => ({
+      ...p,
+      recently_added: true,
+      days_since_listed: Math.floor(
+        (new Date() - new Date(p.created_at)) / (1000 * 60 * 60 * 24)
+      ),
+    }));
+
+    // Enrich with user status
+    if (userId && properties.length > 0) {
+      properties = await propertiesService.enrichPropertiesWithUserStatus(properties, userId);
+    }
+
+    return { properties, error: null };
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Error fetching recently added properties:', error);
+    }
+    return { properties: [], error: error.message };
+  }
+};
+
+/**
+ * Get high demand properties
+ * Criteria: High applications, high save-to-view ratio, or agent-defined priority
+ */
+export const getHighDemandProperties = async ({
+  location,
+  limit = 6,
+  userId = null,
+}) => {
+  try {
+    if (!supabase) {
+      return { properties: [], error: 'Supabase not configured' };
+    }
+
+    // Get all online UK properties
+    let query = supabase
+      .from('properties')
+      .select('*')
+      .eq('country', 'UK')
+      .eq('status', 'online')
+      .limit(limit * 3); // Get more to calculate demand metrics
+
+    // Filter by location if provided
+    if (location?.postcode) {
+      query = query.ilike('postcode', `%${location.postcode}%`);
+    } else if (location?.city) {
+      query = query.ilike('city', `%${location.city}%`);
+    }
+
+    const { data: properties, error: propsError } = await query;
+
+    if (propsError) throw propsError;
+
+    if (!properties || properties.length === 0) {
+      return { properties: [], error: null };
+    }
+
+    // Get application counts per property
+    const propertyIds = properties.map(p => p.id);
+    const { data: applicationsData } = await supabase
+      .from('applied_properties')
+      .select('property_id')
+      .in('property_id', propertyIds);
+
+    // Get save counts per property
+    const { data: savedData } = await supabase
+      .from('saved_properties')
+      .select('property_id')
+      .in('property_id', propertyIds);
+
+    // Get view counts per property
+    const { data: viewedData } = await supabase
+      .from('viewed_properties')
+      .select('property_id, view_count')
+      .in('property_id', propertyIds);
+
+    // Calculate demand metrics
+    const applicationCounts = {};
+    (applicationsData || []).forEach(item => {
+      applicationCounts[item.property_id] = (applicationCounts[item.property_id] || 0) + 1;
+    });
+
+    const saveCounts = {};
+    (savedData || []).forEach(item => {
+      saveCounts[item.property_id] = (saveCounts[item.property_id] || 0) + 1;
+    });
+
+    const viewCounts = {};
+    (viewedData || []).forEach(item => {
+      viewCounts[item.property_id] = (viewCounts[item.property_id] || 0) + (item.view_count || 1);
+    });
+
+    // Calculate demand score for each property
+    let propertiesWithDemand = properties.map(property => {
+      const appCount = applicationCounts[property.id] || 0;
+      const saveCount = saveCounts[property.id] || 0;
+      const viewCount = viewCounts[property.id] || 0;
+      const saveToViewRatio = viewCount > 0 ? saveCount / viewCount : 0;
+
+      // Demand score: applications * 3 + saves * 2 + save-to-view ratio * 100
+      const demandScore = appCount * 3 + saveCount * 2 + saveToViewRatio * 100;
+
+      return {
+        ...property,
+        applications_count: appCount,
+        saves_count: saveCount,
+        view_count: viewCount,
+        save_to_view_ratio: saveToViewRatio,
+        demand_score: demandScore,
+        high_demand: demandScore >= 5, // Threshold for "high demand"
+      };
+    });
+
+    // Sort by demand score and filter high demand properties
+    propertiesWithDemand = propertiesWithDemand
+      .sort((a, b) => b.demand_score - a.demand_score)
+      .filter(p => p.high_demand || p.applications_count > 0) // Include if high demand OR has applications
+      .slice(0, limit);
+
+    // Enrich with user status
+    if (userId && propertiesWithDemand.length > 0) {
+      propertiesWithDemand = await propertiesService.enrichPropertiesWithUserStatus(
+        propertiesWithDemand,
+        userId
+      );
+    }
+
+    return { properties: propertiesWithDemand, error: null };
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Error fetching high demand properties:', error);
+    }
+    return { properties: [], error: error.message };
+  }
+};
+
+/**
+ * Get property discovery (core) - personalized recommendations
+ * Based on user location, preferences, and past interactions
+ */
+export const getPropertyDiscovery = async ({
+  location,
+  limit = 8,
+  userId = null,
+}) => {
+  try {
+    // Priority: Featured > Most Viewed > Recently Added
+    // Combine and deduplicate, prioritizing relevance
+
+    const [featuredResult, mostViewedResult, recentlyAddedResult] = await Promise.all([
+      getFeaturedProperties({ location, limit: limit / 3, userId }),
+      getMostViewedProperties({ location, limit: limit / 3, userId }),
+      getRecentlyAddedProperties({ location, limit: limit / 3, userId }),
+    ]);
+
+    // Combine and deduplicate by property ID
+    const propertyMap = new Map();
+
+    // Add featured first (highest priority)
+    (featuredResult.properties || []).forEach(prop => {
+      if (prop && prop.id) {
+        propertyMap.set(prop.id, { ...prop, priority: 1 });
+      }
+    });
+
+    // Add most viewed (medium priority)
+    (mostViewedResult.properties || []).forEach(prop => {
+      if (prop && prop.id && !propertyMap.has(prop.id)) {
+        propertyMap.set(prop.id, { ...prop, priority: 2 });
+      }
+    });
+
+    // Add recently added (lower priority)
+    (recentlyAddedResult.properties || []).forEach(prop => {
+      if (prop && prop.id && !propertyMap.has(prop.id)) {
+        propertyMap.set(prop.id, { ...prop, priority: 3 });
+      }
+    });
+
+    // Convert to array, sort by priority, and limit
+    let properties = Array.from(propertyMap.values())
+      .sort((a, b) => a.priority - b.priority)
+      .slice(0, limit);
+
+    // If we don't have enough, fetch additional from general pool
+    if (properties.length < limit && supabase) {
+      const additionalLimit = limit - properties.length;
+      const existingIds = new Set(properties.map(p => p.id));
+
+      let query = supabase
+        .from('properties')
+        .select('*')
+        .eq('country', 'UK')
+        .eq('status', 'online')
+        .not('id', 'in', `(${Array.from(existingIds).join(',')})`)
+        .order('created_at', { ascending: false })
+        .limit(additionalLimit);
+
+      if (location?.postcode) {
+        query = query.ilike('postcode', `%${location.postcode}%`);
+      } else if (location?.city) {
+        query = query.ilike('city', `%${location.city}%`);
+      }
+
+      const { data: additionalData } = await query;
+      if (additionalData && additionalData.length > 0) {
+        let enriched = additionalData;
+        if (userId) {
+          enriched = await propertiesService.enrichPropertiesWithUserStatus(additionalData, userId);
+        }
+        properties = [...properties, ...enriched];
+      }
+    }
+
+    return { properties, error: null };
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Error fetching property discovery:', error);
+    }
+    return { properties: [], error: error.message };
   }
 };
 

@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
-import Sidebar from './Sidebar';
+import React from 'react';
+import { useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
+import HorizontalNavigation from './HorizontalNavigation';
 import LakshmiAssistant from './LakshmiAssistant';
 
 const DashboardLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-y-auto dark:bg-gray-900">
-          {children}
-        </main>
-      </div>
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <Header />
+      <HorizontalNavigation />
+      <main className="flex-1 overflow-y-auto dark:bg-gray-900">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="h-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </main>
       {/* Lakshmi AI Assistant - Available on all dashboard pages */}
       <LakshmiAssistant />
     </div>

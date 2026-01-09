@@ -38,67 +38,67 @@ const NearestBrokerWidget = () => {
   const progress = ((600 - timeRemaining) / 600) * 100;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-      <div className="flex items-start justify-between mb-4">
+    <div className="w-full">
+      <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-semibold text-gray-900 mb-1">Nearest Broker</h3>
-          <p className="text-sm text-gray-600">Based on your location</p>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 text-sm">Nearest Broker</h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Based on your location</p>
         </div>
-        <MapPin className="text-orange-500" size={24} />
+        <MapPin className="text-orange-500 dark:text-orange-400" size={20} />
       </div>
 
       {/* Broker Info */}
-      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-semibold">
+      <div className="mb-3 p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {broker.name.charAt(0)}
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-gray-900">{broker.name}</p>
-            <p className="text-sm text-gray-600">{broker.agency}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{broker.name}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{broker.agency}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin size={14} />
+        <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+          <MapPin size={12} />
           <span>{broker.distance} away</span>
         </div>
       </div>
 
       {/* Status & Timer */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {status === 'responded' ? (
               <>
-                <CheckCircle className="text-green-500" size={20} />
-                <span className="text-sm font-medium text-green-700">Responded</span>
+                <CheckCircle className="text-green-500 dark:text-green-400" size={16} />
+                <span className="text-xs font-medium text-green-700 dark:text-green-400">Responded</span>
               </>
             ) : isExpired ? (
               <>
-                <AlertCircle className="text-red-500" size={20} />
-                <span className="text-sm font-medium text-red-700">Time Expired</span>
+                <AlertCircle className="text-red-500 dark:text-red-400" size={16} />
+                <span className="text-xs font-medium text-red-700 dark:text-red-400">Time Expired</span>
               </>
             ) : (
               <>
-                <Clock className="text-orange-500" size={20} />
-                <span className="text-sm font-medium text-orange-700">Waiting for response</span>
+                <Clock className="text-orange-500 dark:text-orange-400" size={16} />
+                <span className="text-xs font-medium text-orange-700 dark:text-orange-400">Waiting for response</span>
               </>
             )}
           </div>
           {status === 'waiting' && !isExpired && (
-            <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
-              <Clock size={14} className="text-orange-600" />
-              <span className="text-sm font-semibold text-orange-700">{formatTime(timeRemaining)}</span>
+            <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">
+              <Clock size={12} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">{formatTime(timeRemaining)}</span>
             </div>
           )}
         </div>
 
         {/* Progress Bar */}
         {status === 'waiting' && (
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
             <div
-              className={`h-2 rounded-full transition-all duration-1000 ${
-                isExpired ? 'bg-red-500' : 'bg-orange-500'
+              className={`h-1.5 rounded-full transition-all duration-1000 ${
+                isExpired ? 'bg-red-500 dark:bg-red-400' : 'bg-orange-500 dark:bg-orange-400'
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -106,16 +106,16 @@ const NearestBrokerWidget = () => {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-col gap-1.5 pt-1">
           {status === 'waiting' && !isExpired && (
             <button
               onClick={() => setStatus('responded')}
-              className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-sm transition-colors"
+              className="w-full px-3 py-1.5 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white rounded-lg font-medium text-xs transition-colors"
             >
               Mark as Responded
             </button>
           )}
-          <button className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+          <button className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-xs transition-colors">
             Contact
           </button>
         </div>

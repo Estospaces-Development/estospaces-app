@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,9 +14,12 @@ import {
   Menu,
   X,
   CreditCard,
-  CheckCircle
+  CheckCircle,
+  Shield
 } from 'lucide-react';
 import { useMessages } from '../../contexts/MessagesContext';
+import { supabase } from '../../lib/supabase';
+import { getUserVerificationStatus } from '../../services/verificationService';
 
 // Helper component to get unread count badge
 const UnreadCountBadge = ({ isOpen }) => {
@@ -40,6 +43,9 @@ const UnreadCountBadge = ({ isOpen }) => {
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [loadingVerification, setLoadingVerification] = useState(true);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/user/dashboard' },
@@ -57,6 +63,54 @@ const Sidebar = ({ isOpen, onToggle }) => {
     }
     return location.pathname.startsWith(path);
   };
+
+  // Get current user and verification status
+  useEffect(() => {
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase?.auth.getSession();
+        setCurrentUser(session?.user || null);
+
+        if (session?.user) {
+          // Fetch verification status
+          setLoadingVerification(true);
+          const verificationResult = await getUserVerificationStatus(session.user.id);
+          if (verificationResult && verificationResult.data) {
+            setIsVerified(verificationResult.data.is_verified || false);
+          }
+          setLoadingVerification(false);
+        } else {
+          setLoadingVerification(false);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        setLoadingVerification(false);
+      }
+    };
+
+    getSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange(async (event, session) => {
+      setCurrentUser(session?.user || null);
+      
+      if (session?.user) {
+        setLoadingVerification(true);
+        const verificationResult = await getUserVerificationStatus(session.user.id);
+        if (verificationResult && verificationResult.data) {
+          setIsVerified(verificationResult.data.is_verified || false);
+        }
+        setLoadingVerification(false);
+      } else {
+        setIsVerified(false);
+        setLoadingVerification(false);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   return (
     <>
@@ -101,16 +155,28 @@ const Sidebar = ({ isOpen, onToggle }) => {
               <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-800">
                 <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0 relative">
                   <User size={16} className="text-gray-600 dark:text-gray-300" />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
-                    <CheckCircle size={10} className="text-white" fill="currentColor" />
-                  </div>
+                  {isVerified && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
+                      <CheckCircle size={10} className="text-white" fill="currentColor" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">Property Viewer</p>
-                    <CheckCircle size={14} className="text-green-500 flex-shrink-0" fill="currentColor" />
+                    {isVerified && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium border border-green-200 dark:border-green-800 whitespace-nowrap">
+                        <Shield size={10} className="flex-shrink-0" />
+                        Verified
+                      </span>
+                    )}
+                    {!isVerified && !loadingVerification && (
+                      <CheckCircle size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">viewer@estospaces.com</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {currentUser?.email || 'viewer@estospaces.com'}
+                  </p>
                 </div>
               </div>
             )}

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, ChevronDown } from 'lucide-react';
 import ThemeSwitcher from './ThemeSwitcher';
+import { supabase } from '../../lib/supabase';
 
-const Header = ({ onMenuToggle }) => {
+const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isDashboard = location.pathname.startsWith('/user/dashboard');
@@ -23,7 +24,9 @@ const Header = ({ onMenuToggle }) => {
         {/* Left side - Title */}
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Welcome, Prajol Annamudu</h1>
+            <h1 className="text-lg font-medium text-gray-900 dark:text-gray-100 tracking-tight" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', letterSpacing: '-0.015em' }}>
+              Welcome, <span className="font-semibold">Prajol Annamudu</span>
+            </h1>
           </div>
         </div>
 
@@ -33,8 +36,10 @@ const Header = ({ onMenuToggle }) => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              const query = searchQuery.toLowerCase().trim();
+              const query = searchQuery.trim();
               if (!query) return;
+
+              const queryLower = query.toLowerCase();
 
               // Navigation mapping for search
               const navigationMap = {
@@ -71,23 +76,47 @@ const Header = ({ onMenuToggle }) => {
 
               // Check if query matches any navigation keyword
               for (const [key, path] of Object.entries(navigationMap)) {
-                if (query.includes(key)) {
+                if (queryLower.includes(key)) {
                   navigate(path);
                   setSearchQuery('');
                   return;
                 }
               }
+
+              // If on main dashboard and query looks like a location (postcode, address, etc.)
+              // Trigger location search via custom event
+              const isMainDashboard = location.pathname === '/user/dashboard';
+              const looksLikeLocation = /^[A-Za-z0-9\s,.-]+$/.test(query) && 
+                                       (query.length >= 3) && 
+                                       (/\d/.test(query) || /[A-Z]{1,2}\d/.test(query.toUpperCase()) || query.split(/\s+/).length >= 2);
+              
+              if (isMainDashboard && looksLikeLocation) {
+                // Dispatch custom event for location search
+                window.dispatchEvent(new CustomEvent('headerLocationSearch', { 
+                  detail: { query: query } 
+                }));
+                setSearchQuery('');
+                return;
+              }
+
+              // If query doesn't match navigation and doesn't look like location, navigate to discover page
+              if (isMainDashboard) {
+                navigate(`/user/dashboard/discover?search=${encodeURIComponent(query)}`);
+                setSearchQuery('');
+              }
             }}
             className="hidden md:flex items-center max-w-md flex-1"
           >
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
               <input
                 type="text"
                 placeholder="Search: payments, messages, contracts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                onClick={(e) => e.target.focus()}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 cursor-text"
+                style={{ cursor: 'text' }}
               />
             </div>
           </form>
@@ -166,13 +195,44 @@ const Header = ({ onMenuToggle }) => {
                     <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400">viewer@estospaces.com</div>
                   </div>
                   <div className="border-t border-gray-200 dark:border-gray-700 p-2">
-                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <button 
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/user/dashboard/settings');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                    >
                       Account Settings
                     </button>
-                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <button 
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/user/dashboard/help');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                    >
                       Help & Support
                     </button>
-                    <button className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                    <button 
+                      onClick={async () => {
+                        setUserMenuOpen(false);
+                        // Handle logout
+                        try {
+                          if (supabase) {
+                            await supabase.auth.signOut();
+                          }
+                          // Navigate to home page after logout
+                          navigate('/');
+                          window.location.reload();
+                        } catch (error) {
+                          console.error('Error signing out:', error);
+                          // Fallback navigation
+                          navigate('/');
+                          window.location.reload();
+                        }
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                    >
                       Log Out
                     </button>
                   </div>

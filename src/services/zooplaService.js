@@ -1,9 +1,20 @@
 /**
  * Zoopla/PropAPIS Service
- * Fetches real property listings from Zoopla API
+ * 
+ * ⚠️ WARNING: This service should NOT be used from the frontend!
+ * 
+ * Zoopla API does not allow browser-side requests (CORS blocked).
+ * All Zoopla calls must go through the server-side API endpoint:
+ * 
+ * ✅ Use: fetch('/api/properties/global?postcode=...')
+ * ❌ Don't: import zooplaService from frontend
+ * 
+ * This file is kept for reference but should only be used server-side.
+ * Frontend should use propertyDataService.js which calls the internal API.
  */
 
-// Note: Replace with your actual PropAPIS/Zoopla API key
+// Note: This is server-side only code
+// Frontend should NEVER import this file
 const ZOOPLA_API_KEY = import.meta.env.VITE_ZOOPLA_API_KEY || '';
 const ZOOPLA_BASE_URL = 'https://api.zoopla.co.uk/api/v1';
 

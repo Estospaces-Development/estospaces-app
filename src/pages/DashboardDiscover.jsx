@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProperties } from '../contexts/PropertiesContext';
+import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import MapView from '../components/Dashboard/MapView';
@@ -9,10 +10,12 @@ import * as postcodeService from '../services/postcodeService';
 
 const DashboardDiscover = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { activeTab, getApiType, setActiveTab: setActiveTabFromContext } = usePropertyFilter();
   const {
-    properties,
-    loading,
-    error,
+    properties: contextProperties,
+    loading: contextLoading,
+    error: contextError,
     filters,
     setFilters,
     pagination,
@@ -20,6 +23,12 @@ const DashboardDiscover = () => {
     fetchProperties,
     searchProperties,
   } = useProperties();
+
+  // Local state for properties fetched from API
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
@@ -54,25 +63,78 @@ const DashboardDiscover = () => {
     };
   }, [searchQuery]);
 
-  // Update filters when local state changes
-  useEffect(() => {
-    setFilters({
-      country: 'UK',
-      status: 'online',
-      propertyType: propertyType === 'all' ? null : propertyType,
-      city: locationQuery || null,
-      minPrice: priceRange.min,
-      maxPrice: priceRange.max,
-      minBedrooms: beds ? parseInt(beds) : null,
-      maxBedrooms: null,
-      minBathrooms: baths ? parseInt(baths) : null,
-    });
-  }, [propertyType, locationQuery, priceRange, beds, baths, setFilters]);
+  // Fetch properties from API based on activeTab
+  const fetchPropertiesFromAPI = useCallback(async (type = 'all', reset = true) => {
+    setLoading(true);
+    setError(null);
 
-  // Fetch properties when filters change
+    try {
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '20',
+        country: 'UK',
+      });
+
+      if (type === 'buy' || type === 'sale') {
+        params.append('type', 'buy');
+      } else if (type === 'rent') {
+        params.append('type', 'rent');
+      }
+      // 'all' → no type parameter
+
+      if (locationQuery) {
+        params.append('postcode', locationQuery);
+      }
+
+      // Use the Vite proxy endpoint (in dev) or direct API (in prod)
+      const apiUrl = `/api/properties?${params.toString()}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Failed to fetch properties');
+      }
+
+      setProperties(result.data || []);
+      setTotalCount(result.pagination?.total || 0);
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.error('Error fetching properties from API:', err);
+      }
+      setError(err.message || 'Failed to fetch properties. Please try again.');
+      setProperties([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [locationQuery]);
+
+  // Fetch properties when activeTab changes
   useEffect(() => {
-    fetchProperties(true);
-  }, [filters.propertyType, filters.city, filters.minPrice, filters.maxPrice, filters.minBedrooms, filters.minBathrooms]);
+    fetchPropertiesFromAPI(activeTab, true);
+  }, [activeTab, fetchPropertiesFromAPI]);
+
+  // Update propertyType when activeTab changes
+  useEffect(() => {
+    if (activeTab === 'buy') {
+      setPropertyType('sale');
+    } else if (activeTab === 'rent') {
+      setPropertyType('rent');
+    } else {
+      setPropertyType('all');
+    }
+  }, [activeTab]);
 
   // Handle postcode autocomplete
   useEffect(() => {
@@ -258,11 +320,18 @@ const DashboardDiscover = () => {
 
   return (
     <div className="p-4 lg:p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Discover Properties</h1>
+        <p className="text-gray-600 dark:text-gray-400">Find your perfect UK property</p>
+      </div>
+
       {/* View Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Discover Properties</h1>
-          <p className="text-gray-600 dark:text-gray-400">Find your perfect UK property</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {loading ? 'Loading...' : `${totalCount} ${totalCount === 1 ? 'property' : 'properties'} found`}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -358,7 +427,17 @@ const DashboardDiscover = () => {
               <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <select 
                 value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  setPropertyType(newType);
+                  // Update URL query parameter
+                  if (newType === 'all') {
+                    searchParams.delete('type');
+                  } else {
+                    searchParams.set('type', newType);
+                  }
+                  setSearchParams(searchParams, { replace: true });
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="all">All Types</option>
@@ -468,30 +547,52 @@ const DashboardDiscover = () => {
                 Retry
               </button>
             </div>
-          ) : displayProperties.length === 0 ? (
+          ) : properties.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-                <Search className="text-gray-400" size={32} />
-             </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No properties found</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">Try adjusting your search or filters to find what you're looking for.</p>
-             <button 
-                onClick={handleClearFilters}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
-             >
-               Clear all filters
-             </button>
-          </div>
+                <AlertCircle className="text-gray-400" size={32} />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                No properties found for {activeTab === 'buy' ? 'Buy' : activeTab === 'rent' ? 'Rent' : 'this category'}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                {activeTab === 'buy' 
+                  ? "We couldn't find any properties for sale. Try switching to 'Rent' or 'Browse Properties' to see all available listings."
+                  : activeTab === 'rent'
+                  ? "We couldn't find any rental properties. Try switching to 'Buy' or 'Browse Properties' to see all available listings."
+                  : "Try adjusting your search or filters to find what you're looking for."
+                }
+              </p>
+              <div className="flex gap-3 justify-center">
+                {activeTab !== 'all' && (
+                  <button 
+                    onClick={() => setActiveTabFromContext('all')}
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Browse All Properties
+                  </button>
+                )}
+                <button 
+                  onClick={handleClearFilters}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                {displayProperties.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    property={transformPropertyForCard(property)}
-                    onViewDetails={(p) => navigate(`/user/dashboard/property/${p.id}`)}
-                  />
-                ))}
+                {properties.map((property) => {
+                  const transformed = transformPropertyForCard(property);
+                  return transformed ? (
+                    <PropertyCard
+                      key={property.id}
+                      property={transformed}
+                      onViewDetails={(p) => navigate(`/user/dashboard/property/${p.id}`)}
+                    />
+                  ) : null;
+                })}
               </div>
 
               {/* Pagination */}

@@ -30,8 +30,16 @@ export const getUKProperties = async ({
     let query = supabase
       .from('properties')
       .select('*', { count: 'exact' })
-      .eq('country', country)
-      .eq('status', status)
+      .eq('country', country);
+    
+    // Support status='online' OR 'active'
+    if (status === 'online' || status === 'active') {
+      query = query.or('status.eq.online,status.eq.active');
+    } else if (status) {
+      query = query.eq('status', status);
+    }
+    
+    query = query
       .order(orderBy, { ascending: orderDirection === 'asc' })
       .range(offset, offset + limit - 1);
 
@@ -161,7 +169,7 @@ export const searchProperties = async ({
 };
 
 // Enrich properties with user interaction status
-const enrichPropertiesWithUserStatus = async (properties, userId) => {
+export const enrichPropertiesWithUserStatus = async (properties, userId) => {
   if (!properties || properties.length === 0) return properties;
 
   const propertyIds = properties.map(p => p.id);
