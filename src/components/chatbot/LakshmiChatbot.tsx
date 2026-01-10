@@ -163,7 +163,7 @@ const LakshmiChatbot = ({ isOpen, onClose }: LakshmiChatbotProps) => {
       const totalProperties = properties.length;
       const publishedProperties = properties.filter(p => p.published).length;
       const draftProperties = properties.filter(p => p.draft).length;
-      const availableProperties = properties.filter(p => p.status === 'Available' || p.status === 'available').length;
+      const availableProperties = properties.filter(p => p.status === 'available').length;
 
       if (lowerQuestion.includes('total') || lowerQuestion.includes('how many')) {
         return `You currently have ${totalProperties} ${totalProperties === 1 ? 'property' : 'properties'} in your portfolio. ${publishedProperties} ${publishedProperties === 1 ? 'is' : 'are'} published, ${draftProperties} ${draftProperties === 1 ? 'is' : 'are'} in draft, and ${availableProperties} ${availableProperties === 1 ? 'is' : 'are'} available.`;
@@ -184,7 +184,16 @@ const LakshmiChatbot = ({ isOpen, onClose }: LakshmiChatbotProps) => {
       if (lowerQuestion.includes('price') || lowerQuestion.includes('cost') || lowerQuestion.includes('rent')) {
         const prices = properties
           .filter(p => p.price)
-          .map(p => parseFloat(p.price.replace(/[^0-9.]/g, '')))
+          .map(p => {
+            // Handle price as PriceInfo object or priceString
+            if (typeof p.price === 'object' && p.price.amount) {
+              return p.price.amount;
+            }
+            if (typeof p.priceString === 'string') {
+              return parseFloat(p.priceString.replace(/[^0-9.]/g, ''));
+            }
+            return NaN;
+          })
           .filter(p => !isNaN(p));
         
         if (prices.length > 0) {

@@ -130,8 +130,8 @@ const HorizontalNavigation = () => {
                   relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                   border-b-2 border-transparent
                   ${active
-                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 active:bg-gray-100 dark:active:bg-gray-700'
                   }
                   ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   whitespace-nowrap cursor-pointer
@@ -163,8 +163,8 @@ const HorizontalNavigation = () => {
                 relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                 border-b-2 border-transparent
                 ${isBuyActive()
-                  ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 active:bg-gray-100 dark:active:bg-gray-700'
                 }
                 ${clickedTab === 'buy' ? 'scale-95 transform active:scale-90' : 'scale-100'}
                 whitespace-nowrap cursor-pointer
@@ -188,8 +188,8 @@ const HorizontalNavigation = () => {
                 relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                 border-b-2 border-transparent
                 ${isRentActive()
-                  ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 active:bg-gray-100 dark:active:bg-gray-700'
                 }
                 ${clickedTab === 'rent' ? 'scale-95 transform active:scale-90' : 'scale-100'}
                 whitespace-nowrap cursor-pointer
@@ -223,8 +223,8 @@ const HorizontalNavigation = () => {
                   relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                   border-b-2 border-transparent
                   ${active
-                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 active:bg-gray-100 dark:active:bg-gray-700'
                   }
                   ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   whitespace-nowrap cursor-pointer
@@ -262,8 +262,8 @@ const HorizontalNavigation = () => {
                   relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                   border-b-2 border-transparent
                   ${active
-                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 active:bg-gray-100 dark:active:bg-gray-700'
                   }
                   ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   whitespace-nowrap cursor-pointer
@@ -334,8 +334,8 @@ const HorizontalNavigation = () => {
                 relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
                 flex-shrink-0 cursor-pointer
                 ${isBuyActive()
-                  ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm active:bg-orange-600 dark:active:bg-orange-700 active:text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 active:text-gray-900 dark:active:text-gray-100'
                 }
                 ${clickedTab === 'buy' ? 'scale-95 transform active:scale-90' : 'scale-100'}
                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
@@ -356,8 +356,8 @@ const HorizontalNavigation = () => {
                 relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
                 flex-shrink-0 cursor-pointer
                 ${isRentActive()
-                  ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm active:bg-orange-600 dark:active:bg-orange-700 active:text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 active:text-gray-900 dark:active:text-gray-100'
                 }
                 ${clickedTab === 'rent' ? 'scale-95 transform active:scale-90' : 'scale-100'}
                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
@@ -388,8 +388,8 @@ const HorizontalNavigation = () => {
                   relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
                   flex-shrink-0 cursor-pointer
                   ${active
-                    ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm active:bg-orange-600 dark:active:bg-orange-700 active:text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 active:text-gray-900 dark:active:text-gray-100'
                   }
                   ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
@@ -424,8 +424,8 @@ const HorizontalNavigation = () => {
                   relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
                   flex-shrink-0 cursor-pointer
                   ${active
-                    ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm active:bg-orange-600 dark:active:bg-orange-700 active:text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 active:text-gray-900 dark:active:text-gray-100'
                   }
                   ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2

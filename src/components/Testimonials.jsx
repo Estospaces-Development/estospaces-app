@@ -65,7 +65,7 @@ const thirdColumn = testimonials.slice(6, 9);
 
 const Testimonials = () => {
     return (
-        <section id="reviews" className="bg-gray-50 py-24 relative overflow-hidden">
+        <section id="reviews" className="bg-gray-50 dark:bg-gray-900 py-24 relative overflow-hidden">
             <div className="container z-10 mx-auto px-4">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -80,10 +80,10 @@ const Testimonials = () => {
                         </div>
                     </div>
 
-                    <h2 className="text-4xl md:text-5xl font-bold text-secondary mb-4 font-serif text-center">
+                    <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4 font-serif text-center">
                         Loved by <span className="text-primary">Thousands</span>
                     </h2>
-                    <p className="text-xl text-gray-600 text-center max-w-2xl">
+                    <p className="text-xl text-gray-600 dark:text-gray-300 text-center max-w-2xl">
                         See what buyers, renters, and brokers are saying about their experience with Estospaces.
                     </p>
                 </motion.div>

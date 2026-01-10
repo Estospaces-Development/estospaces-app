@@ -34,7 +34,7 @@ const ChatWindow = ({ onClose }) => {
     };
 
     return (
-        <div className="flex flex-col h-[500px] bg-white">
+        <div className="flex flex-col h-[500px] bg-white dark:bg-gray-900">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
                 <div className="flex items-center gap-3">
@@ -52,7 +52,7 @@ const ChatWindow = ({ onClose }) => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-800 custom-scrollbar">
                 {!isConversationReady ? (
                     <WelcomeForm onSubmit={startConversation} loading={loading} error={error} />
                 ) : (
@@ -80,14 +80,14 @@ const ChatWindow = ({ onClose }) => {
 
             {/* Input Area (only if conversation started) */}
             {isConversationReady && (
-                <form onSubmit={handleSend} className="p-3 border-t bg-white">
+                <form onSubmit={handleSend} className="p-3 border-t dark:border-gray-700 bg-white dark:bg-gray-900">
                     <div className="flex items-center gap-2">
                         <input
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="Type a message..."
-                            className="flex-1 px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+                            className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                         />
                         <button
                             type="submit"

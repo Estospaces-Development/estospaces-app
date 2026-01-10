@@ -16,8 +16,11 @@ import {
 } from 'lucide-react';
 
 // Fix for default marker icons in React-Leaflet
+// @ts-ignore - Leaflet image imports
 import icon from 'leaflet/dist/images/marker-icon.png';
+// @ts-ignore - Leaflet image imports
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+// @ts-ignore - Leaflet image imports
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 
 const DefaultIcon = L.icon({

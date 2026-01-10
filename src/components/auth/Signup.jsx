@@ -63,9 +63,7 @@ const Signup = () => {
                         full_name: name,
                         role: role 
                     },
-                    emailRedirectTo: role === 'manager' 
-                        ? `${window.location.origin}/manager/dashboard`
-                        : `${window.location.origin}/`
+                    emailRedirectTo: `${window.location.origin}/auth/callback`
                 },
             });
 
@@ -73,11 +71,25 @@ const Signup = () => {
                 // Handle specific error cases
                 if (signUpError.message.includes('already registered')) {
                     setError('This email is already registered. Please sign in instead.');
+                } else if (signUpError.message.includes('not authorized')) {
+                    setError('Email service is not configured. Please contact support or try Google sign-in.');
+                } else if (signUpError.message.includes('rate limit')) {
+                    setError('Too many attempts. Please try again later.');
                 } else {
                     setError(signUpError.message);
                 }
             } else if (data.user) {
-                setSuccess(true);
+                // Check if email confirmation is required
+                if (data.user.identities && data.user.identities.length === 0) {
+                    // User already exists but not confirmed
+                    setError('This email is already registered but not confirmed. Please check your email or try signing in.');
+                } else if (data.session) {
+                    // Email confirmation is disabled - user is logged in directly
+                    navigate(role === 'manager' ? '/manager/dashboard' : '/user/dashboard');
+                } else {
+                    // Email confirmation is required
+                    setSuccess(true);
+                }
             }
         } catch (err) {
             console.error('Signup error:', err);
@@ -100,19 +112,28 @@ const Signup = () => {
                         <Check className="text-green-600" size={32} />
                     </div>
                     
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
                         Check your email
                     </h2>
                     
-                    <p className="text-gray-500 text-sm mb-4">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
                         We've sent a confirmation link to<br />
-                        <strong className="text-gray-800">{email}</strong>
+                        <strong className="text-gray-800 dark:text-gray-200">{email}</strong>
                     </p>
                     
-                    <div className="bg-orange-50 rounded-lg px-4 py-2 mb-8">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg px-4 py-2 mb-4">
                         <p className="text-primary text-sm font-medium">
                             Signed up as: {role === 'manager' ? 'Property Manager' : 'User'}
                         </p>
+                    </div>
+                    
+                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-3 mb-8 text-left">
+                        <p className="text-gray-600 dark:text-gray-300 text-xs font-medium mb-2">Didn't receive the email?</p>
+                        <ul className="text-gray-500 dark:text-gray-400 text-xs space-y-1">
+                            <li>• Check your spam or junk folder</li>
+                            <li>• Wait a few minutes and refresh</li>
+                            <li>• Try signing up with Google instead</li>
+                        </ul>
                     </div>
 
                     <button
@@ -134,82 +155,82 @@ const Signup = () => {
                     <img src={logo} alt="Estospaces" className="h-10" />
                 </div>
                 
-                <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2 text-center">
                     Sign up for Estospaces
                 </h2>
                 
-                <p className="text-gray-500 text-sm mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 text-center">
                     Create your account to get started
                 </p>
 
                 <form onSubmit={handleSignup} className="w-full">
                     {/* Role Selection */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-3">I am a</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">I am a</label>
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 type="button"
                                 onClick={() => setRole('user')}
                                 className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200 ${
                                     role === 'user'
-                                        ? 'border-primary bg-orange-50 text-primary'
-                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        ? 'border-primary bg-orange-50 dark:bg-orange-900/20 text-primary'
+                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                             >
                                 <User size={24} className={role === 'user' ? 'text-primary' : 'text-gray-400'} />
                                 <span className="mt-2 font-medium text-sm">User</span>
-                                <span className="text-xs text-gray-400 mt-1">Looking for property</span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Looking for property</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setRole('manager')}
                                 className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200 ${
                                     role === 'manager'
-                                        ? 'border-primary bg-orange-50 text-primary'
-                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        ? 'border-primary bg-orange-50 dark:bg-orange-900/20 text-primary'
+                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                             >
                                 <Briefcase size={24} className={role === 'manager' ? 'text-primary' : 'text-gray-400'} />
                                 <span className="mt-2 font-medium text-sm">Manager</span>
-                                <span className="text-xs text-gray-400 mt-1">Managing properties</span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Managing properties</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Name Input */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Full Name</label>
                         <input
                             type="text"
                             placeholder="Enter your full name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:border-primary transition-colors bg-white text-gray-900 placeholder-gray-400"
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:border-primary transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                         />
                     </div>
 
                     {/* Email Input */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                         <input
                             type="email"
                             placeholder="Enter your email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:border-primary transition-colors bg-white text-gray-900 placeholder-gray-400"
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:border-primary transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                         />
                     </div>
 
                     {/* Password Input */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 placeholder="Create a password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-md outline-none focus:border-primary transition-colors bg-white text-gray-900 placeholder-gray-400"
+                                className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:border-primary transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                             />
                             <button
                                 type="button"
@@ -255,7 +276,7 @@ const Signup = () => {
                     </button>
                 </form>
 
-                <p className="text-sm text-gray-600 mt-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-6">
                     Already have an account?{' '}
                     <span
                         onClick={() => navigate('/auth/sign-in-email')}

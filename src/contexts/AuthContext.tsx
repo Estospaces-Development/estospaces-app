@@ -1,37 +1,77 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 
-const AuthContext = createContext(null);
+// Profile type
+export interface Profile {
+    id: string;
+    email?: string;
+    full_name?: string;
+    phone?: string;
+    location?: string;
+    bio?: string;
+    company_name?: string;
+    role?: string;
+    avatar_url?: string;
+    is_verified?: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
 
-export const AuthProvider = ({ children }) => {
-    const [session, setSession] = useState(null);
-    const [user, setUser] = useState(null);
-    const [profile, setProfile] = useState(null);
+// Auth context value type
+interface AuthContextValue {
+    session: Session | null;
+    user: User | null;
+    profile: Profile | null;
+    loading: boolean;
+    profileLoading: boolean;
+    error: string | null;
+    signOut: () => Promise<void>;
+    isAuthenticated: boolean;
+    isSupabaseConfigured: boolean;
+    fetchProfile: (userId: string) => Promise<Profile | null>;
+    updateProfile: (updates: Partial<Profile>) => Promise<{ data?: Profile; error?: string }>;
+    createProfile: (profileData?: Partial<Profile>) => Promise<{ data?: Profile; error?: string } | Profile | null>;
+    getDisplayName: () => string;
+    getRole: () => string;
+    getAvatarUrl: () => string | null;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+interface AuthProviderProps {
+    children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+    const [session, setSession] = useState<Session | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     // Fetch user profile from profiles table
-    const fetchProfile = useCallback(async (userId) => {
-        if (!isSupabaseAvailable() || !userId) {
+    const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+        if (!isSupabaseAvailable() || !supabase || !userId) {
             return null;
         }
 
         setProfileLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data, error: fetchError } = await (supabase as SupabaseClient)
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .single();
 
-            if (error) {
+            if (fetchError) {
                 // If profile doesn't exist, it might not have been created yet
-                if (error.code === 'PGRST116') {
+                if (fetchError.code === 'PGRST116') {
                     console.log('Profile not found, may need to be created');
                     return null;
                 }
-                console.error('Error fetching profile:', error);
+                console.error('Error fetching profile:', fetchError);
                 return null;
             }
 
@@ -46,15 +86,15 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // Update user profile
-    const updateProfile = async (updates) => {
-        if (!isSupabaseAvailable() || !user?.id) {
+    const updateProfile = async (updates: Partial<Profile>): Promise<{ data?: Profile; error?: string }> => {
+        if (!isSupabaseAvailable() || !supabase || !user?.id) {
             setError('Cannot update profile: not authenticated');
             return { error: 'Not authenticated' };
         }
 
         setProfileLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data, error: updateError } = await (supabase as SupabaseClient)
                 .from('profiles')
                 .update({
                     ...updates,
@@ -64,15 +104,15 @@ export const AuthProvider = ({ children }) => {
                 .select()
                 .single();
 
-            if (error) {
-                console.error('Error updating profile:', error);
-                setError(error.message);
-                return { error: error.message };
+            if (updateError) {
+                console.error('Error updating profile:', updateError);
+                setError(updateError.message);
+                return { error: updateError.message };
             }
 
             setProfile(data);
             return { data };
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to update profile:', err);
             setError(err.message);
             return { error: err.message };
@@ -82,13 +122,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Create profile if it doesn't exist
-    const createProfile = async (profileData) => {
-        if (!isSupabaseAvailable() || !user?.id) {
+    const createProfile = async (profileData?: Partial<Profile>): Promise<{ data?: Profile; error?: string } | Profile | null> => {
+        if (!isSupabaseAvailable() || !supabase || !user?.id) {
             return { error: 'Not authenticated' };
         }
 
         try {
-            const { data, error } = await supabase
+            const { data, error: createError } = await (supabase as SupabaseClient)
                 .from('profiles')
                 .insert({
                     id: user.id,
@@ -100,19 +140,19 @@ export const AuthProvider = ({ children }) => {
                 .select()
                 .single();
 
-            if (error) {
+            if (createError) {
                 // Profile might already exist
-                if (error.code === '23505') {
+                if (createError.code === '23505') {
                     // Fetch existing profile instead
                     return await fetchProfile(user.id);
                 }
-                console.error('Error creating profile:', error);
-                return { error: error.message };
+                console.error('Error creating profile:', createError);
+                return { error: createError.message };
             }
 
             setProfile(data);
             return { data };
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to create profile:', err);
             return { error: err.message };
         }
@@ -120,17 +160,17 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         // Check if Supabase is configured
-        if (!isSupabaseAvailable()) {
+        if (!isSupabaseAvailable() || !supabase) {
             console.warn('Supabase is not configured. Auth features will not work.');
             setLoading(false);
             return;
         }
 
         // Get initial session
-        supabase.auth.getSession().then(async ({ data, error }) => {
-            if (error) {
-                console.error('Error getting session:', error);
-                setError(error.message);
+        (supabase as SupabaseClient).auth.getSession().then(async ({ data, error: sessionError }) => {
+            if (sessionError) {
+                console.error('Error getting session:', sessionError);
+                setError(sessionError.message);
             } else {
                 setSession(data.session);
                 setUser(data.session?.user ?? null);
@@ -141,24 +181,24 @@ export const AuthProvider = ({ children }) => {
                 }
             }
             setLoading(false);
-        }).catch((err) => {
+        }).catch((err: any) => {
             console.error('Failed to get session:', err);
             setError('Failed to initialize authentication');
             setLoading(false);
         });
 
         // Listen for auth changes
-        const { data: listener } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
+        const { data: listener } = (supabase as SupabaseClient).auth.onAuthStateChange(
+            async (event: any, currentSession: Session | null) => {
                 console.log('Auth state changed:', event);
-                setSession(session);
-                setUser(session?.user ?? null);
+                setSession(currentSession);
+                setUser(currentSession?.user ?? null);
                 setLoading(false);
                 setError(null);
 
                 // Fetch profile when user signs in
-                if (event === 'SIGNED_IN' && session?.user) {
-                    await fetchProfile(session.user.id);
+                if (event === 'SIGNED_IN' && currentSession?.user) {
+                    await fetchProfile(currentSession.user.id);
                 }
 
                 // Clear profile when user signs out
@@ -174,25 +214,25 @@ export const AuthProvider = ({ children }) => {
     }, [fetchProfile]);
 
     const signOut = async () => {
-        if (!isSupabaseAvailable()) {
+        if (!isSupabaseAvailable() || !supabase) {
             console.warn('Supabase is not configured');
             return;
         }
         
         try {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
+            const { error: signOutError } = await (supabase as SupabaseClient).auth.signOut();
+            if (signOutError) throw signOutError;
             setSession(null);
             setUser(null);
             setProfile(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Sign out error:', err);
             setError(err.message);
         }
     };
 
     // Get display name from profile or user metadata
-    const getDisplayName = () => {
+    const getDisplayName = (): string => {
         if (profile?.full_name) return profile.full_name;
         if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
         if (user?.email) return user.email.split('@')[0];
@@ -200,20 +240,20 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Get user role
-    const getRole = () => {
+    const getRole = (): string => {
         if (profile?.role) return profile.role;
         if (user?.user_metadata?.role) return user.user_metadata.role;
         return 'user';
     };
 
     // Get avatar URL
-    const getAvatarUrl = () => {
+    const getAvatarUrl = (): string | null => {
         if (profile?.avatar_url) return profile.avatar_url;
         if (user?.user_metadata?.avatar_url) return user.user_metadata.avatar_url;
         return null;
     };
 
-    const value = {
+    const value: AuthContextValue = {
         session,
         user,
         profile,
@@ -240,7 +280,7 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextValue => {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');

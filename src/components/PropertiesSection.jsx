@@ -72,12 +72,12 @@ const PropertiesSection = () => {
     ];
 
     return (
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-gray-50 dark:bg-gray-900">
             <div className="container mx-auto px-4">
                 {/* Section Header */}
                 <div className="text-center mb-12">
-                    <h2 className="text-4xl font-bold text-secondary mb-4">Featured Properties</h2>
-                    <p className="text-gray-600 max-w-2xl mx-auto">
+                    <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Featured Properties</h2>
+                    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                         Discover our handpicked selection of premium properties that match your lifestyle and budget.
                     </p>
                 </div>

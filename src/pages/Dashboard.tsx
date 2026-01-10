@@ -228,6 +228,148 @@ const Dashboard = () => {
     );
   };
 
+  // Export functions
+  const handleExportLeads = (format: 'pdf' | 'excel') => {
+    const dataToExport = selectedLeads.length > 0 
+      ? leads.filter(l => selectedLeads.includes(l.id))
+      : leads;
+    
+    const exportData = {
+      title: 'Leads Report',
+      headers: ['Name', 'Email', 'Property', 'Status', 'Score', 'Budget', 'Last Contact'],
+      rows: dataToExport.map(l => [l.name, l.email, l.propertyInterested, l.status, l.score, l.budget, l.lastContact])
+    };
+    
+    if (format === 'pdf') {
+      exportToPDF(exportData, 'leads');
+    } else {
+      exportToExcel(exportData, 'leads');
+    }
+    setShowLeadExportMenu(false);
+  };
+
+  const handleExportProperties = (format: 'pdf' | 'excel') => {
+    const dataToExport = selectedProperties.length > 0 
+      ? properties.filter(p => selectedProperties.includes(p.id))
+      : properties;
+    
+    const exportData = {
+      title: 'Properties Report',
+      headers: ['Title', 'Address', 'Type', 'Status', 'Bedrooms', 'Bathrooms'],
+      rows: dataToExport.map(p => [
+        p.title || '',
+        p.address || p.location?.addressLine1 || '',
+        p.propertyType || '',
+        p.status || '',
+        p.rooms?.bedrooms || p.bedrooms || 0,
+        p.rooms?.bathrooms || p.bathrooms || 0
+      ])
+    };
+    
+    if (format === 'pdf') {
+      exportToPDF(exportData, 'properties');
+    } else {
+      exportToExcel(exportData, 'properties');
+    }
+    setShowPropertyExportMenu(false);
+  };
+
+  const handleExportApplications = (format: 'pdf' | 'excel') => {
+    const dataToExport = selectedApplications.length > 0 
+      ? applicationsList.filter(a => selectedApplications.includes(a.id))
+      : applicationsList;
+    
+    const exportData = {
+      title: 'Applications Report',
+      headers: ['Name', 'Email', 'Property', 'Status', 'Score', 'Budget', 'Submitted Date'],
+      rows: dataToExport.map(a => [a.name, a.email, a.propertyInterested, a.status, a.score, a.budget, a.submittedDate])
+    };
+    
+    if (format === 'pdf') {
+      exportToPDF(exportData, 'applications');
+    } else {
+      exportToExcel(exportData, 'applications');
+    }
+    setShowApplicationExportMenu(false);
+  };
+
+  // Toggle selection functions
+  const toggleSelectLead = (id: string) => {
+    setSelectedLeads(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectProperty = (id: string) => {
+    setSelectedProperties(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectApplication = (id: string) => {
+    setSelectedApplications(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  // Share functions
+  const handleShareLead = async (lead: Lead) => {
+    const shareData = {
+      title: `Lead: ${lead.name}`,
+      text: `Lead details: ${lead.name} - ${lead.email} - Budget: ${lead.budget}`,
+      url: window.location.href,
+    };
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Share cancelled or failed');
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}`);
+      alert('Lead details copied to clipboard!');
+    }
+  };
+
+  const handleShareProperty = async (property: any) => {
+    const shareData = {
+      title: `Property: ${property.title || property.name}`,
+      text: `Property: ${property.title || property.name} - ${property.address}`,
+      url: `${window.location.origin}/manager/dashboard/properties/${property.id}`,
+    };
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Share cancelled or failed');
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
+      alert('Property link copied to clipboard!');
+    }
+  };
+
+  const handleShareApplication = async (app: Application) => {
+    const shareData = {
+      title: `Application: ${app.name}`,
+      text: `Application from ${app.name} - ${app.email} - Property: ${app.propertyInterested}`,
+      url: window.location.href,
+    };
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Share cancelled or failed');
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}`);
+      alert('Application details copied to clipboard!');
+    }
+  };
+
   const mockProperties = [
     {
       name: 'Modern Downtown Apartment',
@@ -877,19 +1019,19 @@ const Dashboard = () => {
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-700 mb-1">
-                    {properties.filter((p) => p.status === 'Available').length}
+                    {properties.filter((p) => p.status === 'available').length}
                   </div>
                   <div className="text-sm text-gray-600">Available</div>
                 </div>
                 <div className="text-center p-4 bg-yellow-50 rounded-lg">
                   <div className="text-2xl font-bold text-yellow-700 mb-1">
-                    {properties.filter((p) => p.status === 'Pending').length}
+                    {properties.filter((p) => p.status === 'pending').length}
                   </div>
                   <div className="text-sm text-gray-600">Pending</div>
                 </div>
                 <div className="text-center p-4 bg-red-50 rounded-lg">
                   <div className="text-2xl font-bold text-red-700 mb-1">
-                    {properties.filter((p) => p.status === 'Sold' || p.status === 'Rented').length}
+                    {properties.filter((p) => p.status === 'sold' || p.status === 'rented').length}
                   </div>
                   <div className="text-sm text-gray-600">Sold/Rented</div>
                 </div>

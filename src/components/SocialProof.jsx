@@ -44,7 +44,7 @@ const SocialProof = () => {
     };
 
     return (
-        <section className="py-32 bg-gradient-to-br from-gray-900 via-secondary to-gray-900 text-white relative overflow-hidden">
+        <section className="py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
             {/* Decorative Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[20%] left-[10%] w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>

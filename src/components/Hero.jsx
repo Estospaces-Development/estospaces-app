@@ -69,26 +69,26 @@ const Hero = () => {
                     </div>
 
                     {/* Form Fields */}
-                    <div className="bg-white p-6 rounded-b-xl rounded-tr-xl shadow-2xl grid grid-cols-1 md:grid-cols-4 gap-4 border border-gray-100">
+                    <div className="bg-white dark:bg-gray-900 p-6 rounded-b-xl rounded-tr-xl shadow-2xl grid grid-cols-1 md:grid-cols-4 gap-4 border border-gray-100 dark:border-gray-700">
                         {/* Keyword */}
                         <div className="relative">
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Keyword</label>
-                            <div className="flex items-center border-b border-gray-200 pb-2">
+                            <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Keyword</label>
+                            <div className="flex items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                 <Search size={18} className="text-primary mr-2" />
                                 <input
                                     type="text"
                                     placeholder="Enter Keyword..."
-                                    className="w-full outline-none text-secondary placeholder-gray-400 bg-white"
+                                    className="w-full outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-900"
                                 />
                             </div>
                         </div>
 
                         {/* Location */}
                         <div className="relative">
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Location</label>
-                            <div className="flex items-center border-b border-gray-200 pb-2">
+                            <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Location</label>
+                            <div className="flex items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                 <MapPin size={18} className="text-primary mr-2" />
-                                <select className="w-full outline-none text-secondary bg-transparent cursor-pointer">
+                                <select className="w-full outline-none text-gray-900 dark:text-gray-100 bg-transparent dark:bg-gray-900 cursor-pointer">
                                     <option value="">All Countries</option>
                                     <option value="india">India</option>
                                     <option value="usa">United States</option>
@@ -103,10 +103,10 @@ const Hero = () => {
 
                         {/* Type */}
                         <div className="relative">
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Type</label>
-                            <div className="flex items-center border-b border-gray-200 pb-2">
+                            <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Type</label>
+                            <div className="flex items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                 <Home size={18} className="text-primary mr-2" />
-                                <select className="w-full outline-none text-secondary bg-transparent cursor-pointer">
+                                <select className="w-full outline-none text-gray-900 dark:text-gray-100 bg-transparent dark:bg-gray-900 cursor-pointer">
                                     <option value="">All Types</option>
                                     <option value="apartment">Apartment</option>
                                     <option value="villa">Villa</option>
@@ -117,7 +117,7 @@ const Hero = () => {
 
                         {/* Advanced / Search Button */}
                         <div className="flex items-end gap-2">
-                            <button className="p-3 border border-gray-200 rounded hover:bg-gray-50 text-gray-500 transition-colors" title="Advanced Search">
+                            <button className="p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors" title="Advanced Search">
                                 <Settings size={20} />
                             </button>
                             <button className="flex-1 bg-primary text-white py-3 rounded font-bold hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">

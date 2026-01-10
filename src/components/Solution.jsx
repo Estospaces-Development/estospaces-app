@@ -47,7 +47,7 @@ const Solution = () => {
     };
 
     return (
-        <section id="how-it-works" className="py-32 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+        <section id="how-it-works" className="py-32 bg-gradient-to-b from-gray-50 dark:from-gray-900 to-white dark:to-gray-900 relative overflow-hidden">
             {/* Decorative Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[15%] left-[5%] w-72 h-72 bg-primary/5 rounded-full blur-3xl"></div>
@@ -68,7 +68,7 @@ const Solution = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                            className="text-5xl md:text-6xl font-bold text-secondary mb-6 tracking-tight"
+                            className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-100 mb-6 tracking-tight"
                         >
                             How <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600">Estospaces</span> Works
                         </motion.h2>
@@ -77,7 +77,7 @@ const Solution = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                            className="text-xl text-gray-600 leading-relaxed"
+                            className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed"
                         >
                             A simple, transparent process powered by verified brokers and virtual technology.
                         </motion.p>
@@ -101,7 +101,7 @@ const Solution = () => {
                                     </div>
                                 )}
 
-                                <div className="relative z-10 text-center bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 h-full flex flex-col items-center">
+                                <div className="relative z-10 text-center bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 dark:border-gray-700 h-full flex flex-col items-center">
                                     {/* Icon Circle with Gradient & Floating Animation */}
                                     <motion.div
                                         animate={{ y: [0, -10, 0] }}
@@ -115,16 +115,16 @@ const Solution = () => {
                                     >
                                         {step.icon}
                                         {/* Step Number Badge */}
-                                        <div className="absolute -top-3 -right-3 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-primary/20">
+                                        <div className="absolute -top-3 -right-3 w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center border-2 border-primary/20 dark:border-primary/40">
                                             <span className="text-primary font-bold text-lg">{step.number}</span>
                                         </div>
                                     </motion.div>
 
                                     {/* Content */}
-                                    <h3 className="text-2xl font-bold text-secondary mb-4 group-hover:text-primary transition-colors duration-300">
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 group-hover:text-primary transition-colors duration-300">
                                         {step.title}
                                     </h3>
-                                    <p className="text-gray-600 leading-relaxed">
+                                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                                         {step.description}
                                     </p>
 
@@ -143,7 +143,7 @@ const Solution = () => {
                         transition={{ delay: 1, duration: 1 }}
                         className="text-center mt-16"
                     >
-                        <p className="text-gray-500 text-sm tracking-wider uppercase mb-4">
+                        <p className="text-gray-500 dark:text-gray-400 text-sm tracking-wider uppercase mb-4">
                             Simple • Transparent • Effective
                         </p>
                         <div className="flex justify-center gap-2">

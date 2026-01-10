@@ -23,11 +23,12 @@ interface PropertyCardProps {
 }
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
-  const title = property.title || property.name || 'Untitled Property';
-  const beds = property.bedrooms || property.beds || 0;
-  const area = property.area || property.sqft || 0;
-  const tags = property.features || property.tags || [];
-  const listedDate = property.listedDate || 
+  // Type-safe property access
+  const title = property.title || ('name' in property ? property.name : undefined) || 'Untitled Property';
+  const beds = property.bedrooms || ('beds' in property ? property.beds : undefined) || 0;
+  const area = property.area || ('sqft' in property ? property.sqft : undefined) || 0;
+  const tags = property.features || ('tags' in property ? property.tags : undefined) || [];
+  const listedDate = ('listedDate' in property ? property.listedDate : undefined) || 
     (property.createdAt ? new Date(property.createdAt).toLocaleDateString() : '');
   
   return (
@@ -62,7 +63,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         </div>
 
         {/* Rating */}
-        {property.rating && property.reviews && (
+        {('rating' in property && property.rating && 'reviews' in property && property.reviews) && (
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />

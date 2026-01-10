@@ -80,7 +80,7 @@ const Navbar = () => {
                 <div className="flex justify-between items-center">
                     {/* Logo */}
                     <div className="flex items-center">
-                        <a href="/" className="text-2xl font-bold text-secondary flex items-center gap-2" onClick={handleNavClick}>
+                        <a href="/" className="text-2xl font-bold flex items-center gap-2" onClick={handleNavClick}>
                             <img src={logoIcon} alt="Estospaces Logo" className={`h-8 w-auto object-contain transition-all duration-1000 ${isScrolled ? 'brightness-0 invert' : ''}`} />
                             <span className="text-white font-bold text-xl">Estospaces</span>
                         </a>
@@ -93,7 +93,7 @@ const Navbar = () => {
                                 key={item}
                                 href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
                                 onClick={handleNavClick}
-                                className={`text-sm font-medium transition-colors duration-300 ${isScrolled ? 'text-white hover:text-secondary' : 'text-white hover:text-primary'}`}
+                                className={`text-sm font-medium transition-colors duration-300 ${isScrolled ? 'text-white hover:text-gray-200' : 'text-white hover:text-primary'}`}
                             >
                                 {item}
                             </a>
@@ -213,12 +213,12 @@ const Navbar = () => {
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-lg py-4 px-4 flex flex-col space-y-4">
+                    <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-900 shadow-lg dark:shadow-gray-800/50 py-4 px-4 flex flex-col space-y-4 border-t border-gray-100 dark:border-gray-800">
                         {['Features', 'How It Works', 'FAQ', 'Join Waitlist'].map((item) => (
                             <a
                                 key={item}
                                 href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
-                                className="text-secondary font-medium hover:text-primary"
+                                className="text-gray-800 dark:text-gray-100 font-medium hover:text-primary dark:hover:text-primary transition-colors"
                                 onClick={handleNavClick}
                             >
                                 {item}
@@ -226,7 +226,7 @@ const Navbar = () => {
                         ))}
                         {isAuthenticated ? (
                             /* Authenticated Mobile Menu */
-                            <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                            <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                                 {/* User Info */}
                                 <div className="flex items-center gap-3 pb-2">
                                     {getAvatarUrl() ? (
@@ -241,8 +241,8 @@ const Navbar = () => {
                                         </div>
                                     )}
                                     <div>
-                                        <p className="font-semibold text-gray-900">{getDisplayName()}</p>
-                                        <p className="text-xs text-gray-500 capitalize">{getRole()}</p>
+                                        <p className="font-semibold text-gray-900 dark:text-gray-100">{getDisplayName()}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{getRole()}</p>
                                     </div>
                                 </div>
                                 
@@ -251,7 +251,7 @@ const Navbar = () => {
                                         handleNavClick();
                                         navigate('/manager/dashboard');
                                     }}
-                                    className="text-secondary font-medium hover:text-primary flex items-center gap-2 py-2"
+                                    className="text-gray-800 dark:text-gray-100 font-medium hover:text-primary dark:hover:text-primary flex items-center gap-2 py-2 transition-colors"
                                 >
                                     <LayoutDashboard size={18} />
                                     Dashboard
@@ -261,7 +261,7 @@ const Navbar = () => {
                                         handleNavClick();
                                         navigate('/manager/dashboard/profile');
                                     }}
-                                    className="text-secondary font-medium hover:text-primary flex items-center gap-2 py-2"
+                                    className="text-gray-800 dark:text-gray-100 font-medium hover:text-primary dark:hover:text-primary flex items-center gap-2 py-2 transition-colors"
                                 >
                                     <Settings size={18} />
                                     Profile Settings
@@ -279,13 +279,13 @@ const Navbar = () => {
                             </div>
                         ) : (
                             /* Unauthenticated Mobile Menu */
-                            <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                            <div className="flex flex-col gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <button 
                                     onClick={() => {
                                         handleNavClick();
                                         navigate('/auth/login');
                                     }}
-                                    className="text-secondary font-medium hover:text-primary flex items-center gap-2"
+                                    className="text-gray-800 dark:text-gray-100 font-medium hover:text-primary dark:hover:text-primary flex items-center gap-2 py-2 transition-colors"
                                 >
                                     <LogIn size={18} />
                                     Login
@@ -295,7 +295,7 @@ const Navbar = () => {
                                         handleNavClick();
                                         navigate('/auth/signup');
                                     }}
-                                    className="bg-primary text-white px-6 py-2 rounded-full font-medium w-full flex items-center justify-center gap-2 hover:bg-opacity-90"
+                                    className="bg-primary text-white px-6 py-3 rounded-full font-medium w-full flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all"
                                 >
                                     <UserPlus size={18} />
                                     Sign Up

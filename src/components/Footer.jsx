@@ -73,7 +73,7 @@ const Footer = () => {
     };
 
     return (
-        <footer className="bg-secondary text-white">
+        <footer className="bg-gray-900 text-white">
             {/* Main Footer */}
             <div className="container mx-auto px-4 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
@@ -153,7 +153,7 @@ const Footer = () => {
                                 onChange={(e) => setEmail(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 disabled={loading}
-                                className="flex-1 px-4 py-2 rounded bg-white bg-opacity-10 border border-gray-600 outline-none focus:border-primary transition-colors placeholder-gray-500 text-gray-900 disabled:opacity-50"
+                                className="flex-1 px-4 py-2 rounded bg-white bg-opacity-10 border border-gray-600 outline-none focus:border-primary transition-colors placeholder-gray-400 text-white disabled:opacity-50"
                             />
                             <button
                                 onClick={handleSubmit}

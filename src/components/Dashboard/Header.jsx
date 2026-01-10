@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, User, ChevronDown } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import logoIcon from '../../assets/logo-icon.png';
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, profile, getDisplayName, signOut } = useAuth();
   const isDashboard = location.pathname.startsWith('/user/dashboard');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const logoRef = React.useRef(null);
 
+  // Get user display name and email
+  const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'User');
+  const userEmail = user?.email || '';
 
   const notifications = [
     { id: 1, title: 'New property available', message: 'A new property matches your criteria', time: '2m ago' },
@@ -118,8 +123,8 @@ const Header = () => {
                 />
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                   <div className="p-2">
-                    <div className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">Property Viewer</div>
-                    <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400">viewer@estospaces.com</div>
+                    <div className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">{displayName}</div>
+                    <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400">{userEmail}</div>
                   </div>
                   <div className="border-t border-gray-200 dark:border-gray-700 p-2">
                     <button 
@@ -145,17 +150,17 @@ const Header = () => {
                         setUserMenuOpen(false);
                         // Handle logout
                         try {
-                          if (supabase) {
+                          if (signOut) {
+                            await signOut();
+                          } else if (isSupabaseAvailable()) {
                             await supabase.auth.signOut();
                           }
                           // Navigate to home page after logout
                           navigate('/');
-                          window.location.reload();
                         } catch (error) {
                           console.error('Error signing out:', error);
                           // Fallback navigation
                           navigate('/');
-                          window.location.reload();
                         }
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"

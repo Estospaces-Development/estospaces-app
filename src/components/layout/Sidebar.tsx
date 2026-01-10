@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
   LayoutDashboard,
@@ -17,6 +17,7 @@ import {
   Shield
 } from 'lucide-react';
 import VerificationModal from '../ui/VerificationModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,16 +26,40 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, getDisplayName, signOut } = useAuth();
+  
+  // Get user display name and email
+  const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'Property Manager');
+  const userEmail = user?.email || profile?.email || '';
+  
   const [isVerified, setIsVerified] = useState(() => {
-    // Load verification status from localStorage
+    // Check profile verification status or load from localStorage
+    if (profile?.is_verified) return true;
     const stored = localStorage.getItem('managerVerified');
     return stored === 'true';
   });
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleVerified = () => {
     setIsVerified(true);
     localStorage.setItem('managerVerified', 'true');
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      if (signOut) {
+        await signOut();
+      }
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      navigate('/');
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   const menuItems = [
@@ -79,7 +104,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
             {isOpen && (
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-medium text-gray-800 dark:text-white transition-colors duration-300">Property Manager</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white transition-colors duration-300 truncate">{displayName}</p>
                   {isVerified ? (
                     <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
                   ) : (
@@ -93,7 +118,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate transition-colors duration-300">manager@estospaces.com</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate transition-colors duration-300">{userEmail}</p>
               </div>
             )}
           </div>
@@ -149,13 +174,14 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 
         {/* Sign Out */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-800 transition-colors duration-300">
-          <a
-            href="#"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 group hover:scale-[1.02] hover:shadow-sm"
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 group hover:scale-[1.02] hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LogOut className="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-            {isOpen && <span className="text-sm font-medium transition-all duration-300 group-hover:translate-x-1">Sign out</span>}
-          </a>
+            <LogOut className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${signingOut ? 'animate-spin' : 'group-hover:scale-110 group-hover:rotate-12'}`} />
+            {isOpen && <span className="text-sm font-medium transition-all duration-300 group-hover:translate-x-1">{signingOut ? 'Signing out...' : 'Sign out'}</span>}
+          </button>
         </div>
       </div>
 
@@ -164,8 +190,8 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         isOpen={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         onVerified={handleVerified}
-        email="manager@estospaces.com"
-        phone="+1 (555) 123-4567"
+        email={userEmail || 'manager@estospaces.com'}
+        phone={profile?.phone || '+1 (555) 123-4567'}
       />
     </div>
   );

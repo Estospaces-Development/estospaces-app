@@ -11,9 +11,9 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 p-4">
-            <h4 className="text-lg font-semibold mb-2">Start Chat</h4>
+            <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Start Chat</h4>
             <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">
                     Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -21,13 +21,13 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="John Doe"
-                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     disabled={loading}
                     required
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">
                     Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -35,7 +35,7 @@ const WelcomeForm = ({ onSubmit, loading, error }) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@example.com"
-                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     disabled={loading}
                     required
                 />

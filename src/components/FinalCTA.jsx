@@ -16,7 +16,7 @@ const FinalCTA = () => {
     ];
 
     return (
-        <section className="py-32 bg-gradient-to-br from-secondary via-gray-900 to-secondary text-white relative overflow-hidden">
+        <section className="py-32 bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 text-white relative overflow-hidden">
             {/* Animated Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[10%] left-[5%] w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -45,7 +45,7 @@ const FinalCTA = () => {
                                 className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full border border-white/20 flex items-center gap-2 hover:bg-white/20 transition-all duration-300"
                             >
                                 <CheckCircle2 className="text-primary" size={18} />
-                                <span className="text-sm font-medium text-gray-500">{benefit}</span>
+                                <span className="text-sm font-medium text-white dark:text-gray-100">{benefit}</span>
                             </div>
                         ))}
                     </div>

@@ -117,14 +117,14 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
+                        className="relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
                     >
                         {/* Close Button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors z-10"
+                            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
                         >
-                            <X size={24} className="text-gray-500" />
+                            <X size={24} className="text-gray-500 dark:text-gray-400" />
                         </button>
 
                         {/* Content with hidden scrollbar */}
@@ -134,10 +134,10 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                         }}>
                             {/* Header */}
                             <div className="text-center mb-6">
-                                <h2 className="text-2xl md:text-3xl font-bold text-secondary mb-3 font-serif">
+                                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3 font-serif">
                                     Join the <span className="text-primary">Waitlist</span>
                                 </h2>
-                                <p className="text-gray-600 text-sm">
+                                <p className="text-gray-600 dark:text-gray-300 text-sm">
                                     Be among the first to experience the future of real estate
                                 </p>
                             </div>
@@ -173,7 +173,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {/* User Type Selection */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-3">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-3">
                                         I am a... <span className="text-red-500">*</span>
                                     </label>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -185,13 +185,13 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                                     type="button"
                                                     onClick={() => handleChange('userType', type.value)}
                                                     className={`p-4 rounded-2xl border-2 transition-all duration-300 text-left ${formData.userType === type.value
-                                                        ? 'border-primary bg-primary/5 shadow-lg'
-                                                        : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50'
+                                                        ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-lg'
+                                                        : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800'
                                                         }`}
                                                 >
                                                     <Icon className={`mb-2 ${formData.userType === type.value ? 'text-primary' : 'text-gray-400'}`} size={28} />
-                                                    <div className="font-bold text-secondary mb-1">{type.label}</div>
-                                                    <div className="text-xs text-gray-500">{type.description}</div>
+                                                    <div className="font-bold text-gray-900 dark:text-gray-100 mb-1">{type.label}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">{type.description}</div>
                                                 </button>
                                             );
                                         })}
@@ -201,7 +201,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
 
                                 {/* Name */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
                                         Full Name <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
@@ -210,7 +210,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => handleChange('name', e.target.value)}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${errors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${errors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-200 dark:border-gray-700 focus:border-primary'
                                                 }`}
                                             placeholder="John Doe"
                                         />
@@ -220,7 +220,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
 
                                 {/* Email */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
                                         Email Address <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
@@ -229,7 +229,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                             type="email"
                                             value={formData.email}
                                             onChange={(e) => handleChange('email', e.target.value)}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 dark:border-gray-700 focus:border-primary'
                                                 }`}
                                             placeholder="john@example.com"
                                         />
@@ -239,8 +239,8 @@ const WaitlistModal = ({ isOpen, onClose }) => {
 
                                 {/* Phone (Optional) */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                                        Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
+                                        Phone Number <span className="text-gray-400 dark:text-gray-500 text-xs">(Optional)</span>
                                     </label>
                                     <div className="relative">
                                         <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
@@ -248,7 +248,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                             type="tel"
                                             value={formData.phone}
                                             onChange={(e) => handleChange('phone', e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-colors bg-white text-gray-900 placeholder-gray-400"
+                                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="+1 (555) 000-0000"
                                         />
                                     </div>
@@ -256,7 +256,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
 
                                 {/* Location */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
                                         Location/City <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
@@ -265,7 +265,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                             type="text"
                                             value={formData.location}
                                             onChange={(e) => handleChange('location', e.target.value)}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${errors.location ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${errors.location ? 'border-red-300 focus:border-red-500' : 'border-gray-200 dark:border-gray-700 focus:border-primary'
                                                 }`}
                                             placeholder="New York, NY"
                                         />
@@ -275,7 +275,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
 
                                 {/* Looking For */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
                                         What are you looking for? <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
@@ -284,7 +284,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                                             value={formData.lookingFor}
                                             onChange={(e) => handleChange('lookingFor', e.target.value)}
                                             rows={4}
-                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors resize-none bg-white text-gray-900 placeholder-gray-400 ${errors.lookingFor ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-primary'
+                                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${errors.lookingFor ? 'border-red-300 focus:border-red-500' : 'border-gray-200 dark:border-gray-700 focus:border-primary'
                                                 }`}
                                             placeholder="Tell us about your ideal property, budget, preferences, etc."
                                         />

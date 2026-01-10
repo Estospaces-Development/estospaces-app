@@ -187,7 +187,7 @@ const Profile = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -288,7 +288,7 @@ const Profile = () => {
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center overflow-hidden">
                 {getAvatarUrl() ? (
                   <img 
-                    src={getAvatarUrl()} 
+                    src={getAvatarUrl() || undefined} 
                     alt={getDisplayName()} 
                     className="w-full h-full object-cover"
                   />
@@ -314,7 +314,7 @@ const Profile = () => {
                 {user?.email}
               </p>
               <p className="text-sm text-orange-100 mt-1">
-                Member since {formatDate(formData.created_at || user?.created_at)}
+                Member since {formatDate(formData.created_at || user?.created_at || undefined)}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -503,7 +503,7 @@ const Profile = () => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                     <Calendar className="w-5 h-5 text-gray-400" />
-                    <span>{formatDate(formData.created_at || user?.created_at)}</span>
+                    <span>{formatDate(formData.created_at || user?.created_at || undefined)}</span>
                   </div>
                 </div>
               </div>

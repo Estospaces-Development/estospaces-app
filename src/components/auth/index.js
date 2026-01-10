@@ -4,5 +4,6 @@ export { default as Signup } from './Signup';
 export { default as ResetPassword } from './ResetPassword';
 export { default as AuthLayout } from './AuthLayout';
 export { default as Loader } from './Loader';
+export { default as AuthCallback } from './AuthCallback';
 
 

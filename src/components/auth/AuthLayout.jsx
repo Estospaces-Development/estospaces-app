@@ -13,7 +13,7 @@ const AuthLayout = ({ image, children }) => {
             </div>
             
             {/* Right side - Form */}
-            <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-6 py-12 md:px-16 bg-white min-h-screen">
+            <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-6 py-12 md:px-16 bg-white dark:bg-gray-900 min-h-screen">
                 <div className="w-full max-w-sm">
                     {children}
                 </div>

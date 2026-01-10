@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Type definitions
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR' | 'AED' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'SGD';
@@ -438,13 +439,19 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Fetch properties from Supabase
   const fetchProperties = useCallback(async () => {
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as SupabaseClient).auth.getUser();
       
-      let query = supabase.from('properties').select('*');
+      let query = (supabase as SupabaseClient).from('properties').select('*');
       
       if (user) {
         query = query.eq('agent_id', user.id);
@@ -537,7 +544,9 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Upload images
   const uploadImages = async (files: File[]): Promise<string[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    const { data: { user } } = await (supabase as SupabaseClient).auth.getUser();
     if (!user) throw new Error('Must be logged in to upload images');
 
     const uploadedUrls: string[] = [];
@@ -546,13 +555,13 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage.from('property-images').upload(fileName, file);
+      const { error: uploadError } = await (supabase as SupabaseClient).storage.from('property-images').upload(fileName, file);
       if (uploadError) {
         console.error('Upload error:', uploadError);
         continue;
       }
 
-      const { data: { publicUrl } } = supabase.storage.from('property-images').getPublicUrl(fileName);
+      const { data: { publicUrl } } = (supabase as SupabaseClient).storage.from('property-images').getPublicUrl(fileName);
       uploadedUrls.push(publicUrl);
     }
 
@@ -561,17 +570,22 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Add property
   const addProperty = async (propertyData: Partial<Property>): Promise<Property | null> => {
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      return null;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as SupabaseClient).auth.getUser();
       if (!user) throw new Error('Must be logged in to add a property');
 
       const dbData = propertyToDbRow(propertyData);
       dbData.agent_id = user.id;
 
-      const { data, error: insertError } = await supabase.from('properties').insert(dbData).select().single();
+      const { data, error: insertError } = await (supabase as SupabaseClient).from('properties').insert(dbData).select().single();
       if (insertError) throw insertError;
 
       const newProperty = dbRowToProperty(data);
@@ -588,6 +602,11 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Update property
   const updateProperty = async (id: string, propertyData: Partial<Property>) => {
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -595,7 +614,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       const dbData = propertyToDbRow(propertyData);
       dbData.updated_at = new Date().toISOString();
 
-      const { error: updateError } = await supabase.from('properties').update(dbData).eq('id', id);
+      const { error: updateError } = await (supabase as SupabaseClient).from('properties').update(dbData).eq('id', id);
       if (updateError) throw updateError;
 
       setProperties(prev => prev.map(p => p.id === id ? { ...p, ...propertyData, updatedAt: dbData.updated_at } : p));
@@ -609,8 +628,13 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Delete property
   const deleteProperty = async (id: string) => {
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('properties').delete().eq('id', id);
+      const { error } = await (supabase as SupabaseClient).from('properties').delete().eq('id', id);
       if (error) throw error;
       setProperties(prev => prev.filter(p => p.id !== id));
       setSelectedProperties(prev => prev.filter(pid => pid !== id));
@@ -622,8 +646,13 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Delete multiple
   const deleteProperties = async (ids: string[]) => {
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('properties').delete().in('id', ids);
+      const { error } = await (supabase as SupabaseClient).from('properties').delete().in('id', ids);
       if (error) throw error;
       setProperties(prev => prev.filter(p => !ids.includes(p.id)));
       setSelectedProperties(prev => prev.filter(pid => !ids.includes(pid)));
@@ -663,8 +692,13 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Bulk status update
   const bulkUpdateStatus = async (ids: string[], status: PropertyStatus) => {
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('properties').update({ status, updated_at: new Date().toISOString() }).in('id', ids);
+      const { error } = await (supabase as SupabaseClient).from('properties').update({ status, updated_at: new Date().toISOString() }).in('id', ids);
       if (error) throw error;
       setProperties(prev => prev.map(p => ids.includes(p.id) ? { ...p, status, updatedAt: new Date().toISOString() } : p));
     } catch (err: any) {
@@ -687,10 +721,12 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   const setLimit = (limit: number) => setPagination(prev => ({ ...prev, limit, page: 1 }));
 
   const incrementViews = async (id: string) => {
+    if (!supabase) return;
+    
     const p = properties.find(prop => prop.id === id);
     if (!p) return;
     try {
-      await supabase.from('properties').update({ views: (p.analytics?.views || 0) + 1 }).eq('id', id);
+      await (supabase as SupabaseClient).from('properties').update({ views: (p.analytics?.views || 0) + 1 }).eq('id', id);
       setProperties(prev => prev.map(prop => prop.id === id ? { ...prop, analytics: { ...prop.analytics, views: (prop.analytics?.views || 0) + 1 } } : prop));
     } catch (err) {
       console.error('Error incrementing views:', err);
@@ -698,10 +734,12 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const incrementInquiries = async (id: string) => {
+    if (!supabase) return;
+    
     const p = properties.find(prop => prop.id === id);
     if (!p) return;
     try {
-      await supabase.from('properties').update({ inquiries: (p.analytics?.inquiries || 0) + 1 }).eq('id', id);
+      await (supabase as SupabaseClient).from('properties').update({ inquiries: (p.analytics?.inquiries || 0) + 1 }).eq('id', id);
       setProperties(prev => prev.map(prop => prop.id === id ? { ...prop, analytics: { ...prop.analytics, inquiries: (prop.analytics?.inquiries || 0) + 1 } } : prop));
     } catch (err) {
       console.error('Error incrementing inquiries:', err);

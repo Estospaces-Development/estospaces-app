@@ -61,13 +61,13 @@ const ResetPassword = () => {
                         <Check className="text-green-600" size={32} />
                     </div>
                     
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
                         Check your email
                     </h2>
                     
-                    <p className="text-gray-500 text-sm mb-8">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
                         Password reset link sent to<br />
-                        <strong className="text-gray-800">{email}</strong>
+                        <strong className="text-gray-800 dark:text-gray-200">{email}</strong>
                     </p>
 
                     <button
@@ -89,18 +89,18 @@ const ResetPassword = () => {
                     <img src={logo} alt="Estospaces" className="h-10" />
                 </div>
                 
-                <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2 text-center">
                     Reset Your Password
                 </h2>
                 
-                <p className="text-gray-500 text-sm mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 text-center">
                     Enter your email address and we'll send you a link to reset your password.
                 </p>
 
                 <form onSubmit={handleReset} className="w-full">
                     {/* Email Input */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                         <input
                             type="email"
                             placeholder="Enter your email"
@@ -109,8 +109,8 @@ const ResetPassword = () => {
                                 setEmail(e.target.value);
                                 setError('');
                             }}
-                            className={`w-full px-4 py-3 border rounded-md outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${
-                                error ? 'border-red-400 focus:border-red-500' : 'border-gray-300 focus:border-primary'
+                            className={`w-full px-4 py-3 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                                error ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
                             }`}
                         />
                         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
@@ -127,7 +127,7 @@ const ResetPassword = () => {
 
                 <button
                     onClick={() => navigate('/auth/sign-in-email')}
-                    className="flex items-center gap-2 text-sm text-gray-400 mt-8 hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 mt-8 hover:text-primary transition-colors"
                 >
                     <ArrowLeft size={16} />
                     Back to Sign In

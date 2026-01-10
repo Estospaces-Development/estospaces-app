@@ -82,8 +82,8 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                     <button
                       key={themeOption.value}
                       onClick={() => handleThemeSelect(themeOption.value)}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors duration-300 flex items-center justify-between ${
-                        theme === themeOption.value ? 'bg-primary/10 dark:bg-primary/20 text-primary font-medium' : 'text-gray-700 dark:text-gray-300'
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-900 active:bg-gray-200 dark:active:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 transition-colors duration-300 flex items-center justify-between ${
+                        theme === themeOption.value ? 'bg-primary/10 dark:bg-primary/20 text-primary font-medium active:text-primary dark:active:text-primary' : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
                       <span>{themeOption.label}</span>
@@ -106,7 +106,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
             {/* User Profile */}
             <button 
-              onClick={() => navigate('/profile')}
+              onClick={() => navigate('/manager/dashboard/profile')}
               className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300"
               title="Profile"
             >

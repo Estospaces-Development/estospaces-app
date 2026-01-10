@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
@@ -8,9 +8,60 @@ import { AlertCircle } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [active, setActive] = useState('google');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [checkingSession, setCheckingSession] = useState(true);
+
+    // Get the intended destination from location state
+    const from = location.state?.from?.pathname;
+    const intendedRole = location.state?.intendedRole;
+
+    // Check if user is already logged in and redirect appropriately
+    useEffect(() => {
+        const checkExistingSession = async () => {
+            if (!isSupabaseAvailable()) {
+                setCheckingSession(false);
+                return;
+            }
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    // User is already logged in, redirect based on role
+                    const userRole = session.user?.user_metadata?.role;
+                    
+                    // Check profile for role if not in metadata
+                    let role = userRole;
+                    if (!role) {
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('role')
+                            .eq('id', session.user.id)
+                            .single();
+                        role = profile?.role || 'user';
+                    }
+
+                    // Redirect to the intended destination or dashboard based on role
+                    if (from) {
+                        navigate(from, { replace: true });
+                    } else if (role === 'manager') {
+                        navigate('/manager/dashboard', { replace: true });
+                    } else {
+                        navigate('/user/dashboard', { replace: true });
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking session:', err);
+            } finally {
+                setCheckingSession(false);
+            }
+        };
+
+        checkExistingSession();
+    }, [navigate, from]);
 
     const signInWithGoogle = async () => {
         if (!isSupabaseAvailable()) {
@@ -23,9 +74,13 @@ const Login = () => {
         setError('');
         
         try {
+            // For OAuth, we can't determine role until after login
+            // Default redirect will be to user dashboard, and auth callback will redirect appropriately
             const { error: authError } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: `${window.location.origin}/manager/dashboard` },
+                options: { 
+                    redirectTo: `${window.location.origin}/auth/callback`
+                },
             });
             
             if (authError) {
@@ -52,11 +107,11 @@ const Login = () => {
                     <img src={logo} alt="Estospaces" className="h-10" />
                 </div>
                 
-                <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2 text-center">
                     Sign in to Estospaces
                 </h2>
                 
-                <p className="text-gray-500 text-sm mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 text-center">
                     Welcome back! Please sign in to continue
                 </p>
 
@@ -67,7 +122,7 @@ const Login = () => {
                     className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-3 border ${
                         active === 'google'
                             ? 'bg-primary text-white border-primary'
-                            : 'bg-orange-50 text-primary border-primary hover:bg-orange-100'
+                            : 'bg-orange-50 dark:bg-orange-900/20 text-primary border-primary hover:bg-orange-100 dark:hover:bg-orange-900/30'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                     <span className="flex items-center justify-center gap-3">
@@ -99,7 +154,7 @@ const Login = () => {
                     className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-4 border ${
                         active === 'email'
                             ? 'bg-primary text-white border-primary'
-                            : 'bg-orange-50 text-primary border-primary hover:bg-orange-100'
+                            : 'bg-orange-50 dark:bg-orange-900/20 text-primary border-primary hover:bg-orange-100 dark:hover:bg-orange-900/30'
                     }`}
                 >
                     Sign in with Email
@@ -113,7 +168,7 @@ const Login = () => {
                     </div>
                 )}
 
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                     Don't have an account?{' '}
                     <span
                         onClick={() => navigate('/auth/signup')}
@@ -123,7 +178,7 @@ const Login = () => {
                     </span>
                 </p>
 
-                <p className="text-xs text-gray-400 mt-12 text-center leading-relaxed">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-12 text-center leading-relaxed">
                     By continuing you agree to Estospaces<br />
                     <a href="/terms" className="text-primary hover:underline">terms & conditions</a>
                     {' · '}

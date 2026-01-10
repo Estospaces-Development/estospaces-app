@@ -121,14 +121,14 @@ const CookieConsent = () => {
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom duration-300">
             <div className="container mx-auto max-w-6xl">
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 md:flex md:items-center md:justify-between gap-6">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 md:flex md:items-center md:justify-between gap-6">
                     <div className="flex items-start gap-4 flex-1">
                         <div className="bg-primary/10 p-3 rounded-full flex-shrink-0">
                             <Cookie className="text-primary" size={24} />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 mb-2">We value your privacy</h3>
-                            <p className="text-sm text-gray-600 leading-relaxed">
+                            <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-2">We value your privacy</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                                 We use cookies to enhance your browsing experience, analyze site traffic, and personalize content.
                                 By clicking "Accept All", you consent to our use of cookies.{' '}
                                 <a href="/cookies" className="text-primary hover:underline font-medium">
@@ -141,7 +141,7 @@ const CookieConsent = () => {
                     <div className="flex gap-3 mt-4 md:mt-0 md:flex-shrink-0">
                         <button
                             onClick={handleDecline}
-                            className="px-6 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium text-sm border border-gray-300"
+                            className="px-6 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium text-sm border border-gray-300 dark:border-gray-600"
                         >
                             Decline
                         </button>

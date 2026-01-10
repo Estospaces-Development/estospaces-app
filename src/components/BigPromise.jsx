@@ -49,11 +49,11 @@ const BigPromise = () => {
     };
 
     return (
-        <section id="features" className="py-24 bg-gray-50 relative overflow-hidden">
+        <section id="features" className="py-24 bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-secondary/5 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-gray-800/5 dark:bg-gray-600/5 rounded-full blur-3xl"></div>
             </div>
 
             <motion.div
@@ -70,7 +70,7 @@ const BigPromise = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                        className="text-4xl md:text-6xl font-bold text-secondary mb-6 tracking-tight"
+                        className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-gray-100 mb-6 tracking-tight"
                     >
                         Real Estate, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600">Reimagined.</span>
                     </motion.h2>
@@ -79,7 +79,7 @@ const BigPromise = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                        className="text-xl text-gray-600 leading-relaxed"
+                        className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed"
                     >
                         Estospaces is a virtual-first platform that transforms how you discover, explore, and secure properties.
                     </motion.p>
@@ -97,7 +97,7 @@ const BigPromise = () => {
                         <motion.div
                             key={index}
                             variants={itemVariants}
-                            className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 group transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden"
+                            className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 group transform hover:-translate-y-2 border border-gray-100 dark:border-gray-700 relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
@@ -114,10 +114,10 @@ const BigPromise = () => {
                                 {React.cloneElement(feature.icon, { className: "text-primary group-hover:text-white transition-colors duration-300", size: 32 })}
                             </motion.div>
 
-                            <h3 className="text-xl font-bold text-secondary mb-3 group-hover:text-primary transition-colors duration-300">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 group-hover:text-primary transition-colors duration-300">
                                 {feature.title}
                             </h3>
-                            <p className="text-gray-600 leading-relaxed">
+                            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                                 {feature.description}
                             </p>
                         </motion.div>

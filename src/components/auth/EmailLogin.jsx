@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
@@ -8,15 +8,74 @@ import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const EmailLogin = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [checkingSession, setCheckingSession] = useState(true);
 
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [generalError, setGeneralError] = useState('');
+
+    // Get the intended destination from location state
+    const from = location.state?.from?.pathname;
+
+    // Check if user is already logged in
+    useEffect(() => {
+        const checkExistingSession = async () => {
+            if (!isSupabaseAvailable()) {
+                setCheckingSession(false);
+                return;
+            }
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    // User is already logged in, redirect based on role
+                    await redirectBasedOnRole(session.user);
+                }
+            } catch (err) {
+                console.error('Error checking session:', err);
+            } finally {
+                setCheckingSession(false);
+            }
+        };
+
+        checkExistingSession();
+    }, []);
+
+    // Helper function to redirect based on user role
+    const redirectBasedOnRole = async (user) => {
+        const userRole = user?.user_metadata?.role;
+        
+        // Check profile for role if not in metadata
+        let role = userRole;
+        if (!role) {
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .single();
+                role = profile?.role || 'user';
+            } catch {
+                role = 'user';
+            }
+        }
+
+        // Redirect to the intended destination or dashboard based on role
+        if (from) {
+            navigate(from, { replace: true });
+        } else if (role === 'manager') {
+            navigate('/manager/dashboard', { replace: true });
+        } else {
+            navigate('/user/dashboard', { replace: true });
+        }
+    };
 
     const validateEmail = (value) => {
         if (!value) return 'Email is required';
@@ -66,8 +125,8 @@ const EmailLogin = () => {
                     setGeneralError(error.message);
                 }
             } else if (data.session) {
-                // Successful login
-                navigate('/manager/dashboard');
+                // Successful login - redirect based on role
+                await redirectBasedOnRole(data.session.user);
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -85,18 +144,18 @@ const EmailLogin = () => {
                     <img src={logo} alt="Estospaces" className="h-10" />
                 </div>
                 
-                <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2 text-center">
                     Sign in to continue
                 </h2>
                 
-                <p className="text-gray-500 text-sm mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 text-center">
                     Enter your email and password
                 </p>
 
                 <form onSubmit={handleLogin} className="w-full">
                     {/* Email Input */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                         <input
                             type="email"
                             placeholder="Enter your email"
@@ -105,8 +164,8 @@ const EmailLogin = () => {
                                 setEmail(e.target.value);
                                 setEmailError('');
                             }}
-                            className={`w-full px-4 py-3 border rounded-md outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${
-                                emailError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 focus:border-primary'
+                            className={`w-full px-4 py-3 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                                emailError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
                             }`}
                         />
                         {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
@@ -114,7 +173,7 @@ const EmailLogin = () => {
 
                     {/* Password Input */}
                     <div className="mb-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
@@ -124,8 +183,8 @@ const EmailLogin = () => {
                                     setPassword(e.target.value);
                                     setPasswordError('');
                                 }}
-                                className={`w-full px-4 py-3 pr-12 border rounded-md outline-none transition-colors bg-white text-gray-900 placeholder-gray-400 ${
-                                    passwordError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 focus:border-primary'
+                                className={`w-full px-4 py-3 pr-12 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                                    passwordError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
                                 }`}
                             />
                             <button
@@ -162,7 +221,7 @@ const EmailLogin = () => {
                     <p className="text-red-500 text-sm mt-4 text-center">{generalError}</p>
                 )}
 
-                <p className="text-sm text-gray-600 mt-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-6">
                     Don't have an account?{' '}
                     <span
                         onClick={() => navigate('/auth/signup')}
@@ -174,7 +233,7 @@ const EmailLogin = () => {
 
                 <button
                     onClick={() => navigate('/auth/login')}
-                    className="flex items-center gap-2 text-sm text-gray-400 mt-8 hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 mt-8 hover:text-primary transition-colors"
                 >
                     <ArrowLeft size={16} />
                     Back to Login options
