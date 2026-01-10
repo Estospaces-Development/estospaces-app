@@ -94,7 +94,7 @@ const dummyLocations: Location[] = [
   { id: '9', name: '24/7 Locksmith Services', type: 'locksmith', lat: 40.7128, lng: -74.0080, address: '50 Park Ave, New York, NY', phone: '(555) 111-2222' },
   { id: '10', name: 'Quick Lock & Key', type: 'locksmith', lat: 34.0522, lng: -118.2490, address: '60 Vine St, Los Angeles, CA', phone: '(555) 222-3333' },
   
-  // Supermarkets (ASDA equivalent - using Walmart/Target)
+  // Supermarkets
   { id: '11', name: 'Walmart Supercenter', type: 'supermarket', lat: 40.7505, lng: -73.9934, address: '700 6th Ave, New York, NY', phone: '(555) 333-4444' },
   { id: '12', name: 'Target Store', type: 'supermarket', lat: 34.0522, lng: -118.2510, address: '8500 Sunset Blvd, Los Angeles, CA', phone: '(555) 444-5555' },
   { id: '13', name: 'Whole Foods Market', type: 'supermarket', lat: 37.7749, lng: -122.4210, address: '1765 California St, San Francisco, CA', phone: '(555) 555-6666' },
@@ -162,7 +162,7 @@ const SatelliteMap = () => {
   
   const filteredLocations = dummyLocations.filter(loc => activeFilters.includes(loc.type));
   
-  const getIconForType = (type: string) => {
+  const getIconForType = (type: string): L.Icon | L.DivIcon => {
     const filter = filterOptions.find(f => f.id === type);
     if (!filter) return DefaultIcon;
     
@@ -298,4 +298,3 @@ const SatelliteMap = () => {
 };
 
 export default SatelliteMap;
-
