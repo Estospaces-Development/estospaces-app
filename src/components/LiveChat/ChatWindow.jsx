@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Bot } from 'lucide-react';
 import useLiveChat from '../../hooks/useLiveChat';
 import MessageBubble from './MessageBubble';
 import WelcomeForm from './WelcomeForm';
@@ -36,10 +36,15 @@ const ChatWindow = ({ onClose }) => {
     return (
         <div className="flex flex-col h-[500px] bg-white">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary to-orange-600 text-white">
-                <div>
-                    <h3 className="font-semibold text-lg">Chat with Estospaces</h3>
-                    <p className="text-xs text-orange-100">We typically reply in a few minutes</p>
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                        <Bot size={20} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg">Ask Lakshmi</h3>
+                        <p className="text-xs text-orange-100">Intelligent Assistant</p>
+                    </div>
                 </div>
                 <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
                     <X size={20} />
