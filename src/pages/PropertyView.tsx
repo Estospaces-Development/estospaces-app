@@ -1,32 +1,54 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProperties } from '../contexts/PropertyContext';
-import { 
+import {
   ArrowLeft, Edit, Trash2, MapPin, Home, Calendar, Copy, Share2, Heart,
   Bed, Bath, Car, Maximize, Building, DollarSign, CheckCircle, X,
   Phone, Mail, Globe, Shield, Star, TrendingUp, Eye, MessageCircle,
-  ChevronLeft, ChevronRight, Clock, User, FileText, Verified
+  ChevronLeft, ChevronRight, Clock, User, FileText, Verified, Settings,
+  Send
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import SharePropertyModal from '../components/ui/SharePropertyModal';
+import Toast from '../components/ui/Toast';
 
 const PropertyView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getProperty, deleteProperty, formatPrice, formatArea, incrementViews, duplicateProperty } = useProperties();
+  const { getProperty, deleteProperty, updateProperty, formatPrice, formatArea, incrementViews, incrementShares, duplicateProperty } = useProperties();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
+    message: '',
+    type: 'success',
+    visible: false,
+  });
+
+  // Track if view has been counted for this session
+  const viewCountedRef = useRef(false);
 
   const property = id ? getProperty(id) : undefined;
 
-  // Increment views on mount
+  // Increment views on mount - only once per session per property
   useEffect(() => {
-    if (id) {
-      incrementViews(id);
+    if (id && !viewCountedRef.current) {
+      // Check if this property was already viewed in this session
+      const viewedKey = `property_viewed_${id}`;
+      const alreadyViewed = sessionStorage.getItem(viewedKey);
+
+      if (!alreadyViewed) {
+        incrementViews(id);
+        sessionStorage.setItem(viewedKey, 'true');
+      }
+      viewCountedRef.current = true;
     }
-  }, [id, incrementViews]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!property) {
     return (
@@ -63,46 +85,78 @@ const PropertyView = () => {
     }
   };
 
-  const handleShare = async (platform: string) => {
-    const url = window.location.href;
-    const title = property.title;
+  const handlePublish = async () => {
+    if (!id || !property) return;
 
-    switch (platform) {
-      case 'copy':
-        await navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
-        break;
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(`${title} - ${url}`)}`);
-        break;
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
-        break;
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
-        break;
-      case 'email':
-        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Check out this property: ${url}`)}`);
-        break;
+    setPublishing(true);
+    try {
+      // Update property status from draft to published
+      const updatedProperty = await updateProperty(id, {
+        status: 'published',
+        published: true,
+      });
+
+      if (updatedProperty) {
+        setToast({
+          message: 'Property published successfully!',
+          type: 'success',
+          visible: true,
+        });
+        // Refresh the page after a short delay to show updated status
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        setToast({
+          message: 'Failed to publish property. Please try again.',
+          type: 'error',
+          visible: true,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error publishing property:', error);
+      const errorMessage = error?.message || 'Failed to publish property';
+      setToast({
+        message: `Failed to publish property: ${errorMessage}`,
+        type: 'error',
+        visible: true,
+      });
+    } finally {
+      setPublishing(false);
     }
-    setShowShareMenu(false);
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, visible: false }));
+  };
+
+  const handleShare = async (platform: string) => {
+    try {
+      // Track share analytics
+      if (id && platform !== 'copy') {
+        await incrementShares(id);
+      }
+    } catch (error) {
+      console.error('Error tracking share:', error);
+    }
   };
 
   // Get images from the property
-  const images = property.media?.images?.map(img => img.url) || 
+  const images = property.media?.images?.map(img => img.url) ||
     property.images?.filter((img): img is string => typeof img === 'string') || [];
-  
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      available: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-      sold: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-      rented: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-      under_contract: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-      off_market: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-      coming_soon: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+      online: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      published: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      offline: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+      draft: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      under_offer: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+      sold: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      let: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
     };
-    return colors[status] || colors.available;
+    return colors[status] || colors.online;
   };
 
   const formatStatus = (status: string) => {
@@ -124,52 +178,23 @@ const PropertyView = () => {
           {/* Favorite */}
           <button
             onClick={() => setIsFavorited(!isFavorited)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-              isFavorited 
-                ? 'border-red-300 bg-red-50 dark:bg-red-900/20 text-red-600' 
-                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${isFavorited
+              ? 'border-red-300 bg-red-50 dark:bg-red-900/20 text-red-600'
+              : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
           >
             <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
             <span className="hidden sm:inline">Favorite</span>
           </button>
 
           {/* Share */}
-          <div className="relative">
-            <button
-              onClick={() => setShowShareMenu(!showShareMenu)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <Share2 className="w-5 h-5" />
-              <span className="hidden sm:inline">Share</span>
-            </button>
-            
-            <AnimatePresence>
-              {showShareMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 z-50"
-                >
-                  {[
-                    { id: 'copy', label: 'Copy Link', icon: <FileText className="w-4 h-4" /> },
-                    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle className="w-4 h-4" /> },
-                    { id: 'email', label: 'Email', icon: <Mail className="w-4 h-4" /> },
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleShare(item.id)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg"
-                    >
-                      {item.icon}
-                      {item.label}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="hidden sm:inline">Share</span>
+          </button>
 
           {/* Duplicate */}
           <button
@@ -208,7 +233,7 @@ const PropertyView = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
             {images.length > 0 ? (
               <div className="relative">
-                <div 
+                <div
                   className="aspect-video bg-gray-100 dark:bg-gray-800 cursor-pointer"
                   onClick={() => setShowImageModal(true)}
                 >
@@ -272,11 +297,10 @@ const PropertyView = () => {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      index === currentImageIndex 
-                        ? 'border-primary shadow-lg' 
-                        : 'border-transparent opacity-70 hover:opacity-100'
-                    }`}
+                    className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                      ? 'border-primary shadow-lg'
+                      : 'border-transparent opacity-70 hover:opacity-100'
+                      }`}
                   >
                     <img
                       src={image}
@@ -305,7 +329,7 @@ const PropertyView = () => {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-primary">
-                  {property.price?.amount 
+                  {property.price?.amount
                     ? formatPrice(property.price)
                     : property.priceString || 'Price on Request'}
                 </p>
@@ -430,7 +454,7 @@ const PropertyView = () => {
             {property.amenities && (
               <div className="py-6 border-t border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Amenities & Features</h2>
-                
+
                 {Object.entries(property.amenities).map(([category, items]) => {
                   if (!items || items.length === 0) return null;
                   return (
@@ -490,54 +514,99 @@ const PropertyView = () => {
 
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
-          {/* Contact Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 sticky top-6">
+          {/* Quick Actions Card - For manager viewing their own property */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
-              Contact Agent
+              <Settings className="w-5 h-5 text-primary" />
+              Quick Actions
             </h3>
-            
+
+            <div className="space-y-3">
+              {/* Publish Property Button - Show only when status is draft */}
+              {property.status === 'draft' && (
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing}
+                  className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                  <Send className="w-5 h-5" />
+                  {publishing ? 'Publishing...' : 'Publish Property'}
+                </button>
+              )}
+
+              <button
+                onClick={() => navigate(`/manager/dashboard/properties/edit/${id}`)}
+                className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Edit className="w-5 h-5" />
+                Edit Property
+              </button>
+
+              <button
+                onClick={handleDuplicate}
+                className="w-full py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Copy className="w-5 h-5" />
+                Duplicate Listing
+              </button>
+
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="w-full py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-5 h-5" />
+                Share Property
+              </button>
+
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full py-3 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-5 h-5" />
+                Delete Property
+              </button>
+            </div>
+          </div>
+
+          {/* Property Status Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-primary" />
+              Listing Status
+            </h3>
+
             <div className="space-y-4">
-              <div>
-                <p className="font-medium text-gray-800 dark:text-white">
-                  {property.contact?.name || property.contactName || 'Property Manager'}
-                </p>
-                {property.contact?.company && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{property.contact.company}</p>
-                )}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Current Status</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(property.status)}`}>
+                  {formatStatus(property.status)}
+                </span>
               </div>
 
-              <div className="space-y-2">
-                <a
-                  href={`tel:${property.contact?.phone || property.phoneNumber}`}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Phone className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {property.contact?.phone || property.phoneNumber || 'N/A'}
-                  </span>
-                </a>
-
-                <a
-                  href={`mailto:${property.contact?.email || property.emailAddress}`}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Mail className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700 dark:text-gray-300 truncate">
-                    {property.contact?.email || property.emailAddress || 'N/A'}
-                  </span>
-                </a>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Listing Type</span>
+                <span className="text-gray-800 dark:text-white font-medium capitalize">
+                  For {property.listingType}
+                </span>
               </div>
 
-              <button className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                Send Message
-              </button>
+              {property.createdAt && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Listed On</span>
+                  <span className="text-gray-800 dark:text-white font-medium">
+                    {new Date(property.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
 
-              <button className="w-full py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors font-medium flex items-center justify-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Schedule Viewing
-              </button>
+              {property.updatedAt && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Last Updated</span>
+                  <span className="text-gray-800 dark:text-white font-medium">
+                    {new Date(property.updatedAt).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -548,7 +617,7 @@ const PropertyView = () => {
                 <TrendingUp className="w-5 h-5 text-primary" />
                 Property Analytics
               </h3>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <Eye className="w-5 h-5 text-blue-500 mx-auto mb-1" />
@@ -581,7 +650,7 @@ const PropertyView = () => {
                 <FileText className="w-5 h-5 text-primary" />
                 Additional Information
               </h3>
-              
+
               <div className="space-y-3">
                 {property.availableFrom && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
@@ -654,7 +723,7 @@ const PropertyView = () => {
             >
               <X className="w-8 h-8" />
             </button>
-            
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -664,14 +733,14 @@ const PropertyView = () => {
             >
               <ChevronLeft className="w-10 h-10" />
             </button>
-            
+
             <img
               src={images[currentImageIndex]}
               alt={`${property.title} - Full size`}
               className="max-h-[90vh] max-w-[90vw] object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-            
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -681,7 +750,7 @@ const PropertyView = () => {
             >
               <ChevronRight className="w-10 h-10" />
             </button>
-            
+
             <div className="absolute bottom-4 text-white/80 text-sm">
               {currentImageIndex + 1} / {images.length}
             </div>
@@ -729,6 +798,23 @@ const PropertyView = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Share Property Modal */}
+      <SharePropertyModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        property={property}
+        onShare={handleShare}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.visible}
+        onClose={hideToast}
+        duration={3000}
+      />
     </div>
   );
 };

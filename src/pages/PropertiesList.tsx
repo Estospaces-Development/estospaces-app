@@ -1,7 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProperties, PropertyStatus, PropertyType, ListingType, FurnishingStatus, SortField, SortOrder } from '../contexts/PropertyContext';
+import { useProperties, PropertyStatus, PropertyType, ListingType, FurnishingStatus, SortField, SortOrder, Property } from '../contexts/PropertyContext';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import BackButton from '../components/ui/BackButton';
+import SharePropertyModal from '../components/ui/SharePropertyModal';
 import { 
   Plus, Edit, Trash2, Eye, Filter, Download, Search, Grid, List, Map,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Copy, MoreVertical,
@@ -13,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // View modes
 type ViewMode = 'grid' | 'list' | 'map';
+type TabType = 'all' | 'favorited' | 'draft';
 
 // Price range presets
 const priceRanges = [
@@ -84,6 +89,7 @@ const sortOptions: { field: SortField; order: SortOrder; label: string }[] = [
 
 const PropertiesList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { 
     filteredProperties, 
     properties,
@@ -109,9 +115,11 @@ const PropertiesList = () => {
     formatPrice,
     formatArea,
     getPropertyStats,
+    incrementShares,
   } = useProperties();
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -119,6 +127,103 @@ const PropertiesList = () => {
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [activePropertyMenu, setActivePropertyMenu] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedPropertyForShare, setSelectedPropertyForShare] = useState<Property | null>(null);
+  
+  // Favorited properties state (manager-specific from database)
+  const [favoritedIds, setFavoritedIds] = useState<string[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
+  
+  // Load favorited properties from database
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!user?.id || !isSupabaseAvailable() || !supabase) {
+        setLoadingFavorites(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await (supabase as SupabaseClient)
+          .from('saved_properties')
+          .select('property_id')
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        const ids = (data || []).map(item => item.property_id);
+        setFavoritedIds(ids);
+      } catch (err) {
+        console.error('Error loading favorites:', err);
+      } finally {
+        setLoadingFavorites(false);
+      }
+    };
+    
+    loadFavorites();
+  }, [user?.id]);
+  
+  // Toggle favorite status (save to database)
+  const toggleFavorite = async (propertyId: string) => {
+    if (!user?.id || !isSupabaseAvailable() || !supabase) {
+      alert('Please log in to save favorites');
+      return;
+    }
+    
+    const isCurrentlyFavorited = favoritedIds.includes(propertyId);
+    
+    try {
+      if (isCurrentlyFavorited) {
+        // Remove from favorites
+        const { error } = await (supabase as SupabaseClient)
+          .from('saved_properties')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('property_id', propertyId);
+        
+        if (error) throw error;
+        
+        setFavoritedIds(prev => prev.filter(id => id !== propertyId));
+      } else {
+        // Add to favorites (upsert prevents duplicates)
+        const { error } = await (supabase as SupabaseClient)
+          .from('saved_properties')
+          .upsert({
+            user_id: user.id,
+            property_id: propertyId,
+          }, {
+            onConflict: 'user_id,property_id'
+          });
+        
+        if (error) throw error;
+        
+        setFavoritedIds(prev => [...prev, propertyId]);
+      }
+    } catch (err: any) {
+      console.error('Error toggling favorite:', err);
+      alert(`Failed to ${isCurrentlyFavorited ? 'remove from' : 'add to'} favorites: ${err?.message || 'Unknown error'}`);
+    }
+  };
+  
+  // Check if property is favorited
+  const isFavorited = (propertyId: string) => {
+    return favoritedIds.includes(propertyId);
+  };
+  
+  // Filter properties based on active tab
+  const tabFilteredProperties = useMemo(() => {
+    if (activeTab === 'favorited') {
+      return filteredProperties.filter(p => favoritedIds.includes(p.id));
+    }
+    if (activeTab === 'draft') {
+      return filteredProperties.filter(p => p.draft === true || p.status === 'draft');
+    }
+    return filteredProperties;
+  }, [filteredProperties, activeTab, favoritedIds]);
+  
+  // Count draft properties
+  const draftCount = useMemo(() => {
+    return filteredProperties.filter(p => p.draft === true || p.status === 'draft').length;
+  }, [filteredProperties]);
 
   // Local filter state
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -222,7 +327,7 @@ const PropertiesList = () => {
   }, [filters]);
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans overflow-visible">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -231,7 +336,11 @@ const PropertiesList = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Properties</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage all your property listings ({pagination.total} total)
+            {activeTab === 'favorited' 
+              ? `Your favorited properties (${tabFilteredProperties.length} ${tabFilteredProperties.length === 1 ? 'property' : 'properties'})`
+              : activeTab === 'draft'
+              ? `Saved draft properties (${tabFilteredProperties.length} ${tabFilteredProperties.length === 1 ? 'draft' : 'drafts'})`
+              : `Manage all your property listings (${pagination.total} total)`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -253,6 +362,44 @@ const PropertiesList = () => {
           >
             <Plus className="w-5 h-5" />
             Add Property
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-1">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === 'all'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            All Properties ({pagination.total})
+          </button>
+          <button
+            onClick={() => setActiveTab('favorited')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'favorited'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${activeTab === 'favorited' ? 'fill-current' : ''}`} />
+            Favorited ({favoritedIds.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('draft')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'draft'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            <FileText className={`w-4 h-4 ${activeTab === 'draft' ? 'fill-current' : ''}`} />
+            Saved Draft ({draftCount})
           </button>
         </div>
       </div>
@@ -611,20 +758,36 @@ const PropertiesList = () => {
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      ) : filteredProperties.length === 0 ? (
+      ) : tabFilteredProperties.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-12 text-center"
         >
           <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Home className="w-10 h-10 text-gray-400" />
+            {activeTab === 'favorited' ? (
+              <Heart className="w-10 h-10 text-gray-400" />
+            ) : activeTab === 'draft' ? (
+              <FileText className="w-10 h-10 text-gray-400" />
+            ) : (
+              <Home className="w-10 h-10 text-gray-400" />
+            )}
           </div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">No properties found</h3>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+            {activeTab === 'favorited' 
+              ? 'No favorited properties'
+              : activeTab === 'draft'
+              ? 'No draft properties'
+              : 'No properties found'}
+          </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
-            {activeFiltersCount > 0 
-              ? 'Try adjusting your filters to see more results.'
-              : 'Start by adding your first property listing.'}
+            {activeTab === 'favorited'
+              ? 'Properties you like will appear here. Click the heart icon on any property to add it to favorites.'
+              : activeTab === 'draft'
+              ? 'Properties saved as drafts will appear here. Use "Save as Draft" when creating or editing a property.'
+              : activeFiltersCount > 0 
+                ? 'Try adjusting your filters to see more results.'
+                : 'Start by adding your first property listing.'}
           </p>
           <div className="flex items-center justify-center gap-3">
             {activeFiltersCount > 0 && (
@@ -646,7 +809,7 @@ const PropertiesList = () => {
         </motion.div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProperties.map((property, index) => (
+          {tabFilteredProperties.map((property, index) => (
             <motion.div
               key={property.id}
               initial={{ opacity: 0, y: 20 }}
@@ -678,7 +841,13 @@ const PropertiesList = () => {
               {/* Image */}
               <div 
                 className="relative h-48 bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 cursor-pointer"
-                onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (property.id) {
+                    navigate(`/manager/dashboard/properties/${property.id}`);
+                  }
+                }}
               >
                 {property.media?.images?.[0]?.url || (property.images && property.images[0]) ? (
                   <img
@@ -694,6 +863,11 @@ const PropertiesList = () => {
                 
                 {/* Badges */}
                 <div className="absolute top-3 right-3 flex flex-col gap-2">
+                  {property.draft && (
+                    <span className="px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                      <FileText className="w-3 h-3" /> Draft
+                    </span>
+                  )}
                   {property.featured && (
                     <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
                       <Star className="w-3 h-3" /> Featured
@@ -712,11 +886,30 @@ const PropertiesList = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors">
-                    <Heart className="w-4 h-4 text-gray-600" />
+                <div className={`absolute bottom-3 right-3 flex gap-2 transition-opacity ${
+                  isFavorited(property.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(property.id);
+                    }}
+                    className={`w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors ${
+                      isFavorited(property.id) ? 'text-red-500' : 'text-gray-600'
+                    }`}
+                    title={isFavorited(property.id) ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorited(property.id) ? 'fill-current' : ''}`} />
                   </button>
-                  <button className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPropertyForShare(property);
+                      setShowShareModal(true);
+                    }}
+                    className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors"
+                    title="Share"
+                  >
                     <Share2 className="w-4 h-4 text-gray-600" />
                   </button>
                 </div>
@@ -728,7 +921,13 @@ const PropertiesList = () => {
                   <div className="flex-1 min-w-0">
                     <h3 
                       className="font-semibold text-gray-800 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (property.id) {
+                          navigate(`/manager/dashboard/properties/${property.id}`);
+                        }
+                      }}
                     >
                       {property.title}
                     </h3>
@@ -756,8 +955,12 @@ const PropertiesList = () => {
                           className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 z-50"
                         >
                           <button
-                            onClick={() => {
-                              navigate(`/manager/dashboard/properties/${property.id}`);
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (property.id) {
+                                navigate(`/manager/dashboard/properties/${property.id}`);
+                              }
                               setActivePropertyMenu(null);
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-t-lg"
@@ -847,7 +1050,7 @@ const PropertiesList = () => {
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-4">
-          {filteredProperties.map((property, index) => (
+          {tabFilteredProperties.map((property, index) => (
             <motion.div
               key={property.id}
               initial={{ opacity: 0, x: -20 }}
@@ -875,7 +1078,13 @@ const PropertiesList = () => {
 
                   <div 
                     className="h-full bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 cursor-pointer"
-                    onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (property.id) {
+                        navigate(`/manager/dashboard/properties/${property.id}`);
+                      }
+                    }}
                   >
                     {property.media?.images?.[0]?.url || (property.images && property.images[0]) ? (
                       <img
@@ -896,16 +1105,27 @@ const PropertiesList = () => {
                   <div>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex items-center gap-3 mb-1 flex-wrap">
                           <h3 
                             className="text-lg font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (property.id) {
+                                navigate(`/manager/dashboard/properties/${property.id}`);
+                              }
+                            }}
                           >
                             {property.title}
                           </h3>
+                          {property.draft && (
+                            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium rounded-full flex items-center gap-1">
+                              <FileText className="w-3 h-3" /> Draft
+                            </span>
+                          )}
                           {getStatusBadge(property.status)}
                           {property.featured && (
-                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs font-medium rounded-full flex items-center gap-1">
                               <Star className="w-3 h-3" /> Featured
                             </span>
                           )}
@@ -952,7 +1172,24 @@ const PropertiesList = () => {
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/manager/dashboard/properties/${property.id}`)}
+                        onClick={() => toggleFavorite(property.id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isFavorited(property.id)
+                            ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            : 'text-gray-600 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                        title={isFavorited(property.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        <Heart className={`w-5 h-5 ${isFavorited(property.id) ? 'fill-current' : ''}`} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (property.id) {
+                            navigate(`/manager/dashboard/properties/${property.id}`);
+                          }
+                        }}
                         className="p-2 text-gray-600 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         title="View"
                       >
@@ -996,87 +1233,125 @@ const PropertiesList = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-            </span>
-            <select
-              value={pagination.limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              className="px-2 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-            >
-              <option value={12}>12 per page</option>
-              <option value={24}>24 per page</option>
-              <option value={48}>48 per page</option>
-              <option value={96}>96 per page</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(1)}
-              disabled={pagination.page === 1}
-              className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <ChevronLeft className="w-4 h-4 -ml-2" />
-            </button>
-            <button
-              onClick={() => setPage(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {/* Page Numbers */}
-            <div className="flex items-center gap-1 mx-2">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (pagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (pagination.page <= 3) {
-                  pageNum = i + 1;
-                } else if (pagination.page >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
-                } else {
-                  pageNum = pagination.page - 2 + i;
-                }
-
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                      pagination.page === pageNum
-                        ? 'bg-primary text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+      {/* Pagination - Only show on "All" tab */}
+      {activeTab === 'all' && pagination.totalPages > 1 && tabFilteredProperties.length > 0 && (
+        <div className="pagination-container bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4" style={{ overflow: 'visible' }}>
+          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+            {/* Left Side - Items per page */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+              </span>
+              <div className="relative inline-block" style={{ position: 'relative', zIndex: 50 }}>
+                <label htmlFor="items-per-page-select" className="sr-only">Items per page</label>
+                <select
+                  id="items-per-page-select"
+                  value={pagination.limit}
+                  onChange={(e) => setLimit(Number(e.target.value))}
+                  className="px-3 py-1.5 pr-8 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all min-w-[110px]"
+                  style={{ 
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundSize: '12px',
+                    position: 'relative',
+                    zIndex: 50
+                  }}
+                >
+                  <option value={12}>12 per page</option>
+                  <option value={24}>24 per page</option>
+                  <option value={48}>48 per page</option>
+                  <option value={96}>96 per page</option>
+                </select>
+              </div>
             </div>
 
-            <button
-              onClick={() => setPage(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-              className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setPage(pagination.totalPages)}
-              disabled={pagination.page === pagination.totalPages}
-              className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-              <ChevronRight className="w-4 h-4 -ml-2" />
-            </button>
+            {/* Right Side - Pagination Controls */}
+            <div className="flex items-center justify-center xl:justify-end gap-2 flex-wrap">
+              {/* Previous Page Button */}
+              <button
+                onClick={() => setPage(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                title="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline">Previous</span>
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {pagination.totalPages > 5 && pagination.page > 3 && (
+                  <>
+                    <button
+                      onClick={() => setPage(1)}
+                      className="w-10 h-10 rounded-lg font-medium transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      aria-label="Go to first page"
+                    >
+                      1
+                    </button>
+                    {pagination.page > 4 && (
+                      <span className="px-1 text-gray-400 dark:text-gray-500" aria-hidden="true">...</span>
+                    )}
+                  </>
+                )}
+                
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.page >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = pagination.page - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                        pagination.page === pageNum
+                          ? 'bg-primary text-white'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      aria-label={`Go to page ${pageNum}`}
+                      aria-current={pagination.page === pageNum ? 'page' : undefined}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                {pagination.totalPages > 5 && pagination.page < pagination.totalPages - 2 && (
+                  <>
+                    {pagination.page < pagination.totalPages - 3 && (
+                      <span className="px-1 text-gray-400 dark:text-gray-500" aria-hidden="true">...</span>
+                    )}
+                    <button
+                      onClick={() => setPage(pagination.totalPages)}
+                      className="w-10 h-10 rounded-lg font-medium transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      aria-label={`Go to last page (${pagination.totalPages})`}
+                    >
+                      {pagination.totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Next Page Button */}
+              <button
+                onClick={() => setPage(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
+                className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                title="Next page"
+              >
+                <span className="text-sm font-medium hidden sm:inline">Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1164,6 +1439,32 @@ const PropertiesList = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Share Property Modal */}
+      {selectedPropertyForShare && (
+        <SharePropertyModal
+          isOpen={showShareModal}
+          onClose={() => {
+            setShowShareModal(false);
+            setSelectedPropertyForShare(null);
+          }}
+          property={{
+            id: selectedPropertyForShare.id,
+            title: selectedPropertyForShare.title,
+            description: selectedPropertyForShare.description || selectedPropertyForShare.shortDescription,
+            price: selectedPropertyForShare.price,
+            priceString: selectedPropertyForShare.priceString,
+            location: selectedPropertyForShare.location,
+            images: selectedPropertyForShare.images?.filter((img): img is string => typeof img === 'string'),
+            media: selectedPropertyForShare.media,
+          }}
+          onShare={async (platform) => {
+            if (selectedPropertyForShare.id && platform !== 'copy') {
+              await incrementShares(selectedPropertyForShare.id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

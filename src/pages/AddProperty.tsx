@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   useProperties, 
@@ -49,6 +49,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import BackButton from '../components/ui/BackButton';
+import AddressSection, { AddressFormData } from '../components/ui/AddressSection';
+import Toast from '../components/ui/Toast';
 
 // Countries list
 const countries = [
@@ -191,10 +193,14 @@ interface FormData {
   addressLine1: string;
   addressLine2: string;
   city: string;
+  cityId: string;
   state: string;
+  stateId: string;
+  stateCode: string;
   postalCode: string;
   country: string;
   countryCode: string;
+  countryId: string;
   neighborhood: string;
   landmark: string;
   
@@ -259,7 +265,7 @@ const initialFormData: FormData = {
   title: '',
   propertyType: 'apartment',
   listingType: 'sale',
-  status: 'available',
+  status: 'online',
   
   priceAmount: 0,
   currency: 'USD',
@@ -268,10 +274,14 @@ const initialFormData: FormData = {
   addressLine1: '',
   addressLine2: '',
   city: '',
+  cityId: '',
   state: '',
+  stateId: '',
+  stateCode: '',
   postalCode: '',
-  country: 'United States',
-  countryCode: 'US',
+  country: '',
+  countryCode: '',
+  countryId: '',
   neighborhood: '',
   landmark: '',
   
@@ -337,6 +347,21 @@ const AddProperty = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
+    message: '',
+    type: 'success',
+    visible: false,
+  });
+  
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type, visible: true });
+  }, []);
+  
+  const hideToast = useCallback(() => {
+    setToast(prev => ({ ...prev, visible: false }));
+  }, []);
 
   // Load existing property for edit mode
   useEffect(() => {
@@ -347,7 +372,7 @@ const AddProperty = () => {
           title: property.title || '',
           propertyType: property.propertyType || 'apartment',
           listingType: property.listingType || 'sale',
-          status: property.status || 'available',
+          status: property.status || 'online',
           
           priceAmount: property.price?.amount || 0,
           currency: property.price?.currency || 'USD',
@@ -356,10 +381,14 @@ const AddProperty = () => {
           addressLine1: property.location?.addressLine1 || property.address || '',
           addressLine2: property.location?.addressLine2 || '',
           city: property.location?.city || property.city || '',
+          cityId: property.location?.cityId || '',
           state: property.location?.state || property.state || '',
+          stateId: property.location?.stateId || '',
+          stateCode: property.location?.stateCode || '',
           postalCode: property.location?.postalCode || property.zipCode || '',
-          country: property.location?.country || 'United States',
-          countryCode: property.location?.countryCode || 'US',
+          country: property.location?.country || '',
+          countryCode: property.location?.countryCode || '',
+          countryId: property.location?.countryId || '',
           neighborhood: property.location?.neighborhood || '',
           landmark: property.location?.landmark || '',
           
@@ -437,9 +466,11 @@ const AddProperty = () => {
       if (!formData.title?.trim()) newErrors.title = 'Property title is required';
       if (formData.priceAmount <= 0) newErrors.priceAmount = 'Price is required';
     } else if (step === 2) {
-      if (!formData.addressLine1?.trim()) newErrors.addressLine1 = 'Address is required';
-      if (!formData.city?.trim()) newErrors.city = 'City is required';
-      if (!formData.state?.trim()) newErrors.state = 'State/Region is required';
+      if (!formData.addressLine1?.trim()) newErrors.addressLine1 = 'Street address is required';
+      if (!formData.countryId) newErrors.country = 'Country is required';
+      if (!formData.stateId && !formData.state?.trim()) newErrors.state = 'State/Province is required';
+      if (!formData.cityId && !formData.city?.trim()) newErrors.city = 'City is required';
+      if (!formData.postalCode?.trim()) newErrors.postalCode = 'Postal code is required';
       if (!formData.postalCode?.trim()) newErrors.postalCode = 'Postal code is required';
     } else if (step === 3) {
       if (formData.totalArea <= 0) newErrors.totalArea = 'Area is required';
@@ -629,10 +660,14 @@ const AddProperty = () => {
         addressLine1: formData.addressLine1,
         addressLine2: formData.addressLine2,
         city: formData.city,
+        cityId: formData.cityId,
         state: formData.state,
+        stateId: formData.stateId,
+        stateCode: formData.stateCode,
         postalCode: formData.postalCode,
         country: formData.country,
         countryCode: formData.countryCode,
+        countryId: formData.countryId,
         neighborhood: formData.neighborhood,
         landmark: formData.landmark,
       },
@@ -731,46 +766,111 @@ const AddProperty = () => {
   };
 
   const handleSaveDraft = async () => {
-    setSaving(true);
-    try {
-      const propertyData = await buildPropertyData();
-      
-      if (isEditMode && id) {
-        await updateProperty(id, { ...propertyData, draft: true, published: false });
-      } else {
-        const result = await addProperty({ ...propertyData, draft: true, published: false });
-        if (!result) {
-          throw new Error('Failed to save property');
-        }
-      }
-      navigate('/manager/dashboard/properties');
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      alert('Failed to save draft. Please try again.');
-    } finally {
-      setSaving(false);
+    // Minimum validation for draft - at least title required
+    if (!formData.title?.trim()) {
+      setErrors({ title: 'Property title is required to save draft' });
+      setCurrentStep(1);
+      showToast('Please enter a property title to save as draft.', 'error');
+      return;
     }
-  };
-
-  const handlePublish = async () => {
-    if (!validateStep(5)) return;
     
     setSaving(true);
     try {
       const propertyData = await buildPropertyData();
       
       if (isEditMode && id) {
-        await updateProperty(id, { ...propertyData, published: true, draft: false });
+        const result = await updateProperty(id, { ...propertyData, draft: true, published: false });
+        if (!result) {
+          throw new Error('Failed to save property - update returned no result');
+        }
+      } else {
+        const result = await addProperty({ ...propertyData, draft: true, published: false });
+        if (!result) {
+          throw new Error('Failed to save property - creation returned no result');
+        }
+      }
+      showToast('Property saved as draft successfully!', 'success');
+      setTimeout(() => navigate('/manager/dashboard/properties'), 1500);
+    } catch (error: any) {
+      console.error('Error saving draft:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error occurred';
+      showToast(`Failed to save draft: ${errorMessage}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    // Validate all steps before publishing
+    const allErrors: Record<string, string> = {};
+    
+    // Step 1 validation
+    if (!formData.title?.trim()) allErrors.title = 'Property title is required';
+    if (formData.priceAmount <= 0) allErrors.priceAmount = 'Price is required';
+    
+    // Step 2 validation
+    if (!formData.addressLine1?.trim()) allErrors.addressLine1 = 'Street address is required';
+    if (!formData.countryId) allErrors.country = 'Country is required';
+    if (!formData.stateId && !formData.state?.trim()) allErrors.state = 'State/Province is required';
+    if (!formData.cityId && !formData.city?.trim()) allErrors.city = 'City is required';
+    if (!formData.postalCode?.trim()) allErrors.postalCode = 'Postal code is required';
+    
+    // Step 3 validation
+    if (formData.totalArea <= 0) allErrors.totalArea = 'Area is required';
+    
+    // Step 4 validation
+    if (formData.images.length === 0 && imagePreviews.length === 0) {
+      allErrors.images = 'At least one image is required';
+    }
+    
+    // Step 5 validation
+    if (!formData.contactName?.trim()) allErrors.contactName = 'Contact name is required';
+    if (!formData.contactPhone?.trim()) allErrors.contactPhone = 'Phone number is required';
+    if (!formData.contactEmail?.trim()) {
+      allErrors.contactEmail = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
+      allErrors.contactEmail = 'Please enter a valid email';
+    }
+    
+    if (Object.keys(allErrors).length > 0) {
+      setErrors(allErrors);
+      // Find which step has the first error and navigate to it
+      if (allErrors.title || allErrors.priceAmount) {
+        setCurrentStep(1);
+      } else if (allErrors.addressLine1 || allErrors.country || allErrors.state || allErrors.city || allErrors.postalCode) {
+        setCurrentStep(2);
+      } else if (allErrors.totalArea) {
+        setCurrentStep(3);
+      } else if (allErrors.images) {
+        setCurrentStep(4);
+      } else {
+        setCurrentStep(5);
+      }
+      showToast('Please fill in all required fields before publishing.', 'error');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const propertyData = await buildPropertyData();
+      
+      if (isEditMode && id) {
+        const result = await updateProperty(id, { ...propertyData, published: true, draft: false });
+        if (!result) {
+          throw new Error('Failed to publish property - update returned no result');
+        }
       } else {
         const result = await addProperty({ ...propertyData, published: true, draft: false });
         if (!result) {
-          throw new Error('Failed to publish property');
+          throw new Error('Failed to publish property - creation returned no result');
         }
       }
-      navigate('/manager/dashboard/properties');
-    } catch (error) {
-      console.error('Error publishing:', error);
-      alert('Failed to publish property. Please try again.');
+      showToast('Property published successfully!', 'success');
+      setTimeout(() => navigate('/manager/dashboard/properties'), 1500);
+    } catch (error: any) {
+      console.error('Error publishing property:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error occurred';
+      showToast(`Failed to publish property: ${errorMessage}`, 'error');
     } finally {
       setSaving(false);
     }
@@ -985,7 +1085,7 @@ const AddProperty = () => {
                       type="number"
                       value={formData.priceAmount || ''}
                       onChange={(e) => handleInputChange('priceAmount', parseFloat(e.target.value) || 0)}
-                      className={`w-full pl-16 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                      className={`w-full pl-16 pr-10 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600 ${
                         errors.priceAmount ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                       }`}
                       placeholder="0"
@@ -1000,7 +1100,7 @@ const AddProperty = () => {
                       type="checkbox"
                       checked={formData.negotiable}
                       onChange={(e) => handleInputChange('negotiable', e.target.checked)}
-                      className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                      className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary transition-all"
                     />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Price is Negotiable
@@ -1036,115 +1136,49 @@ const AddProperty = () => {
         {/* Step 2: Location */}
         {currentStep === 2 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              Location Details
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Address Line 1 *
-                </label>
-                <input
-                  type="text"
-                  value={formData.addressLine1}
-                  onChange={(e) => handleInputChange('addressLine1', e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
-                    errors.addressLine1 ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                  }`}
-                  placeholder="Street address, building number"
-                />
-                {errors.addressLine1 && <p className="text-red-500 text-xs mt-1">{errors.addressLine1}</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Address Line 2
-                </label>
-                <input
-                  type="text"
-                  value={formData.addressLine2}
-                  onChange={(e) => handleInputChange('addressLine2', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                  placeholder="Apartment, suite, unit number (optional)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  City *
-                </label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
-                    errors.city ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                  }`}
-                  placeholder="Enter city"
-                />
-                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  State / Region *
-                </label>
-                <input
-                  type="text"
-                  value={formData.state}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
-                    errors.state ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                  }`}
-                  placeholder="Enter state or region"
-                />
-                {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Postal / ZIP Code *
-                </label>
-                <input
-                  type="text"
-                  value={formData.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
-                    errors.postalCode ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                  }`}
-                  placeholder="Enter postal code"
-                />
-                {errors.postalCode && <p className="text-red-500 text-xs mt-1">{errors.postalCode}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Neighborhood
-                </label>
-                <input
-                  type="text"
-                  value={formData.neighborhood}
-                  onChange={(e) => handleInputChange('neighborhood', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                  placeholder="Enter neighborhood (optional)"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nearby Landmark
-                </label>
-                <input
-                  type="text"
-                  value={formData.landmark}
-                  onChange={(e) => handleInputChange('landmark', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                  placeholder="e.g., Near Central Park, 5 min from Airport (optional)"
-                />
-              </div>
-            </div>
+            <AddressSection
+              key={`address-${id || 'new'}-${formData.countryId || ''}-${formData.stateId || ''}-${formData.cityId || ''}`}
+              value={{
+                countryId: formData.countryId || '',
+                countryName: formData.country || '',
+                countryCode: formData.countryCode || '',
+                stateId: formData.stateId || '',
+                stateName: formData.state || '',
+                stateCode: formData.stateCode || '',
+                cityId: formData.cityId || '',
+                cityName: formData.city || '',
+                addressLine1: formData.addressLine1 || '',
+                addressLine2: formData.addressLine2 || '',
+                postalCode: formData.postalCode || '',
+                neighborhood: formData.neighborhood || '',
+                landmark: formData.landmark || '',
+              }}
+              onChange={(addressData: AddressFormData) => {
+                setFormData(prev => ({
+                  ...prev,
+                  countryId: addressData.countryId,
+                  country: addressData.countryName,
+                  countryCode: addressData.countryCode,
+                  stateId: addressData.stateId,
+                  state: addressData.stateName,
+                  stateCode: addressData.stateCode,
+                  cityId: addressData.cityId,
+                  city: addressData.cityName,
+                  addressLine1: addressData.addressLine1,
+                  addressLine2: addressData.addressLine2,
+                  postalCode: addressData.postalCode,
+                  neighborhood: addressData.neighborhood,
+                  landmark: addressData.landmark,
+                }));
+              }}
+              errors={errors}
+              disabled={saving}
+              required={true}
+              initialCountry={formData.country}
+              initialCountryCode={formData.countryCode}
+              initialState={formData.state}
+              initialCity={formData.city}
+            />
           </div>
         )}
 
@@ -1167,7 +1201,7 @@ const AddProperty = () => {
                     type="number"
                     value={formData.totalArea || ''}
                     onChange={(e) => handleInputChange('totalArea', parseFloat(e.target.value) || 0)}
-                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white ${
+                    className={`w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600 ${
                       errors.totalArea ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                     }`}
                     placeholder="0"
@@ -1183,7 +1217,7 @@ const AddProperty = () => {
                     type="number"
                     value={formData.carpetArea || ''}
                     onChange={(e) => handleInputChange('carpetArea', parseFloat(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                     placeholder="0"
                   />
                 </div>
@@ -1215,7 +1249,7 @@ const AddProperty = () => {
                     max={new Date().getFullYear()}
                     value={formData.yearBuilt || ''}
                     onChange={(e) => handleInputChange('yearBuilt', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
               </div>
@@ -1238,7 +1272,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.bedrooms}
                     onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
 
@@ -1251,7 +1285,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.bathrooms}
                     onChange={(e) => handleInputChange('bathrooms', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
 
@@ -1264,7 +1298,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.balconies}
                     onChange={(e) => handleInputChange('balconies', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
 
@@ -1277,7 +1311,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.parkingSpaces}
                     onChange={(e) => handleInputChange('parkingSpaces', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
               </div>
@@ -1293,7 +1327,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.floorNumber}
                     onChange={(e) => handleInputChange('floorNumber', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
 
@@ -1306,7 +1340,7 @@ const AddProperty = () => {
                     min="1"
                     value={formData.totalFloors}
                     onChange={(e) => handleInputChange('totalFloors', parseInt(e.target.value) || 1)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
 
@@ -1711,7 +1745,7 @@ const AddProperty = () => {
                       min="1"
                       value={formData.minimumLease}
                       onChange={(e) => handleInputChange('minimumLease', parseInt(e.target.value) || 1)}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                      className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                     />
                   </div>
                 )}
@@ -1725,7 +1759,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.deposit || ''}
                     onChange={(e) => handleInputChange('deposit', parseFloat(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                     placeholder="0"
                   />
                 </div>
@@ -1739,7 +1773,7 @@ const AddProperty = () => {
                     min="0"
                     value={formData.maintenanceCharges || ''}
                     onChange={(e) => handleInputChange('maintenanceCharges', parseFloat(e.target.value) || 0)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                     placeholder="0"
                   />
                 </div>
@@ -1838,6 +1872,15 @@ const AddProperty = () => {
           )}
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.visible}
+        onClose={hideToast}
+        duration={3000}
+      />
     </div>
   );
 };

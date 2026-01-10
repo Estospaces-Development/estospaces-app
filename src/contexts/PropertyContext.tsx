@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // Type definitions
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR' | 'AED' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'SGD';
 export type AreaUnit = 'sqft' | 'sqm' | 'acres' | 'hectares';
-export type PropertyStatus = 'available' | 'pending' | 'sold' | 'rented' | 'under_contract' | 'off_market' | 'coming_soon';
+export type PropertyStatus = 'online' | 'offline' | 'under_offer' | 'sold' | 'let' | 'draft' | 'published' | 'active';
 export type PropertyType = 'apartment' | 'house' | 'condo' | 'townhouse' | 'villa' | 'penthouse' | 'studio' | 'duplex' | 'triplex' | 'land' | 'commercial' | 'industrial' | 'office';
 export type ListingType = 'sale' | 'rent' | 'lease' | 'short_term' | 'vacation';
 export type FurnishingStatus = 'furnished' | 'semi_furnished' | 'unfurnished';
@@ -28,16 +28,20 @@ export interface Property {
   propertyType: PropertyType;
   listingType: ListingType;
   status: PropertyStatus;
-  
+
   // Location
   location?: {
     addressLine1?: string;
     addressLine2?: string;
     city?: string;
+    cityId?: string;
     state?: string;
+    stateId?: string;
+    stateCode?: string;
     postalCode?: string;
     country?: string;
     countryCode?: string;
+    countryId?: string;
     latitude?: number;
     longitude?: number;
     neighborhood?: string;
@@ -47,7 +51,7 @@ export interface Property {
   city?: string;
   state?: string;
   zipCode?: string;
-  
+
   // Dimensions
   dimensions?: {
     totalArea: number;
@@ -58,7 +62,7 @@ export interface Property {
     totalFloors?: number;
   };
   area?: number;
-  
+
   // Rooms
   rooms?: {
     bedrooms: number;
@@ -68,7 +72,7 @@ export interface Property {
   };
   bedrooms?: number;
   bathrooms?: number;
-  
+
   // Features
   yearBuilt?: number;
   furnishing: FurnishingStatus;
@@ -82,7 +86,7 @@ export interface Property {
     utilities: string[];
   };
   features?: string[];
-  
+
   // Media
   media?: {
     images: { id: string; url: string; type: string; isPrimary?: boolean; order?: number; uploadedAt: string }[];
@@ -93,7 +97,7 @@ export interface Property {
   images?: (File | string)[];
   videos?: (File | string)[];
   virtualTourUrl?: string;
-  
+
   // Contact
   contact?: {
     name: string;
@@ -107,7 +111,7 @@ export interface Property {
   contactName?: string;
   phoneNumber?: string;
   emailAddress?: string;
-  
+
   // Terms
   availableFrom: string;
   minimumLease?: number;
@@ -118,7 +122,7 @@ export interface Property {
     maintenanceCharges?: number;
     maintenanceFrequency?: string;
   };
-  
+
   // Analytics
   analytics: {
     views: number;
@@ -126,7 +130,7 @@ export interface Property {
     favorites: number;
     shares: number;
   };
-  
+
   // Flags & Meta
   propertyId?: string;
   createdAt: string;
@@ -182,30 +186,31 @@ interface PropertyContextType {
   pagination: Pagination;
   loading: boolean;
   error: string | null;
-  
+
   fetchProperties: () => Promise<void>;
   addProperty: (property: Partial<Property>) => Promise<Property | null>;
-  updateProperty: (id: string, property: Partial<Property>) => Promise<void>;
+  updateProperty: (id: string, property: Partial<Property>) => Promise<Property | null>;
   deleteProperty: (id: string) => Promise<void>;
   deleteProperties: (ids: string[]) => Promise<void>;
   duplicateProperty: (id: string) => Promise<Property | null>;
   getProperty: (id: string) => Property | undefined;
   uploadImages: (files: File[]) => Promise<string[]>;
-  
+
   selectProperty: (id: string) => void;
   deselectProperty: (id: string) => void;
   selectAllProperties: () => void;
   clearSelection: () => void;
   bulkUpdateStatus: (ids: string[], status: PropertyStatus) => Promise<void>;
-  
+
   setFilters: (filters: PropertyFilters) => void;
   clearFilters: () => void;
   setSort: (sort: SortOption) => void;
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
-  
+
   incrementViews: (id: string) => void;
   incrementInquiries: (id: string) => void;
+  incrementShares: (id: string) => void;
   exportProperties: (format: 'csv' | 'json' | 'pdf', ids?: string[]) => void;
   formatPrice: (price: PriceInfo) => string;
   formatArea: (area: number, unit: AreaUnit) => string;
@@ -252,15 +257,19 @@ const dbRowToProperty = (row: any): Property => {
     priceString: `${row.currency || 'USD'} ${row.price}`,
     propertyType: row.property_type || 'apartment',
     listingType: row.listing_type || 'sale',
-    status: row.status || 'available',
+    status: row.status || 'online',
     location: {
       addressLine1: row.address_line_1,
       addressLine2: row.address_line_2,
       city: row.city,
+      cityId: row.city_id,
       state: row.state,
+      stateId: row.state_id,
+      stateCode: row.state_code,
       postalCode: row.postcode,
       country: row.country,
-      countryCode: row.country === 'United Kingdom' ? 'GB' : 'US',
+      countryCode: row.country === 'United Kingdom' ? 'GB' : (row.country === 'United States' ? 'US' : (row.country === 'India' ? 'IN' : 'US')),
+      countryId: row.country_id,
       latitude: row.latitude ? parseFloat(row.latitude) : undefined,
       longitude: row.longitude ? parseFloat(row.longitude) : undefined,
       neighborhood: row.neighborhood,
@@ -328,7 +337,7 @@ const dbRowToProperty = (row: any): Property => {
       views: row.views || 0,
       inquiries: row.inquiries || 0,
       favorites: row.favorites || 0,
-      shares: 0,
+      shares: row.shares || 0,
     },
     propertyId: `PROP-${row.id.slice(-6)}`,
     createdAt: row.created_at,
@@ -344,7 +353,7 @@ const dbRowToProperty = (row: any): Property => {
 // Convert Property to DB format
 const propertyToDbRow = (p: Partial<Property>): any => {
   const row: any = {};
-  
+
   if (p.title !== undefined) row.title = p.title;
   if (p.description !== undefined) row.description = p.description;
   if (p.shortDescription !== undefined) row.short_description = p.shortDescription;
@@ -354,32 +363,38 @@ const propertyToDbRow = (p: Partial<Property>): any => {
   if (p.propertyType !== undefined) row.property_type = p.propertyType;
   if (p.listingType !== undefined) row.listing_type = p.listingType;
   if (p.status !== undefined) row.status = p.status;
-  
+
   // Location
   if (p.location?.addressLine1 !== undefined) row.address_line_1 = p.location.addressLine1;
   if (p.location?.addressLine2 !== undefined) row.address_line_2 = p.location.addressLine2;
   if (p.location?.city !== undefined) row.city = p.location.city;
+  if (p.location?.cityId !== undefined) row.city_id = p.location.cityId;
   if (p.location?.state !== undefined) row.state = p.location.state;
+  if (p.location?.stateId !== undefined) row.state_id = p.location.stateId;
+  if (p.location?.stateCode !== undefined) row.state_code = p.location.stateCode;
   if (p.location?.postalCode !== undefined) row.postcode = p.location.postalCode;
   if (p.location?.country !== undefined) row.country = p.location.country;
+  if (p.location?.countryId !== undefined) row.country_id = p.location.countryId;
+  // Note: country_code column doesn't exist in properties table, only country_id
+  // if (p.location?.countryCode !== undefined) row.country_code = p.location.countryCode;
   if (p.location?.latitude !== undefined) row.latitude = p.location.latitude;
   if (p.location?.longitude !== undefined) row.longitude = p.location.longitude;
   if (p.location?.neighborhood !== undefined) row.neighborhood = p.location.neighborhood;
   if (p.location?.landmark !== undefined) row.landmark = p.location.landmark;
-  
+
   // Legacy location fields
   if (p.address !== undefined) row.address_line_1 = p.address;
   if (p.city !== undefined) row.city = p.city;
   if (p.state !== undefined) row.state = p.state;
   if (p.zipCode !== undefined) row.postcode = p.zipCode;
-  
+
   // Dimensions
   if (p.dimensions?.totalArea !== undefined) row.area = p.dimensions.totalArea;
   if (p.dimensions?.areaUnit !== undefined) row.area_unit = p.dimensions.areaUnit;
   if (p.dimensions?.floorNumber !== undefined) row.floor_number = p.dimensions.floorNumber;
   if (p.dimensions?.totalFloors !== undefined) row.total_floors = p.dimensions.totalFloors;
   if (p.area !== undefined) row.area = p.area;
-  
+
   // Rooms
   if (p.rooms?.bedrooms !== undefined) row.bedrooms = p.rooms.bedrooms;
   if (p.rooms?.bathrooms !== undefined) row.bathrooms = p.rooms.bathrooms;
@@ -387,21 +402,21 @@ const propertyToDbRow = (p: Partial<Property>): any => {
   if (p.rooms?.parkingSpaces !== undefined) row.parking_spaces = p.rooms.parkingSpaces;
   if (p.bedrooms !== undefined) row.bedrooms = p.bedrooms;
   if (p.bathrooms !== undefined) row.bathrooms = p.bathrooms;
-  
+
   // Features
   if (p.yearBuilt !== undefined) row.year_built = p.yearBuilt;
   if (p.furnishing !== undefined) row.furnishing = p.furnishing;
   if (p.condition !== undefined) row.condition = p.condition;
   if (p.facing !== undefined) row.facing = p.facing;
   if (p.amenities !== undefined) row.amenities = p.amenities;
-  
+
   // Media
   if (p.images !== undefined) {
     row.image_urls = p.images.filter((img): img is string => typeof img === 'string');
   }
   if (p.virtualTourUrl !== undefined) row.virtual_tour_url = p.virtualTourUrl;
   if (p.media?.virtualTourUrl !== undefined) row.virtual_tour_url = p.media.virtualTourUrl;
-  
+
   // Contact
   if (p.contact?.name !== undefined) row.contact_name = p.contact.name;
   if (p.contact?.email !== undefined) row.contact_email = p.contact.email;
@@ -410,7 +425,7 @@ const propertyToDbRow = (p: Partial<Property>): any => {
   if (p.contactName !== undefined) row.contact_name = p.contactName;
   if (p.emailAddress !== undefined) row.contact_email = p.emailAddress;
   if (p.phoneNumber !== undefined) row.contact_phone = p.phoneNumber;
-  
+
   // Terms
   if (p.availableFrom !== undefined) row.available_from = p.availableFrom;
   if (p.minimumLease !== undefined) row.minimum_lease = p.minimumLease;
@@ -418,13 +433,13 @@ const propertyToDbRow = (p: Partial<Property>): any => {
   if (p.exclusions !== undefined) row.exclusions = p.exclusions;
   if (p.financial?.deposit !== undefined) row.deposit = p.financial.deposit;
   if (p.financial?.maintenanceCharges !== undefined) row.maintenance_charges = p.financial.maintenanceCharges;
-  
+
   // Flags
   if (p.featured !== undefined) row.featured = p.featured;
   if (p.verified !== undefined) row.verified = p.verified;
   if (p.published !== undefined) row.published = p.published;
   if (p.draft !== undefined) row.draft = p.draft;
-  
+
   return row;
 };
 
@@ -447,23 +462,23 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data: { user } } = await (supabase as SupabaseClient).auth.getUser();
-      
+
       let query = (supabase as SupabaseClient).from('properties').select('*');
-      
+
       if (user) {
         query = query.eq('agent_id', user.id);
       }
-      
+
       const sortColumn = sort.field === 'createdAt' ? 'created_at' : sort.field === 'updatedAt' ? 'updated_at' : sort.field;
       query = query.order(sortColumn, { ascending: sort.order === 'asc' });
-      
+
       const { data, error: fetchError } = await query;
-      
+
       if (fetchError) throw fetchError;
-      
+
       const mapped = (data || []).map(dbRowToProperty);
       setProperties(mapped);
     } catch (err: any) {
@@ -484,7 +499,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
     if (filters.search) {
       const s = filters.search.toLowerCase();
-      result = result.filter(p => 
+      result = result.filter(p =>
         p.title.toLowerCase().includes(s) ||
         p.description?.toLowerCase().includes(s) ||
         p.city?.toLowerCase().includes(s)
@@ -545,7 +560,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   // Upload images
   const uploadImages = async (files: File[]): Promise<string[]> => {
     if (!supabase) throw new Error('Supabase client not initialized');
-    
+
     const { data: { user } } = await (supabase as SupabaseClient).auth.getUser();
     if (!user) throw new Error('Must be logged in to upload images');
 
@@ -584,6 +599,13 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
       const dbData = propertyToDbRow(propertyData);
       dbData.agent_id = user.id;
+      
+      // Remove any undefined fields and ensure country_code is not included (column doesn't exist)
+      Object.keys(dbData).forEach(key => {
+        if (dbData[key] === undefined || key === 'country_code') {
+          delete dbData[key];
+        }
+      });
 
       const { data, error: insertError } = await (supabase as SupabaseClient).from('properties').insert(dbData).select().single();
       if (insertError) throw insertError;
@@ -601,10 +623,11 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update property
-  const updateProperty = async (id: string, propertyData: Partial<Property>) => {
+  const updateProperty = async (id: string, propertyData: Partial<Property>): Promise<Property | null> => {
     if (!supabase) {
-      setError('Supabase client not initialized');
-      return;
+      const errorMsg = 'Supabase client not initialized';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     setLoading(true);
@@ -613,14 +636,76 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     try {
       const dbData = propertyToDbRow(propertyData);
       dbData.updated_at = new Date().toISOString();
+      
+      // Remove any undefined fields and ensure country_code is not included (column doesn't exist)
+      Object.keys(dbData).forEach(key => {
+        if (dbData[key] === undefined || key === 'country_code') {
+          delete dbData[key];
+        }
+      });
+      
+      // Ensure required fields are present (use defaults if not provided)
+      if (!dbData.hasOwnProperty('status') || dbData.status === null || dbData.status === undefined || dbData.status === '') {
+        dbData.status = propertyData.status || 'online';
+      }
+      
+      if (!dbData.hasOwnProperty('listing_type') || dbData.listing_type === null || dbData.listing_type === undefined || dbData.listing_type === '') {
+        dbData.listing_type = propertyData.listingType || 'sale';
+      }
+      
+      // Ensure numeric required fields are set
+      if (dbData.bedrooms === null || dbData.bedrooms === undefined || isNaN(dbData.bedrooms)) {
+        dbData.bedrooms = propertyData.bedrooms ?? propertyData.rooms?.bedrooms ?? 0;
+      }
+      if (dbData.bathrooms === null || dbData.bathrooms === undefined || isNaN(dbData.bathrooms)) {
+        dbData.bathrooms = propertyData.bathrooms ?? propertyData.rooms?.bathrooms ?? 0;
+      }
+      if (dbData.price === null || dbData.price === undefined || isNaN(Number(dbData.price)) || Number(dbData.price) < 0) {
+        dbData.price = propertyData.price?.amount ?? 0;
+      }
+      if (!dbData.title || typeof dbData.title !== 'string' || dbData.title.trim() === '') {
+        throw new Error('Property title is required');
+      }
 
-      const { error: updateError } = await (supabase as SupabaseClient).from('properties').update(dbData).eq('id', id);
-      if (updateError) throw updateError;
+      const { data, error: updateError } = await (supabase as SupabaseClient)
+        .from('properties')
+        .update(dbData)
+        .eq('id', id)
+        .select()
+        .single();
+        
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        throw updateError;
+      }
+      if (!data) {
+        console.error('Update returned no data for property:', id);
+        throw new Error('Property not found or update failed - no data returned');
+      }
 
-      setProperties(prev => prev.map(p => p.id === id ? { ...p, ...propertyData, updatedAt: dbData.updated_at } : p));
+      const updatedProperty = dbRowToProperty(data);
+      setProperties(prev => prev.map(p => p.id === id ? updatedProperty : p));
+      return updatedProperty;
     } catch (err: any) {
       console.error('Error updating property:', err);
-      setError(err.message || 'Failed to update property');
+      let errorMsg = 'Failed to update property';
+      
+      // Extract meaningful error message
+      if (err?.message) {
+        errorMsg = err.message;
+      } else if (err?.code) {
+        errorMsg = `Database error: ${err.code} - ${err.message || err.details || 'Unknown error'}`;
+      } else if (typeof err === 'string') {
+        errorMsg = err;
+      } else if (err?.details) {
+        errorMsg = err.details;
+      }
+      
+      setError(errorMsg);
+      // Create a new error with the formatted message to ensure it's properly thrown
+      const errorToThrow = new Error(errorMsg);
+      errorToThrow.cause = err;
+      throw errorToThrow;
     } finally {
       setLoading(false);
     }
@@ -722,7 +807,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   const incrementViews = async (id: string) => {
     if (!supabase) return;
-    
+
     const p = properties.find(prop => prop.id === id);
     if (!p) return;
     try {
@@ -735,7 +820,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   const incrementInquiries = async (id: string) => {
     if (!supabase) return;
-    
+
     const p = properties.find(prop => prop.id === id);
     if (!p) return;
     try {
@@ -746,9 +831,22 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const incrementShares = async (id: string) => {
+    if (!supabase) return;
+
+    const p = properties.find(prop => prop.id === id);
+    if (!p) return;
+    try {
+      await (supabase as SupabaseClient).from('properties').update({ shares: (p.analytics?.shares || 0) + 1 }).eq('id', id);
+      setProperties(prev => prev.map(prop => prop.id === id ? { ...prop, analytics: { ...prop.analytics, shares: (prop.analytics?.shares || 0) + 1 } } : prop));
+    } catch (err) {
+      console.error('Error incrementing shares:', err);
+    }
+  };
+
   const exportProperties = (format: 'csv' | 'json' | 'pdf', ids?: string[]) => {
     const toExport = ids ? properties.filter(p => ids.includes(p.id)) : paginatedProperties;
-    
+
     if (format === 'json') {
       const dataStr = JSON.stringify(toExport, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -789,10 +887,10 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   const getPropertyStats = () => ({
     total: properties.length,
-    available: properties.filter(p => p.status === 'available').length,
+    available: properties.filter(p => p.status === 'online' || p.status === 'active').length,
     sold: properties.filter(p => p.status === 'sold').length,
-    rented: properties.filter(p => p.status === 'rented').length,
-    pending: properties.filter(p => p.status === 'pending').length,
+    rented: properties.filter(p => p.status === 'let').length,
+    pending: properties.filter(p => p.status === 'under_offer').length,
   });
 
   return (
@@ -826,6 +924,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         setLimit,
         incrementViews,
         incrementInquiries,
+        incrementShares,
         exportProperties,
         formatPrice,
         formatArea,

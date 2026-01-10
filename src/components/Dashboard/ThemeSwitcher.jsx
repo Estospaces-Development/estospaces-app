@@ -3,7 +3,7 @@ import { Sun, Moon, ChevronDown } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const ThemeSwitcher = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const themes = [
@@ -15,7 +15,7 @@ const ThemeSwitcher = () => {
   const CurrentIcon = currentTheme.icon;
 
   const handleThemeChange = (newTheme) => {
-    toggleTheme(newTheme);
+    setTheme(newTheme);
     setIsOpen(false);
   };
 

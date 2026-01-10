@@ -100,30 +100,93 @@
   }
 }
 
-/* Custom Scrollbar Design */
-::-webkit-scrollbar {
-  width: 10px;
+/* Custom Scrollbar Design - Theme Aware */
+/* Default/Light Theme Scrollbars */
+html:not([data-theme="dark"]) ::-webkit-scrollbar,
+html:not(.dark) ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-::-webkit-scrollbar-track {
-  background: #1f2937;
+html:not([data-theme="dark"]) ::-webkit-scrollbar-track,
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f9fafb;
   border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+html:not([data-theme="dark"]) ::-webkit-scrollbar-thumb,
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #9ca3af;
   border-radius: 10px;
   transition: all 0.3s ease;
+  border: 1px solid #f9fafb;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
+html:not([data-theme="dark"]) ::-webkit-scrollbar-thumb:hover,
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 
-/* Firefox scrollbar */
-* {
+html:not([data-theme="dark"]) ::-webkit-scrollbar-corner,
+html:not(.dark) ::-webkit-scrollbar-corner {
+  background: #f9fafb;
+}
+
+/* Dark Theme Scrollbars */
+html[data-theme="dark"] ::-webkit-scrollbar,
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-track,
+html.dark ::-webkit-scrollbar-track {
+  background: #111827;
+  border-radius: 10px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb,
+html.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  border: 1px solid #111827;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-corner,
+html.dark ::-webkit-scrollbar-corner {
+  background: #111827;
+}
+
+/* Firefox scrollbar - Default/Light Theme */
+html:not([data-theme="dark"]),
+html:not(.dark) {
   scrollbar-width: thin;
-  scrollbar-color: #f97316 #1f2937;
+  scrollbar-color: #9ca3af #f9fafb;
+}
+
+html:not([data-theme="dark"]) *,
+html:not(.dark) * {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f9fafb;
+}
+
+/* Firefox scrollbar - Dark Theme */
+html[data-theme="dark"],
+html.dark {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #111827;
+}
+
+html[data-theme="dark"] *,
+html.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #111827;
 }
 
 /* Hide scrollbar for modal */
@@ -229,4 +292,263 @@ iframe[src*="botsailor"] {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Number Input Styling - Theme-Aware with Primary Color (#FF6B35) */
+/* Light Theme Number Inputs */
+html:not([data-theme="dark"]) input[type="number"],
+html:not(.dark) input[type="number"] {
+  background-color: #f9fafb !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+html:not([data-theme="dark"]) input[type="number"]:hover,
+html:not(.dark) input[type="number"]:hover {
+  border-color: #d1d5db !important;
+}
+
+html:not([data-theme="dark"]) input[type="number"]:focus,
+html:not(.dark) input[type="number"]:focus {
+  background-color: #ffffff !important;
+  border-color: #FF6B35 !important;
+  color: #111827 !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1) !important;
+  outline: none !important;
+}
+
+html:not([data-theme="dark"]) input[type="number"]:active,
+html:not(.dark) input[type="number"]:active {
+  border-color: #FF6B35 !important;
+}
+
+/* Dark Theme Number Inputs */
+html[data-theme="dark"] input[type="number"],
+html.dark input[type="number"] {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+html[data-theme="dark"] input[type="number"]:hover,
+html.dark input[type="number"]:hover {
+  border-color: #4b5563 !important;
+}
+
+html[data-theme="dark"] input[type="number"]:focus,
+html.dark input[type="number"]:focus {
+  background-color: #111827 !important;
+  border-color: #FF6B35 !important;
+  color: #f9fafb !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2) !important;
+  outline: none !important;
+}
+
+html[data-theme="dark"] input[type="number"]:active,
+html.dark input[type="number"]:active {
+  border-color: #FF6B35 !important;
+}
+
+/* Number Input Spinner Buttons - Styled with Primary Color (#FF6B35) */
+/* Note: Webkit spinners have limited styling, but we make them larger and more visible */
+/* Light Theme - Native spinners */
+html:not([data-theme="dark"]) input[type="number"]::-webkit-inner-spin-button,
+html:not([data-theme="dark"]) input[type="number"]::-webkit-outer-spin-button,
+html:not(.dark) input[type="number"]::-webkit-inner-spin-button,
+html:not(.dark) input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  height: 32px !important;
+  width: 28px !important;
+  cursor: pointer !important;
+  margin: 2px 4px 2px 2px !important;
+  background: transparent !important;
+  transform: scale(1.2);
+}
+
+html:not([data-theme="dark"]) input[type="number"]:hover::-webkit-inner-spin-button,
+html:not([data-theme="dark"]) input[type="number"]:hover::-webkit-outer-spin-button,
+html:not(.dark) input[type="number"]:hover::-webkit-inner-spin-button,
+html:not(.dark) input[type="number"]:hover::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  transform: scale(1.3);
+}
+
+html:not([data-theme="dark"]) input[type="number"]:focus::-webkit-inner-spin-button,
+html:not([data-theme="dark"]) input[type="number"]:focus::-webkit-outer-spin-button,
+html:not(.dark) input[type="number"]:focus::-webkit-inner-spin-button,
+html:not(.dark) input[type="number"]:focus::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  transform: scale(1.35);
+}
+
+/* Dark Theme - Native spinners */
+html[data-theme="dark"] input[type="number"]::-webkit-inner-spin-button,
+html[data-theme="dark"] input[type="number"]::-webkit-outer-spin-button,
+html.dark input[type="number"]::-webkit-inner-spin-button,
+html.dark input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  height: 32px !important;
+  width: 28px !important;
+  cursor: pointer !important;
+  margin: 2px 4px 2px 2px !important;
+  background: transparent !important;
+  filter: brightness(1.6) contrast(1.2) !important;
+  transform: scale(1.2);
+}
+
+html[data-theme="dark"] input[type="number"]:hover::-webkit-inner-spin-button,
+html[data-theme="dark"] input[type="number"]:hover::-webkit-outer-spin-button,
+html.dark input[type="number"]:hover::-webkit-inner-spin-button,
+html.dark input[type="number"]:hover::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  filter: brightness(1.9) contrast(1.3) !important;
+  transform: scale(1.3);
+}
+
+html[data-theme="dark"] input[type="number"]:focus::-webkit-inner-spin-button,
+html[data-theme="dark"] input[type="number"]:focus::-webkit-outer-spin-button,
+html.dark input[type="number"]:focus::-webkit-inner-spin-button,
+html.dark input[type="number"]:focus::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  filter: brightness(2.1) contrast(1.4) !important;
+  transform: scale(1.35);
+}
+
+/* Firefox Number Input - Use accent color */
+html:not([data-theme="dark"]) input[type="number"]:focus,
+html:not(.dark) input[type="number"]:focus {
+  accent-color: #FF6B35 !important;
+}
+
+html[data-theme="dark"] input[type="number"]:focus,
+html.dark input[type="number"]:focus {
+  accent-color: #FF6B35 !important;
+}
+
+/* Checkbox Styling - Theme-Aware with Primary Color (#FF6B35) */
+html:not([data-theme="dark"]) input[type="checkbox"],
+html:not(.dark) input[type="checkbox"] {
+  accent-color: #FF6B35 !important;
+  border-color: #d1d5db !important;
+  background-color: #ffffff !important;
+  width: 20px !important;
+  height: 20px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+html:not([data-theme="dark"]) input[type="checkbox"]:hover,
+html:not(.dark) input[type="checkbox"]:hover {
+  border-color: #FF6B35 !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1) !important;
+}
+
+html:not([data-theme="dark"]) input[type="checkbox"]:checked,
+html:not(.dark) input[type="checkbox"]:checked {
+  background-color: #FF6B35 !important;
+  border-color: #FF6B35 !important;
+  color: #ffffff !important;
+}
+
+html:not([data-theme="dark"]) input[type="checkbox"]:focus,
+html:not(.dark) input[type="checkbox"]:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2) !important;
+  border-color: #FF6B35 !important;
+}
+
+html[data-theme="dark"] input[type="checkbox"],
+html.dark input[type="checkbox"] {
+  accent-color: #FF6B35 !important;
+  border-color: #4b5563 !important;
+  background-color: #1f2937 !important;
+  width: 20px !important;
+  height: 20px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-theme="dark"] input[type="checkbox"]:hover,
+html.dark input[type="checkbox"]:hover {
+  border-color: #FF6B35 !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.15) !important;
+}
+
+html[data-theme="dark"] input[type="checkbox"]:checked,
+html.dark input[type="checkbox"]:checked {
+  background-color: #FF6B35 !important;
+  border-color: #FF6B35 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] input[type="checkbox"]:focus,
+html.dark input[type="checkbox"]:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3) !important;
+  border-color: #FF6B35 !important;
+}
+
+/* Special styling for yellow/featured checkbox (keep yellow theme) */
+html:not([data-theme="dark"]) input[type="checkbox"].border-yellow-400,
+html:not(.dark) input[type="checkbox"].border-yellow-400 {
+  border-color: #fbbf24 !important;
+  accent-color: #f59e0b !important;
+}
+
+html:not([data-theme="dark"]) input[type="checkbox"].border-yellow-400:checked,
+html:not(.dark) input[type="checkbox"].border-yellow-400:checked {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+
+html[data-theme="dark"] input[type="checkbox"].border-yellow-400,
+html.dark input[type="checkbox"].border-yellow-400 {
+  border-color: #fbbf24 !important;
+  accent-color: #fbbf24 !important;
+}
+
+html[data-theme="dark"] input[type="checkbox"].border-yellow-400:checked,
+html.dark input[type="checkbox"].border-yellow-400:checked {
+  background-color: #fbbf24 !important;
+  border-color: #fbbf24 !important;
+}
+
+/* Select Dropdown Styling - Theme-Aware with Primary Color */
+/* Ensure select dropdowns are not clipped and can extend beyond containers */
+select {
+  position: relative;
+  z-index: 1;
+}
+
+select:focus {
+  position: relative;
+  z-index: 50;
+  outline: none;
+}
+
+/* Pagination select dropdown - ensure it's not clipped */
+.pagination-container select,
+.pagination-container select:focus {
+  position: relative;
+  z-index: 50;
+}
+
+/* Ensure pagination containers don't clip dropdowns */
+.pagination-container {
+  overflow: visible !important;
+  position: relative;
+}
+
+.pagination-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+.pagination-container select {
+  position: relative;
+  z-index: 50;
+}
+
+.pagination-container select:focus {
+  z-index: 50;
 }

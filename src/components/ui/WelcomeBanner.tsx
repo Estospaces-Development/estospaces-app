@@ -1,13 +1,45 @@
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { getWelcomeBannerStats } from '../../services/dashboardStatsService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const WelcomeBanner = () => {
   const navigate = useNavigate();
+  const { user, profile, getDisplayName } = useAuth();
+  const [stats, setStats] = useState({
+    activeProperties: 0,
+    activeLeads: 0,
+    totalApplications: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Get user display name
+  const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'User');
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      try {
+        const result = await getWelcomeBannerStats();
+        if (result.data) {
+          setStats(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching welcome banner stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="page-title text-gray-800 dark:text-white mb-2">Welcome Prajol</h2>
+          <h2 className="page-title text-gray-800 dark:text-white mb-2">Welcome {displayName}</h2>
           <p className="body-text text-gray-600 dark:text-gray-400">
             Manage Your Properties, ideas, and grow your business with powerful insight
           </p>
@@ -25,15 +57,21 @@ const WelcomeBanner = () => {
       <div className="flex items-center gap-6 mt-4">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-primary rounded-full"></div>
-          <span className="secondary-label text-gray-700 dark:text-gray-300">3 Active Properties</span>
+          <span className="secondary-label text-gray-700 dark:text-gray-300">
+            {loading ? '...' : `${stats.activeProperties} Active Properties`}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <span className="secondary-label text-gray-700 dark:text-gray-300">6 Active Leads</span>
+          <span className="secondary-label text-gray-700 dark:text-gray-300">
+            {loading ? '...' : `${stats.activeLeads} Active Leads`}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-          <span className="secondary-label text-gray-700 dark:text-gray-300">6 Applications</span>
+          <span className="secondary-label text-gray-700 dark:text-gray-300">
+            {loading ? '...' : `${stats.totalApplications} Applications`}
+          </span>
         </div>
       </div>
     </div>

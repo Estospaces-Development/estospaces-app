@@ -45,7 +45,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           {/* Left Section */}
           <div className="flex items-center gap-6 flex-1">
             <h1 className="page-title text-gray-800 dark:text-white transition-colors duration-300">Manager Dashboard</h1>
-            
+
             {/* Search Bar */}
             <div className="flex-1 max-w-md">
               <div className="relative group">
@@ -72,7 +72,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
               >
                 <Palette className="w-6 h-6" />
               </button>
-              
+
               {showThemeDropdown && (
                 <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-black rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 py-2 z-50 transition-colors duration-300">
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800">
@@ -82,9 +82,8 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                     <button
                       key={themeOption.value}
                       onClick={() => handleThemeSelect(themeOption.value)}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-900 active:bg-gray-200 dark:active:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 transition-colors duration-300 flex items-center justify-between ${
-                        theme === themeOption.value ? 'bg-primary/10 dark:bg-primary/20 text-primary font-medium active:text-primary dark:active:text-primary' : 'text-gray-700 dark:text-gray-300'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-900 active:bg-gray-200 dark:active:bg-gray-800 active:text-gray-900 dark:active:text-gray-100 transition-colors duration-300 flex items-center justify-between ${theme === themeOption.value ? 'bg-primary/10 dark:bg-primary/20 text-primary font-medium active:text-primary dark:active:text-primary' : 'text-gray-700 dark:text-gray-300'
+                        }`}
                     >
                       <span>{themeOption.label}</span>
                       {theme === themeOption.value && (
@@ -105,7 +104,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             </button>
 
             {/* User Profile */}
-            <button 
+            <button
               onClick={() => navigate('/manager/dashboard/profile')}
               className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300"
               title="Profile"

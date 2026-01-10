@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProperties } from '../contexts/PropertyContext';
 import WelcomeBanner from '../components/ui/WelcomeBanner';
@@ -13,6 +13,7 @@ import PieChart from '../components/ui/PieChart';
 import BarChart from '../components/ui/BarChart';
 import LineChart from '../components/ui/LineChart';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
+import { getDashboardStats } from '../services/dashboardStatsService';
 
 interface Lead {
   id: string;
@@ -59,6 +60,41 @@ const Dashboard = () => {
   const [showApplicationFilters, setShowApplicationFilters] = useState(false);
   const [showApplicationExportMenu, setShowApplicationExportMenu] = useState(false);
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
+  
+  // Dashboard statistics state
+  const [dashboardStats, setDashboardStats] = useState({
+    monthlyRevenue: '0.00',
+    monthlyRevenueChange: '+0%',
+    activeProperties: 0,
+    activeListingsChange: '+0%',
+    totalViews: '0',
+    totalViewsChange: '+0%',
+    conversionRate: '0.0%',
+    conversionRateChange: '+0%',
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Fetch dashboard statistics
+  useEffect(() => {
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      try {
+        const result = await getDashboardStats();
+        if (result.data) {
+          setDashboardStats(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Sample leads data
   const leads: Lead[] = [
@@ -433,32 +469,32 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard
           title="Monthly Revenue"
-          value="$15,000.00"
-          change="+8.5%"
+          value={statsLoading ? '...' : `$${parseFloat(dashboardStats.monthlyRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          change={dashboardStats.monthlyRevenueChange}
           icon={DollarSign}
           iconColor="bg-green-500"
           trendColor="text-green-600"
         />
         <KPICard
           title="Active Listings"
-          value="8"
-          change="+5%"
+          value={statsLoading ? '...' : dashboardStats.activeProperties.toString()}
+          change={dashboardStats.activeListingsChange}
           icon={Building2}
           iconColor="bg-blue-500"
           trendColor="text-blue-600"
         />
         <KPICard
           title="Total Views"
-          value="2450"
-          change="+15.2%"
+          value={statsLoading ? '...' : dashboardStats.totalViews}
+          change={dashboardStats.totalViewsChange}
           icon={Eye}
           iconColor="bg-purple-500"
           trendColor="text-purple-600"
         />
         <KPICard
           title="Conversion Rate"
-          value="12.2%"
-          change="+5%"
+          value={statsLoading ? '...' : dashboardStats.conversionRate}
+          change={dashboardStats.conversionRateChange}
           icon={UserCheck}
           iconColor="bg-primary"
           trendColor="text-primary"
