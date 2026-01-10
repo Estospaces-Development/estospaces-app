@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, ChevronDown } from 'lucide-react';
-import ThemeSwitcher from './ThemeSwitcher';
+import { Bell, User, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import logoIcon from '../../assets/logo-icon.png';
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isDashboard = location.pathname.startsWith('/user/dashboard');
-  const [searchQuery, setSearchQuery] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const logoRef = React.useRef(null);
+
 
   const notifications = [
     { id: 1, title: 'New property available', message: 'A new property matches your criteria', time: '2m ago' },
@@ -19,119 +20,42 @@ const Header = () => {
   ];
 
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
+    <header className="h-16 bg-primary dark:bg-[#0a0a0a] sticky top-0 z-30 shadow-sm border-b border-primary/80 dark:border-gray-800">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
-        {/* Left side - Title */}
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-lg font-medium text-gray-900 dark:text-gray-100 tracking-tight" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', letterSpacing: '-0.015em' }}>
-              Welcome, <span className="font-semibold">Prajol Annamudu</span>
-            </h1>
-          </div>
-        </div>
-
-        {/* Right side - Search, Notifications, User */}
-        <div className="flex items-center gap-4 flex-1 justify-end">
-          {/* Search */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const query = searchQuery.trim();
-              if (!query) return;
-
-              const queryLower = query.toLowerCase();
-
-              // Navigation mapping for search
-              const navigationMap = {
-                'payments': '/user/dashboard/payments',
-                'payment': '/user/dashboard/payments',
-                'pay': '/user/dashboard/payments',
-                'messages': '/user/dashboard/messages',
-                'message': '/user/dashboard/messages',
-                'chat': '/user/dashboard/messages',
-                'contracts': '/user/dashboard/contracts',
-                'contract': '/user/dashboard/contracts',
-                'applications': '/user/dashboard/applications',
-                'application': '/user/dashboard/applications',
-                'apply': '/user/dashboard/applications',
-                'viewings': '/user/dashboard/viewings',
-                'viewing': '/user/dashboard/viewings',
-                'schedule': '/user/dashboard/viewings',
-                'saved': '/user/dashboard/saved',
-                'favorites': '/user/dashboard/saved',
-                'favorite': '/user/dashboard/saved',
-                'discover': '/user/dashboard/discover',
-                'browse': '/user/dashboard/discover',
-                'properties': '/user/dashboard/discover',
-                'property': '/user/dashboard/discover',
-                'search': '/user/dashboard/discover',
-                'reviews': '/user/dashboard/reviews',
-                'review': '/user/dashboard/reviews',
-                'settings': '/user/dashboard/settings',
-                'setting': '/user/dashboard/settings',
-                'profile': '/user/dashboard/profile',
-                'help': '/user/dashboard/help',
-                'support': '/user/dashboard/help',
-              };
-
-              // Check if query matches any navigation keyword
-              for (const [key, path] of Object.entries(navigationMap)) {
-                if (queryLower.includes(key)) {
-                  navigate(path);
-                  setSearchQuery('');
-                  return;
-                }
-              }
-
-              // If on main dashboard and query looks like a location (postcode, address, etc.)
-              // Trigger location search via custom event
-              const isMainDashboard = location.pathname === '/user/dashboard';
-              const looksLikeLocation = /^[A-Za-z0-9\s,.-]+$/.test(query) && 
-                                       (query.length >= 3) && 
-                                       (/\d/.test(query) || /[A-Z]{1,2}\d/.test(query.toUpperCase()) || query.split(/\s+/).length >= 2);
-              
-              if (isMainDashboard && looksLikeLocation) {
-                // Dispatch custom event for location search
-                window.dispatchEvent(new CustomEvent('headerLocationSearch', { 
-                  detail: { query: query } 
-                }));
-                setSearchQuery('');
-                return;
-              }
-
-              // If query doesn't match navigation and doesn't look like location, navigate to discover page
-              if (isMainDashboard) {
-                navigate(`/user/dashboard/discover?search=${encodeURIComponent(query)}`);
-                setSearchQuery('');
-              }
+        {/* Left side - Logo */}
+        <button
+          onClick={() => navigate('/user/dashboard')}
+          className="flex items-center gap-1.5 hover:opacity-90 transition-opacity duration-200 cursor-pointer"
+          aria-label="Navigate to dashboard"
+        >
+          <img 
+            ref={logoRef}
+            src={logoIcon} 
+            alt="Estospaces Logo" 
+            className="h-8 w-auto object-contain transition-all duration-300"
+            style={{ 
+              filter: 'brightness(0) saturate(100%) invert(77%) sepia(95%) saturate(2500%) hue-rotate(345deg) brightness(1.6) contrast(1.2) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))',
+              WebkitFilter: 'brightness(0) saturate(100%) invert(77%) sepia(95%) saturate(2500%) hue-rotate(345deg) brightness(1.6) contrast(1.2) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))'
             }}
-            className="hidden md:flex items-center max-w-md flex-1"
-          >
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-              <input
-                type="text"
-                placeholder="Search: payments, messages, contracts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onClick={(e) => e.target.focus()}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 cursor-text"
-                style={{ cursor: 'text' }}
-              />
-            </div>
-          </form>
+          />
+          <span className="text-xl font-bold text-white dark:text-orange-500 transition-colors duration-300" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+            Estospaces
+          </span>
+        </button>
 
-          {/* Theme Switcher - Only show on dashboard */}
-          {isDashboard && <ThemeSwitcher />}
-
+        {/* Right side - Notifications, User */}
+        <div className="flex items-center gap-4">
           {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="relative p-2 rounded-lg transition-colors"
+              style={{ backgroundColor: 'transparent' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"></span>
+              <Bell size={20} className="text-white dark:text-gray-200" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-primary"></span>
             </button>
 
             {/* Notifications dropdown */}
@@ -171,14 +95,17 @@ const Header = () => {
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="flex items-center gap-2 p-2 rounded-lg transition-colors"
+              style={{ backgroundColor: 'transparent' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                <User size={18} className="text-white" />
+              <div className="w-8 h-8 bg-white/20 dark:bg-gray-700 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 dark:border-gray-600">
+                <User size={18} className="text-white dark:text-gray-200" />
               </div>
               <ChevronDown
                 size={16}
-                className={`text-gray-600 dark:text-gray-300 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
+                className={`text-white dark:text-gray-200 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
               />
             </button>
 

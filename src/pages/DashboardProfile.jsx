@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, MapPin, Edit, ArrowLeft, Shield, CheckCircle, Sun, Moon, Loader2, Home, Upload, X, Camera, Image as ImageIcon } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { User, Mail, Phone, MapPin, Edit, ArrowLeft, Shield, CheckCircle, Loader2, Home, Upload, X, Camera, Image as ImageIcon } from 'lucide-react';
 import * as postcodeService from '../services/postcodeService';
 import { supabase } from '../lib/supabase';
 import { useProperties } from '../contexts/PropertiesContext';
@@ -9,7 +8,6 @@ import VerificationSection from '../components/Dashboard/VerificationSection';
 
 const DashboardProfile = () => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
   const { currentUser } = useProperties();
   const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -292,8 +290,8 @@ const DashboardProfile = () => {
       </button>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Profile</h1>
-        <p className="text-gray-600">Manage your personal information</p>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-orange-500 mb-2">Profile</h1>
+        <p className="text-gray-600 dark:text-orange-400">Manage your personal information</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -302,7 +300,7 @@ const DashboardProfile = () => {
           {/* Personal Information Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Personal Information</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-orange-500">Personal Information</h2>
               <button 
                 onClick={() => setIsEditing(!isEditing)}
                 className="flex items-center gap-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
@@ -478,7 +476,7 @@ const DashboardProfile = () => {
                 )}
               </div>
               
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{formData.fullName}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-orange-500 mb-1">{formData.fullName}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Member since Jan 2024</p>
               
               {/* Upload Photo Button */}
@@ -525,38 +523,10 @@ const DashboardProfile = () => {
             </div>
           </div>
 
-          {/* Theme Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Appearance</h3>
-            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <button
-                onClick={() => toggleTheme('light')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                  theme === 'light'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}
-              >
-                <Sun size={16} />
-                Light
-              </button>
-              <button
-                onClick={() => toggleTheme('dark')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                  theme === 'dark'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}
-              >
-                <Moon size={16} />
-                Dark
-              </button>
-            </div>
-          </div>
 
           {/* Account Stats */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Account Stats</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-orange-500 mb-4">Account Stats</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Properties</span>

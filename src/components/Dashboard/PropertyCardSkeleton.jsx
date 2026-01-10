@@ -44,3 +44,4 @@ const PropertyCardSkeleton = () => {
 
 export default PropertyCardSkeleton;
 
+

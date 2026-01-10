@@ -12,40 +12,72 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    // Load theme from localStorage or default to 'light'
+    // Force light theme for dashboard - dark theme removed
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('dashboard-theme');
-      const initialTheme = savedTheme || 'light';
-      
-      // Apply theme class immediately on mount
+      const isDashboardRoute = window.location.pathname.startsWith('/user/dashboard');
+      // Always use light theme for dashboard
       const root = document.documentElement;
-      if (initialTheme === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-      
-      return initialTheme;
+      root.classList.remove('dark');
+      return 'light';
     }
     return 'light';
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Save theme to localStorage
-      localStorage.setItem('dashboard-theme', theme);
-      
-      // Apply theme class to document root
+      const isDashboardRoute = window.location.pathname.startsWith('/user/dashboard');
       const root = document.documentElement;
-      if (theme === 'dark') {
-        root.classList.add('dark');
-      } else {
+      
+      // Force light theme for dashboard routes
+      if (isDashboardRoute) {
         root.classList.remove('dark');
+        // Ensure theme state is light for dashboard
+        if (theme !== 'light') {
+          setTheme('light');
+        }
+      } else {
+        // For non-dashboard routes, allow theme switching
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
       }
+      
+      // Listen for route changes
+      const handleRouteChange = () => {
+        const currentIsDashboard = window.location.pathname.startsWith('/user/dashboard');
+        if (currentIsDashboard) {
+          root.classList.remove('dark');
+          if (theme !== 'light') {
+            setTheme('light');
+          }
+        }
+      };
+      
+      // Listen to popstate (browser back/forward)
+      window.addEventListener('popstate', handleRouteChange);
+      
+      // Listen for React Router navigation (custom event)
+      window.addEventListener('pushstate', handleRouteChange);
+      window.addEventListener('replacestate', handleRouteChange);
+      
+      return () => {
+        window.removeEventListener('popstate', handleRouteChange);
+        window.removeEventListener('pushstate', handleRouteChange);
+        window.removeEventListener('replacestate', handleRouteChange);
+      };
     }
-  }, [theme]);
+  }, [theme, setTheme]);
 
   const toggleTheme = (newTheme) => {
+    // Prevent dark theme on dashboard routes
+    if (typeof window !== 'undefined') {
+      const isDashboardRoute = window.location.pathname.startsWith('/user/dashboard');
+      if (isDashboardRoute && newTheme === 'dark') {
+        return; // Don't allow dark theme on dashboard
+      }
+    }
     setTheme(newTheme);
   };
 

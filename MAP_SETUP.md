@@ -62,3 +62,4 @@ npm install @react-google-maps/api
 
 Update the component to use Google Maps API instead.
 
+

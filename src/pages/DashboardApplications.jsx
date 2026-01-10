@@ -55,10 +55,10 @@ const DashboardApplications = () => {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 lg:p-6 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">
               My Applications
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-orange-400">
               Track your property applications
             </p>
           </div>
@@ -123,7 +123,7 @@ const DashboardApplications = () => {
             <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <FileText size={48} className="text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 mb-2">
               No applications found
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">

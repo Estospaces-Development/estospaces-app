@@ -6,6 +6,33 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 
 ### Recent Updates
 
+- **✅ Saved Properties Tab**: New navigation tab for saved properties
+  - Added "Saved Properties" tab in navigation (after Rent, before My Applications)
+  - Heart icon with badge showing count of saved properties
+  - Properties saved from Buy, Rent, or anywhere in dashboard appear here
+  - Clickable logo and "Estospaces" text redirect to main dashboard
+  - Logo in light orange color with white drop shadow for contrast
+- **✅ Glassmorphism Hero Search Card**: Modern glass effect for property search
+  - Transparent glass background with backdrop blur
+  - Semi-transparent search input with glass effect
+  - Solid filter dropdown for better UX and readability
+  - Orange accents for selected states and focus rings
+- **✅ Footer Updates**: Redesigned footer with Search and Locations sections
+  - Removed "PROFESSIONAL" and "EDUCATION & INSIGHTS" sections
+  - Added "Search" section with 10 property search options
+  - Added "Locations" section with 9 location options (UK cities and international)
+  - Dark blue section titles matching brand colors
+- **✅ Welcome Animation**: First-time user onboarding
+  - Animated welcome message from "Lakshmi" assistant
+  - Speech bubble with "hi, welcome to the estospaces" message
+  - Auto-hides after 6 seconds or can be dismissed manually
+  - Appears for first-time users who haven't completed onboarding
+- **✅ Welcome Card**: Enhanced dashboard welcome experience
+  - Personalized greeting with user name
+  - Current date display
+  - Quick action buttons (Browse Properties, Saved, My Applications)
+  - Stats cards (Properties Available, Current Location)
+  - Beautiful orange gradient background
 - **✅ Navigation Animations**: Smooth click animations and page transitions when navigating between tabs
   - Click scale animation (95% on click) for all navigation tabs
   - Page fade + slide transitions (200ms) when switching pages
@@ -14,12 +41,12 @@ A modern, responsive property management dashboard built with React, Tailwind CS
   - Buy tab shows properties with `listing_type = 'sale'` (39 properties)
   - Rent tab shows properties with `listing_type = 'rent'` (5 properties)
   - Filtering works across Dashboard and Discover Properties pages
+  - Local filtering in hero section (no page redirect)
+  - Filter dropdown with options: Most Viewed, Trending, High Demand, Budget Friendly
 - **✅ Property Discovery Sections**: Multiple discovery sections on main dashboard
-  - **Property Discovery (Core)**: 6-8 curated properties based on location and preferences
-  - **Most Viewed Properties**: Properties sorted by view count from Supabase
-  - **Trending Properties**: Properties with rapid increase in views/engagement
-  - **Recently Added Properties**: Latest properties sorted by `created_at`
-  - **High Demand Properties**: Properties with high inquiries and favorites
+  - **Hero Search Section**: Glass-style search widget with Buy/Rent/Sold tabs
+  - **Welcome Card**: Personalized user greeting with quick actions
+  - **Map View**: Interactive map showing nearby properties
 - **✅ Real Property Data Integration**: Connected to Supabase `properties` table
   - 44 total properties (39 for sale, 5 for rent)
   - Real property data with images, prices, locations, and details
@@ -33,8 +60,8 @@ A modern, responsive property management dashboard built with React, Tailwind CS
   - `GET /api/properties/sections?section=most_viewed|trending|recently_added|high_demand|featured|discovery`
 - **✅ Horizontal Navigation**: Modern horizontal navigation bar replacing sidebar
   - All navigation items in horizontal tabs below header
-  - Buy and Rent buttons positioned before "My Applications"
-  - Active state highlighting
+  - Buy, Rent, and Saved Properties buttons positioned before "My Applications"
+  - Active state highlighting with orange theme
   - Responsive design (horizontal tabs on desktop, scrollable pills on mobile)
 - **✅ Typography System**: Updated to Inter font family matching modern chat interface standards
   - Consistent font sizes across all components (H1: 20px, H2: 18px, H3: 16px, Body: 14px, Captions: 12px)
@@ -49,12 +76,10 @@ A modern, responsive property management dashboard built with React, Tailwind CS
   - **Live Chat**: Direct email integration for support requests.
   - **Email Support**: One-click email composition.
 - **✅ Property Detail Page**: Comprehensive property information with market insights and analytics (orange theme)
-- **✅ Welcome Card**: Personalized welcome message with user name integrated into dashboard header
 - **✅ Smart Search Navigation**: Search bars navigate to relevant pages based on keywords
 - **✅ User Verification Badge**: Verified indicator displayed in sidebar for authenticated users
 - **✅ Global Chatbot Access**: "Ask Lakshmi" AI Assistant available on all dashboard pages
-- **✅ Theme Switcher**: Available on all dashboard pages (not just main dashboard)
-- **✅ Orange Theme**: Property Detail page uses consistent orange branding matching dashboard theme
+- **✅ Orange Theme**: Consistent orange branding (#FF6B35) throughout dashboard
 
 ### User Dashboard
 
@@ -70,9 +95,9 @@ A modern, responsive property management dashboard built with React, Tailwind CS
 
 ### Dashboard Pages
 
-- **Dashboard Home**: Main dashboard with property discovery sections, map view, and quick stats
+- **Dashboard Home**: Main dashboard with hero search section, welcome card, property discovery sections, and map view
 - **Discover Properties**: Browse and search properties with advanced filtering (Buy/Rent tabs, location, price, beds, baths)
-- **Saved Properties**: View saved/favorited properties (saved from Featured Properties or Browse Properties)
+- **Saved Properties**: View saved/favorited properties (accessible via navigation tab with badge count)
 - **Property Detail Page**: Comprehensive property information page with:
   - Property details (images, description, specs, agent info, inspection times)
   - Financial metrics (median price, rent, cashflow, yield, vacancy rate)

@@ -5,14 +5,14 @@ const DashboardViewings = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Viewings</h1>
-        <p className="text-gray-600">Schedule and manage property viewings</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">Viewings</h1>
+        <p className="text-gray-600 dark:text-orange-400">Schedule and manage property viewings</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
         <Calendar size={48} className="mx-auto mb-4 text-gray-300" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No viewings scheduled</h3>
-        <p className="text-gray-600 mb-4">Schedule a viewing for properties you're interested in</p>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-2">No viewings scheduled</h3>
+        <p className="text-gray-600 dark:text-orange-400 mb-4">Schedule a viewing for properties you're interested in</p>
         <button className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors">
           Browse Properties
         </button>
@@ -22,4 +22,5 @@ const DashboardViewings = () => {
 };
 
 export default DashboardViewings;
+
 

@@ -3,14 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, Home, Heart, FileText, Map as MapIcon, 
   ArrowRight, MapPin, AlertCircle, TrendingUp, Star,
-  Loader2, X, Compass, Clock, Zap, Eye
+  Loader2, X, Compass, Clock, Zap, Eye, Bath, Filter, ChevronDown, DollarSign, Sparkles
 } from 'lucide-react';
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import NearbyPropertiesMap from '../components/Dashboard/NearbyPropertiesMap';
 import PropertyDiscoverySection from '../components/Dashboard/PropertyDiscoverySection';
-import NearestBrokerWidget from '../components/Dashboard/NearestBrokerWidget';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import { useLocation } from '../contexts/LocationContext';
 import { useProperties } from '../contexts/PropertiesContext';
@@ -39,6 +39,25 @@ const DashboardLocationBased = () => {
   const [searchInput, setSearchInput] = useState(() => {
     return searchParams.get('location') || '';
   });
+  
+  // State for selected property type tab (Buy/Rent/Sold) - default to 'sold'
+  const [selectedPropertyType, setSelectedPropertyType] = useState(() => {
+    const urlType = searchParams.get('type');
+    if (urlType === 'buy' || urlType === 'rent' || urlType === 'sold') {
+      return urlType;
+    }
+    return 'sold';
+  });
+  
+  // Sync selectedPropertyType with URL params when they change
+  useEffect(() => {
+    const urlType = searchParams.get('type');
+    if (urlType === 'buy' || urlType === 'rent' || urlType === 'sold') {
+      setSelectedPropertyType(urlType);
+    } else if (!urlType) {
+      setSelectedPropertyType('sold');
+    }
+  }, [searchParams]);
   
   // Discovery sections state
   const [discoveryProperties, setDiscoveryProperties] = useState([]);
@@ -163,6 +182,39 @@ const DashboardLocationBased = () => {
       }
     }
   }, [currentUser]);
+
+  // State for filter dropdown
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState(() => {
+    return searchParams.get('filter') || null;
+  });
+  
+  // Sync selectedPropertyType with URL params when they change
+  useEffect(() => {
+    const urlType = searchParams.get('type');
+    if (urlType === 'buy' || urlType === 'rent' || urlType === 'sold') {
+      setSelectedPropertyType(urlType);
+    } else if (!urlType || window.location.pathname === '/user/dashboard') {
+      setSelectedPropertyType('sold');
+    }
+  }, [searchParams]);
+  
+  // Sync selectedFilter with URL params when they change
+  useEffect(() => {
+    const urlFilter = searchParams.get('filter');
+    setSelectedFilter(urlFilter || null);
+  }, [searchParams]);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isFilterDropdownOpen && !event.target.closest('.filter-dropdown-container')) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isFilterDropdownOpen]);
 
   // Initial fetch based on location
   useEffect(() => {
@@ -360,112 +412,359 @@ const DashboardLocationBased = () => {
   };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen">
-      {/* Location Search - Rebuilt with Modern Design */}
-      <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-800 rounded-xl shadow-lg border-2 border-orange-200 dark:border-orange-800 p-6 lg:p-8">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            Find Your Perfect Property
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Search by postcode, street name, or full address
+    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen">
+      {/* Hero Search Section - Rightmove Style */}
+      <div className="relative rounded-xl shadow-2xl overflow-hidden min-h-[500px] lg:min-h-[600px] flex flex-col items-center justify-center mb-8">
+        {/* Background Image - Winter Scene */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1549517045-bc93de075e53?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')`
+          }}
+        />
+        {/* Dark Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70" />
+        
+        {/* Hero Text Overlay - Centered at top */}
+        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 text-center z-10 w-full px-4">
+          <p className="text-4xl lg:text-5xl font-bold mb-3 text-orange-500">
+            Your complete property journey, simplified.
+          </p>
+          <p className="text-xl lg:text-2xl text-white font-medium">
+            Search, rent, buy, manage properties, and pay bills — all from one intelligent platform.
           </p>
         </div>
-        <form 
-          onSubmit={handleLocationSearch} 
-          className="flex flex-col sm:flex-row gap-3"
-        >
-          <div className="flex-1 relative group">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-              <MapPin 
-                className={`transition-colors ${
-                  searchInput.trim() 
-                    ? 'text-orange-500 dark:text-orange-400' 
-                    : 'text-gray-400 dark:text-gray-500'
-                }`} 
-                size={22} 
-              />
-            </div>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                // Support Enter key submission
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (searchInput.trim() && !loading) {
-                    handleLocationSearch(e);
-                  }
-                }
-              }}
-              onClick={(e) => e.target.focus()}
-              placeholder="e.g., SW1A 1AA, Oxford Street, or 123 Main Street, London"
-              className="w-full pl-12 pr-4 py-4 text-base border-2 border-orange-300 dark:border-orange-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-500 dark:focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 cursor-text transition-all duration-200 shadow-sm hover:shadow-md"
-              disabled={loading}
-              aria-label="Search for properties by location"
-            />
-            {searchInput.trim() && (
+
+        {/* Glass Search Widget - Centered below hero text */}
+        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 mt-32">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 lg:p-8 shadow-2xl border border-white/20">
+            {/* Tabs */}
+            <div className="flex items-center gap-2 mb-4 border-b border-white/20 pb-4">
               <button
                 type="button"
-                onClick={() => {
-                  setSearchInput('');
-                  setSearchParams({});
-                  setError(null);
-                  setLocationMessage(null);
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedPropertyType('buy');
+                  setSearchParams({ type: 'buy' }, { replace: true });
                 }}
-                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                aria-label="Clear search"
+                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                  selectedPropertyType === 'buy'
+                    ? 'text-white bg-orange-500 border-2 border-orange-600'
+                    : 'text-white hover:bg-white/20'
+                }`}
               >
-                <X size={18} />
+                Buy
               </button>
-            )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedPropertyType('rent');
+                  setSearchParams({ type: 'rent' }, { replace: true });
+                }}
+                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                  selectedPropertyType === 'rent'
+                    ? 'text-white bg-orange-500 border-2 border-orange-600'
+                    : 'text-white hover:bg-white/20'
+                }`}
+              >
+                Rent
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedPropertyType('sold');
+                  setSearchParams({ type: 'sold' }, { replace: true });
+                }}
+                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                  selectedPropertyType === 'sold'
+                    ? 'text-white bg-orange-500 border-2 border-orange-600'
+                    : 'text-white hover:bg-white/20'
+                }`}
+              >
+                Sold
+              </button>
+              
+              {/* Filter Button with Dropdown */}
+              <div className="relative ml-auto filter-dropdown-container">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsFilterDropdownOpen(!isFilterDropdownOpen);
+                  }}
+                  className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 ${
+                    selectedFilter
+                      ? 'text-white bg-orange-500 border-2 border-orange-600'
+                      : 'text-white hover:bg-white/20 border border-white/30'
+                  }`}
+                >
+                  <Filter size={16} />
+                  <span>Filter</span>
+                  <ChevronDown size={16} className={`transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {/* Dropdown Menu */}
+                {isFilterDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden">
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedFilter(null);
+                          const params = new URLSearchParams(searchParams);
+                          params.delete('filter');
+                          setSearchParams(params, { replace: true });
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          !selectedFilter
+                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        All Properties
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedFilter('most-viewed');
+                          const params = new URLSearchParams(searchParams);
+                          params.set('filter', 'most-viewed');
+                          setSearchParams(params, { replace: true });
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                          selectedFilter === 'most-viewed'
+                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <Eye size={14} className={selectedFilter === 'most-viewed' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
+                        Most Viewed
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedFilter('trending');
+                          const params = new URLSearchParams(searchParams);
+                          params.set('filter', 'trending');
+                          setSearchParams(params, { replace: true });
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                          selectedFilter === 'trending'
+                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <TrendingUp size={14} className={selectedFilter === 'trending' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
+                        Trending
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedFilter('high-demand');
+                          const params = new URLSearchParams(searchParams);
+                          params.set('filter', 'high-demand');
+                          setSearchParams(params, { replace: true });
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                          selectedFilter === 'high-demand'
+                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <Zap size={14} className={selectedFilter === 'high-demand' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
+                        High Demand
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedFilter('budget-friendly');
+                          const params = new URLSearchParams(searchParams);
+                          params.set('filter', 'budget-friendly');
+                          setSearchParams(params, { replace: true });
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                          selectedFilter === 'budget-friendly'
+                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <DollarSign size={14} className={selectedFilter === 'budget-friendly' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
+                        Budget Friendly
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Search Prompt */}
+            <p className="text-white text-sm mb-4">
+              {selectedPropertyType === 'buy' && 'Search properties for sale'}
+              {selectedPropertyType === 'rent' && 'Search properties for rent'}
+              {selectedPropertyType === 'sold' && 'Search sold house prices'}
+            </p>
+
+            {/* Search Form */}
+            <form 
+              onSubmit={handleLocationSearch} 
+              className="flex flex-col sm:flex-row gap-3"
+            >
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                  <Search className="text-gray-400" size={20} />
+                </div>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="School Road, SW4 7DD or York"
+                  className="w-full pl-12 pr-4 py-4 text-base bg-white/95 backdrop-blur-sm text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 border border-white/30 placeholder-gray-400"
+                  disabled={loading}
+                  aria-label="Search for properties by location"
+                />
+                {searchInput.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearchParams({});
+                      setError(null);
+                      setLocationMessage(null);
+                    }}
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const query = searchInput.trim();
+                  if (query && !loading) {
+                    handleLocationSearch(e);
+                  } else if (!query) {
+                    setError('Please enter a postcode, street name, or address to search.');
+                    const input = e.target.closest('form')?.querySelector('input[type="text"]');
+                    if (input) {
+                      input.focus();
+                    }
+                  }
+                }}
+                className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[140px] shadow-lg hover:shadow-xl"
+                aria-label="Search for properties"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    <span className="hidden sm:inline">Searching...</span>
+                  </>
+                ) : (
+                  <span>Search</span>
+                )}
+              </button>
+            </form>
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const query = searchInput.trim();
-              if (query && !loading) {
-                handleLocationSearch(e);
-              } else if (!query) {
-                // Show validation message if input is empty
-                setError('Please enter a postcode, street name, or address to search.');
-                // Focus the input field
-                const input = e.target.closest('form')?.querySelector('input[type="text"]');
-                if (input) {
-                  input.focus();
-                }
-              }
-            }}
-            className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-xl active:shadow-md transform hover:scale-[1.02] active:scale-[0.98] min-w-[140px] z-10 relative"
-            aria-label="Search for properties"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                <span className="hidden sm:inline">Searching...</span>
-                <span className="sm:hidden">Search...</span>
-              </>
-            ) : (
-              <>
-                <Search size={20} className="flex-shrink-0" />
-                <span>Search</span>
-              </>
-            )}
-          </button>
-        </form>
-        {searchInput.trim() && (
-          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-            <span>Press</span>
-            <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">
-              Enter
-            </kbd>
-            <span>to search</span>
-          </p>
-        )}
+        </div>
+      </div>
+
+      {/* Welcome Card */}
+      <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-white dark:to-white rounded-xl shadow-lg border-2 border-orange-200 dark:border-orange-300 p-6 lg:p-8 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-orange-500 rounded-lg">
+                <Sparkles className="text-white" size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                  Welcome back{currentUser?.email ? `, ${currentUser.email.split('@')[0]}` : ''}!
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-700 text-sm lg:text-base mb-4">
+              Discover your perfect property or manage your existing ones. Use the search above to find properties by location, or explore nearby listings on the map.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => navigate('/user/dashboard/discover?type=buy')}
+                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 border border-orange-300 text-orange-600 rounded-lg font-medium transition-all duration-200 hover:shadow-md"
+              >
+                <Home size={16} />
+                <span>Browse Properties</span>
+                <ArrowRight size={14} />
+              </button>
+              <button
+                onClick={() => navigate('/user/dashboard/saved')}
+                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 border border-orange-300 text-orange-600 rounded-lg font-medium transition-all duration-200 hover:shadow-md"
+              >
+                <Heart size={16} />
+                <span>Saved ({savedProperties.length || 0})</span>
+              </button>
+              <button
+                onClick={() => navigate('/user/dashboard/applications')}
+                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 border border-orange-300 text-orange-600 rounded-lg font-medium transition-all duration-200 hover:shadow-md"
+              >
+                <FileText size={16} />
+                <span>My Applications</span>
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 md:w-auto">
+            <div className="bg-white/80 rounded-lg p-4 border border-orange-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Home size={20} className="text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{allProperties.length || 0}</p>
+                  <p className="text-xs text-gray-600">Properties Available</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/80 rounded-lg p-4 border border-orange-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <MapPin size={20} className="text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {activeLocation?.city || 'London'}
+                  </p>
+                  <p className="text-xs text-gray-600">Current Location</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -500,63 +799,15 @@ const DashboardLocationBased = () => {
         </div>
       )}
 
-      {/* Stats and Nearest Broker */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <Home className="text-green-600 dark:text-green-400" size={24} />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {stats.totalProperties}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Properties Available</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Heart className="text-blue-600 dark:text-blue-400" size={24} />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {stats.savedCount}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Saved Favorites</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <FileText className="text-purple-600 dark:text-purple-400" size={24} />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {stats.applicationsCount}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Applications</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Nearest Broker Widget */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <NearestBrokerWidget />
-        </div>
-      </div>
-
       {/* Main Map View - Nearby Properties */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
               <MapIcon className="text-orange-500" size={20} />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Nearby Properties</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500">Nearby Properties</h2>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
               Explore properties on the map - click markers to view details
             </p>
           </div>
@@ -570,11 +821,11 @@ const DashboardLocationBased = () => {
         </div>
 
         {loading || locationLoading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
             <div className="h-[600px] lg:h-[700px] flex items-center justify-center">
               <div className="text-center">
                 <Loader2 className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
-                <p className="text-gray-600 dark:text-gray-400">Loading nearby properties...</p>
+                <p className="text-gray-600 dark:text-gray-300">Loading nearby properties...</p>
               </div>
             </div>
           </div>
@@ -590,14 +841,14 @@ const DashboardLocationBased = () => {
             </button>
           </div>
         ) : (allProperties && allProperties.length === 0) ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
             <div className="h-[600px] lg:h-[700px] flex items-center justify-center">
               <div className="text-center">
                 <MapPin className="mx-auto mb-4 text-gray-400" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-2">
                   No properties found
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-gray-600 dark:text-orange-400 mb-4">
                   Try searching for a different location or browse all properties.
                 </p>
                 <button
@@ -610,7 +861,7 @@ const DashboardLocationBased = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
             <div className="h-[600px] lg:h-[700px]">
               <NearbyPropertiesMap
                 properties={mapProperties || []}
@@ -622,78 +873,8 @@ const DashboardLocationBased = () => {
         )}
       </div>
 
-      {/* Property Discovery Sections */}
-      <div className="space-y-8 lg:space-y-12">
-        {/* 1. Property Discovery (Core) */}
-        <PropertyDiscoverySection
-          title="Property Discovery"
-          description="Curated properties based on your location and preferences"
-          icon={Compass}
-          properties={discoveryProperties}
-          loading={loadingDiscovery || loading}
-          error={null}
-          badge={{ type: 'featured' }}
-          viewAllLink="/user/dashboard/discover"
-          emptyMessage="No properties found in this area. Try searching for a different location."
-          limit={8}
-        />
-
-        {/* 2. Most Viewed Properties */}
-        <PropertyDiscoverySection
-          title="Most Viewed Properties"
-          description="Properties that are getting the most attention from other users"
-          icon={Eye}
-          properties={mostViewedProperties}
-          loading={loadingMostViewed || loading}
-          error={null}
-          badge={{ type: 'most-viewed' }}
-          viewAllLink="/user/dashboard/discover?filter=most-viewed"
-          emptyMessage="No most viewed properties found yet."
-          limit={6}
-        />
-
-        {/* 3. Trending Properties */}
-        <PropertyDiscoverySection
-          title="Trending Properties"
-          description="Properties with rapidly increasing engagement and interest"
-          icon={TrendingUp}
-          properties={trendingProperties}
-          loading={loadingTrending || loading}
-          error={null}
-          badge={{ type: 'trending' }}
-          viewAllLink="/user/dashboard/discover?filter=trending"
-          emptyMessage="No trending properties found at the moment."
-          limit={6}
-        />
-
-        {/* 4. Recently Added Properties */}
-        <PropertyDiscoverySection
-          title="Recently Added Properties"
-          description="Fresh listings just added to the platform"
-          icon={Clock}
-          properties={recentlyAddedProperties}
-          loading={loadingRecentlyAdded || loading}
-          error={null}
-          badge={{ type: 'new' }}
-          viewAllLink="/user/dashboard/discover?filter=recent"
-          emptyMessage="No recently added properties found."
-          limit={6}
-        />
-
-        {/* 5. High Demand Properties */}
-        <PropertyDiscoverySection
-          title="High Demand Properties"
-          description="Properties with high application rates and strong interest"
-          icon={Zap}
-          properties={highDemandProperties}
-          loading={loadingHighDemand || loading}
-          error={null}
-          badge={{ type: 'high-demand' }}
-          viewAllLink="/user/dashboard/discover?filter=high-demand"
-          emptyMessage="No high demand properties found at the moment."
-          limit={6}
-        />
-      </div>
+      {/* Footer Section */}
+      <DashboardFooter />
     </div>
   );
 };

@@ -136,8 +136,8 @@ const DashboardPayments = () => {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Payments</h1>
-        <p className="text-gray-600">Manage your rent and utility bill payments</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">Payments</h1>
+        <p className="text-gray-600 dark:text-orange-400">Manage your rent and utility bill payments</p>
       </div>
 
       {/* Summary Cards */}

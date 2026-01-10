@@ -9,10 +9,10 @@ const DashboardLayout = ({ children }) => {
   const location = useLocation();
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden">
       <Header />
       <HorizontalNavigation />
-      <main className="flex-1 overflow-y-auto dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto dark:bg-[#0a0a0a]">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

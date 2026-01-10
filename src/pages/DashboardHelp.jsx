@@ -47,8 +47,8 @@ const DashboardHelp = () => {
   return (
     <div className="p-4 lg:p-6 relative">
       <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Help & Support</h1>
-        <p className="text-gray-600">Get help with your account and properties</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">Help & Support</h1>
+        <p className="text-gray-600 dark:text-orange-400">Get help with your account and properties</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -63,8 +63,8 @@ const DashboardHelp = () => {
               <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mb-4">
                 <Icon className="text-red-600" size={24} />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{topic.title}</h3>
-              <p className="text-sm text-gray-600">{topic.description}</p>
+              <h3 className="font-semibold text-gray-900 dark:text-orange-500 mb-2">{topic.title}</h3>
+              <p className="text-sm text-gray-600 dark:text-orange-400">{topic.description}</p>
             </div>
           );
         })}
@@ -75,7 +75,7 @@ const DashboardHelp = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900">Help & Support Guides</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-orange-500">Help & Support Guides</h3>
               <button 
                 onClick={() => setShowDocsModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -145,8 +145,8 @@ const DashboardHelp = () => {
             <Mail className="text-orange-600" size={24} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Raise a Ticket</h2>
-            <p className="text-sm text-gray-600">Submit a support request and we'll get back to you shortly</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-orange-500">Raise a Ticket</h2>
+            <p className="text-sm text-gray-600 dark:text-orange-400">Submit a support request and we'll get back to you shortly</p>
           </div>
         </div>
 
@@ -202,12 +202,12 @@ const DashboardHelp = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Frequently Asked Questions</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Frequently Asked Questions</h2>
         <div className="space-y-4">
           {faqs.map((faq, index) => (
             <div key={index} className="border-b border-gray-200 last:border-0 pb-4 last:pb-0">
-              <h3 className="font-medium text-gray-900 mb-2">{faq.question}</h3>
-              <p className="text-sm text-gray-600">{faq.answer}</p>
+              <h3 className="font-medium text-gray-900 dark:text-orange-500 mb-2">{faq.question}</h3>
+              <p className="text-sm text-gray-600 dark:text-orange-400">{faq.answer}</p>
             </div>
           ))}
         </div>
@@ -217,3 +217,4 @@ const DashboardHelp = () => {
 };
 
 export default DashboardHelp;
+

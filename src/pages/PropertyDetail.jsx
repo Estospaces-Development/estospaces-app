@@ -88,7 +88,7 @@ const PropertyDetail = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen flex items-center justify-center">
+      <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
           <p className="text-gray-600 dark:text-gray-400">Loading property details...</p>
@@ -99,10 +99,10 @@ const PropertyDetail = () => {
 
   if (error || !property) {
     return (
-      <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen flex items-center justify-center">
+      <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen flex items-center justify-center">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center max-w-md">
           <AlertCircle className="mx-auto mb-4 text-red-600 dark:text-red-400" size={48} />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Property Not Found</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-2">Property Not Found</h3>
           <p className="text-red-700 dark:text-red-400 mb-4">{error || 'The property you are looking for does not exist.'}</p>
           <button
             onClick={() => navigate('/user/dashboard/discover')}
@@ -188,7 +188,7 @@ const PropertyDetail = () => {
   };
 
   return (
-    <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-gray-900">
+    <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-[#0a0a0a]">
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
@@ -199,11 +199,11 @@ const PropertyDetail = () => {
       </button>
 
       {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{property.title || 'Property'}</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-orange-500">{property.title || 'Property'}</h1>
               <button
                 onClick={handleSave}
                 className={`p-2 rounded-full transition-all ${
@@ -267,8 +267,8 @@ const PropertyDetail = () => {
       {/* Main Content - Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Left Column - Image Carousel */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="relative h-96 lg:h-[500px] bg-gray-200 dark:bg-gray-700">
+          <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
+            <div className="relative h-96 lg:h-[500px] bg-gray-200 dark:bg-gray-200">
             {images.length > 0 ? (
               <>
                 <img
@@ -283,13 +283,13 @@ const PropertyDetail = () => {
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-900/70 hover:bg-white dark:hover:bg-gray-900 p-2 rounded-full shadow-lg transition-all"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-[#0a0a0a]/70 hover:bg-white dark:hover:bg-gray-900 p-2 rounded-full shadow-lg transition-all"
                     >
                       <ChevronLeft size={24} className="text-gray-700 dark:text-gray-300" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-900/70 hover:bg-white dark:hover:bg-gray-900 p-2 rounded-full shadow-lg transition-all"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-[#0a0a0a]/70 hover:bg-white dark:hover:bg-gray-900 p-2 rounded-full shadow-lg transition-all"
                     >
                       <ChevronRight size={24} className="text-gray-700 dark:text-gray-300" />
                     </button>
@@ -321,7 +321,7 @@ const PropertyDetail = () => {
         <div className="space-y-6">
           {/* Description */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Property Description</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 mb-3">Property Description</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
               {property.description || 'No description available for this property.'}
             </p>
@@ -329,7 +329,7 @@ const PropertyDetail = () => {
             {/* Real Property Features */}
             {propertyFeatures.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Property Features</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-3">Property Features</h3>
                 <div className="flex flex-wrap gap-2">
                   {propertyFeatures.map((feature, index) => (
                     <span 
@@ -375,7 +375,7 @@ const PropertyDetail = () => {
 
           {/* Financial Metrics */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Financial Metrics</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Financial Metrics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Property Price</p>
@@ -428,8 +428,8 @@ const PropertyDetail = () => {
 
           {/* Potential Value (for sale properties) */}
           {property.property_type === 'sale' && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Estimated Property Value</h3>
+            <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Estimated Property Value</h3>
               <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
                 Market Estimate
               </span>
@@ -452,8 +452,8 @@ const PropertyDetail = () => {
 
           {/* Real Agent Information */}
           {(property.agent_name || property.agent_email || property.agent_phone || property.agent_company) && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Contact Agent</h3>
+            <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Contact Agent</h3>
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-xl font-semibold text-orange-600 dark:text-orange-400">
                   {property.agent_name ? property.agent_name.charAt(0).toUpperCase() : <User size={24} />}

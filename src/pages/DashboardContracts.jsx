@@ -333,14 +333,14 @@ const DashboardContracts = () => {
   ).length;
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen">
+    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">
             Digital Contracts
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-orange-400">
             View, review, and sign your property contracts
           </p>
         </div>
@@ -495,7 +495,7 @@ const DashboardContracts = () => {
       {filteredAndSortedContracts.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <FileText className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-2">
             No contracts found
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -545,7 +545,7 @@ const DashboardContracts = () => {
                           {contract.requiresAction && !signed && (
                             <Bell className="text-orange-500 dark:text-orange-400 animate-pulse" size={16} />
                           )}
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <h3 className="font-semibold text-gray-900 dark:text-orange-500 truncate">
                             {contract.property}
                           </h3>
                         </div>
@@ -778,7 +778,7 @@ const DashboardContracts = () => {
                           {contract.requiresAction && !signed && (
                             <Bell className="text-orange-500 dark:text-orange-400 animate-pulse flex-shrink-0" size={16} />
                           )}
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <h3 className="font-semibold text-gray-900 dark:text-orange-500 truncate">
                             {contract.property}
                           </h3>
                           {isUrgent && (
@@ -792,7 +792,7 @@ const DashboardContracts = () => {
                         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
-                            Created {formatDate(contract.date)}
+                          Created {formatDate(contract.date)}
                           </span>
                           {contract.location && (
                             <span className="flex items-center gap-1">
@@ -814,12 +814,12 @@ const DashboardContracts = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <span
+                      <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap ${status.color}`}
-                        >
-                          <StatusIcon size={14} />
-                          {status.label}
-                        </span>
+                      >
+                        <StatusIcon size={14} />
+                        {status.label}
+                      </span>
                         <button
                           onClick={() => setQuickActionMenu(quickActionMenu === contract.id ? null : contract.id)}
                           className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors relative"
@@ -991,7 +991,7 @@ const ContractDetailsModal = ({ contract, isSigned, signedDate, onClose, onSign,
               <FileText className="text-orange-600 dark:text-orange-400" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{contract.property}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500">{contract.property}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">{contract.type}</p>
             </div>
           </div>
@@ -1022,7 +1022,7 @@ const ContractDetailsModal = ({ contract, isSigned, signedDate, onClose, onSign,
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Contract Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Contract Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Contract Information</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Property</label>
@@ -1077,7 +1077,7 @@ const ContractDetailsModal = ({ contract, isSigned, signedDate, onClose, onSign,
 
             {/* Financial & Terms */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Financial Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Financial Details</h3>
               
               {contract.amount && (
                 <div>

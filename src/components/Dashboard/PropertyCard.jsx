@@ -113,7 +113,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 group">
+      <div className="bg-white dark:bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-300 hover:shadow-lg transition-all duration-300 group">
         {/* Image Carousel */}
         <div className="relative h-56 bg-gray-200 overflow-hidden">
           {images.length > 0 ? (
@@ -186,7 +186,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
               className={`p-2 rounded-full backdrop-blur-sm transition-all ${
                 isSaved
                   ? 'bg-red-500 text-white'
-                  : 'bg-white/90 dark:bg-gray-900/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900'
+                  : 'bg-white/90 dark:bg-white/90 text-gray-700 dark:text-gray-800 hover:bg-white dark:hover:bg-white'
               } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label={isSaved ? 'Remove from saved' : 'Save property'}
               title={isSaved ? 'Saved' : 'Save property'}
@@ -219,29 +219,29 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">{property.title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
-            <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-900 mb-1 line-clamp-1">{property.title}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-700 mb-3 flex items-center gap-1">
+            <MapPin size={14} className="text-gray-400 dark:text-gray-600" />
             <span className="line-clamp-1">{property.location}</span>
           </p>
 
           {/* Specs */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-700 mb-3">
             {property.beds && (
               <div className="flex items-center gap-1">
-                <Bed size={16} className="text-gray-400 dark:text-gray-500" />
+                <Bed size={16} className="text-gray-400 dark:text-gray-600" />
                 <span>{property.beds} Bed{property.beds > 1 ? 's' : ''}</span>
               </div>
             )}
             {property.baths && (
               <div className="flex items-center gap-1">
-                <Bath size={16} className="text-gray-400 dark:text-gray-500" />
+                <Bath size={16} className="text-gray-400 dark:text-gray-600" />
                 <span>{property.baths} Bath{property.baths > 1 ? 'room' : ''}</span>
               </div>
             )}
             {property.area && (
               <div className="flex items-center gap-1">
-                <Maximize size={16} className="text-gray-400 dark:text-gray-500" />
+                <Maximize size={16} className="text-gray-400 dark:text-gray-600" />
                 <span>{property.area} sqft</span>
               </div>
             )}
@@ -252,13 +252,13 @@ const PropertyCard = ({ property, onViewDetails }) => {
             <div className="flex items-center gap-2 mb-3">
               <div className="flex items-center gap-1">
                 <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{property.rating}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-900">{property.rating}</span>
               </div>
               {property.reviews && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">({property.reviews})</span>
+                <span className="text-sm text-gray-500 dark:text-gray-700">({property.reviews})</span>
               )}
               {property.listedDate && (
-                <span className="text-sm text-gray-400 dark:text-gray-500 ml-auto">
+                <span className="text-sm text-gray-400 dark:text-gray-600 ml-auto">
                   {formatListedDate(property.listedDate)}
                 </span>
               )}
@@ -271,7 +271,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
               {property.tags.slice(0, 3).map((tag, index) => (
                 <span
                   key={index}
-                  className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md"
+                  className="px-2 py-0.5 bg-gray-100 dark:bg-gray-200 text-gray-700 dark:text-gray-800 text-xs rounded-md"
                 >
                   {tag}
                 </span>
@@ -311,7 +311,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                 e.stopPropagation();
                 setShowVirtualTour(true);
               }}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-700 dark:text-gray-800 rounded-lg text-sm font-medium transition-colors"
             >
               Virtual Tour
             </button>
@@ -320,7 +320,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                 e.stopPropagation();
                 setShowShareModal(true);
               }}
-              className="p-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+              className="p-2 border border-gray-300 dark:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-700 dark:text-gray-800 rounded-lg transition-colors"
               title="Share property"
             >
               <Share2 size={16} />

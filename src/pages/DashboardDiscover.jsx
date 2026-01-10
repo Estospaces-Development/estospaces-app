@@ -322,8 +322,8 @@ const DashboardDiscover = () => {
     <div className="p-4 lg:p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Discover Properties</h1>
-        <p className="text-gray-600 dark:text-gray-400">Find your perfect UK property</p>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-orange-500 mb-2">Discover Properties</h1>
+        <p className="text-gray-600 dark:text-orange-400">Find your perfect UK property</p>
       </div>
 
       {/* View Mode Toggle */}
@@ -339,7 +339,7 @@ const DashboardDiscover = () => {
             className={`p-2 rounded-lg transition-colors ${
               viewMode === 'grid'
                 ? 'bg-orange-500 text-white'
-                : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                : 'bg-white dark:bg-white border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-800'
             }`}
           >
             <Grid size={20} />
@@ -349,7 +349,7 @@ const DashboardDiscover = () => {
             className={`p-2 rounded-lg transition-colors ${
               viewMode === 'map'
                 ? 'bg-orange-500 text-white'
-                : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                : 'bg-white dark:bg-white border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-800'
             }`}
           >
             <MapIcon size={20} />
@@ -358,7 +358,7 @@ const DashboardDiscover = () => {
       </div>
 
       {/* Smart Search and Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6 mb-6">
+      <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-4 lg:p-6 mb-6">
         {/* Main Search Bar */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -367,7 +367,7 @@ const DashboardDiscover = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by postcode, street, address, keyword, or property title..."
-            className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
           />
         </div>
 
@@ -398,12 +398,12 @@ const DashboardDiscover = () => {
                   setTimeout(() => setShowSuggestions(false), 200);
                 }}
                 placeholder="Postcode, street, or address"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-white text-gray-900 dark:text-gray-900"
               />
               
               {/* Postcode Suggestions Dropdown */}
               {showSuggestions && postcodeSuggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-white border border-gray-300 dark:border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                   {postcodeSuggestions.map((postcode, index) => (
                     <button
                       key={index}
@@ -438,7 +438,7 @@ const DashboardDiscover = () => {
                   }
                   setSearchParams(searchParams, { replace: true });
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white dark:bg-white text-gray-900 dark:text-gray-900"
               >
                 <option value="all">All Types</option>
                 <option value="rent">For Rent</option>
@@ -458,7 +458,7 @@ const DashboardDiscover = () => {
                   value={priceRange.min || ''}
                   onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value ? parseInt(e.target.value) : null })}
                   placeholder="Min £"
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 />
               </div>
               <span className="text-gray-400 dark:text-gray-500">-</span>
@@ -469,7 +469,7 @@ const DashboardDiscover = () => {
                   value={priceRange.max || ''}
                   onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value ? parseInt(e.target.value) : null })}
                   placeholder="Max £"
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 />
               </div>
             </div>
@@ -484,7 +484,7 @@ const DashboardDiscover = () => {
                 <select 
                   value={beds || ''}
                   onChange={(e) => setBeds(e.target.value ? e.target.value : null)}
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 >
                   <option value="">Any</option>
                   <option value="1">1+</option>
@@ -502,7 +502,7 @@ const DashboardDiscover = () => {
                 <select 
                   value={baths || ''}
                   onChange={(e) => setBaths(e.target.value ? e.target.value : null)}
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 >
                   <option value="">Any</option>
                   <option value="1">1+</option>
@@ -518,12 +518,12 @@ const DashboardDiscover = () => {
 
       {/* Properties Display */}
       {viewMode === 'map' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
           <div className="h-[600px] lg:h-[700px]">
             {mapProperties.length > 0 ? (
               <MapView houses={mapProperties} />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+              <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-100">
                 <p className="text-gray-500 dark:text-gray-400">No properties with location data available</p>
               </div>
             )}
@@ -548,14 +548,14 @@ const DashboardDiscover = () => {
               </button>
             </div>
           ) : properties.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+            <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-100 mb-4">
                 <AlertCircle className="text-gray-400" size={32} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-orange-500 mb-2">
                 No properties found for {activeTab === 'buy' ? 'Buy' : activeTab === 'rent' ? 'Rent' : 'this category'}
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-gray-500 dark:text-orange-400 mb-4">
                 {activeTab === 'buy' 
                   ? "We couldn't find any properties for sale. Try switching to 'Rent' or 'Browse Properties' to see all available listings."
                   : activeTab === 'rent'
@@ -597,7 +597,7 @@ const DashboardDiscover = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex items-center justify-between bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-4">
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} properties
                   </div>

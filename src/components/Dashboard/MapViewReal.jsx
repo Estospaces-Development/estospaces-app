@@ -132,3 +132,4 @@ const MapViewReal = ({ houses = [], agencies = [] }) => {
 
 export default MapViewReal;
 
+

@@ -10,9 +10,11 @@ import {
   HelpCircle,
   ShoppingBag,
   Home,
+  Heart,
 } from 'lucide-react';
 import { useMessages } from '../../contexts/MessagesContext';
 import { usePropertyFilter } from '../../contexts/PropertyFilterContext';
+import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
 
 // Helper component for unread count badge
 const UnreadCountBadge = ({ count }) => {
@@ -30,10 +32,12 @@ const HorizontalNavigation = () => {
   const navigate = useNavigate();
   const { totalUnreadCount } = useMessages();
   const { activeTab, setActiveTab } = usePropertyFilter();
+  const { savedProperties } = useSavedProperties();
   const [clickedTab, setClickedTab] = useState(null);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/user/dashboard' },
+    { icon: Heart, label: 'Saved Properties', path: '/user/dashboard/saved', showBadge: true, badgeCount: savedProperties?.length || 0 },
     { icon: FileText, label: 'My Applications', path: '/user/dashboard/applications' },
     { icon: Calendar, label: 'Viewings', path: '/user/dashboard/viewings' },
     { icon: MessageSquare, label: 'Messages', path: '/user/dashboard/messages', showBadge: true, badgeCount: totalUnreadCount },
@@ -69,17 +73,13 @@ const HorizontalNavigation = () => {
 
   // Handle Buy/Rent clicks with animation
   const handleBuyClick = (e) => {
-    e.preventDefault();
-    setClickedTab('buy');
-    setTimeout(() => setClickedTab(null), 300);
+    e?.preventDefault();
     setActiveTab('buy');
     navigate('/user/dashboard/discover?type=buy');
   };
 
   const handleRentClick = (e) => {
-    e.preventDefault();
-    setClickedTab('rent');
-    setTimeout(() => setClickedTab(null), 300);
+    e?.preventDefault();
     setActiveTab('rent');
     navigate('/user/dashboard/discover?type=rent');
   };
@@ -87,12 +87,29 @@ const HorizontalNavigation = () => {
   // Handle navigation link clicks with animation
   const handleNavClick = (path) => {
     setClickedTab(path);
+    // Animation duration matches CSS transition
+    setTimeout(() => setClickedTab(null), 300);
+  };
+
+  // Handle Buy button click with animation
+  const handleBuyClickWithAnimation = (e) => {
+    e?.preventDefault();
+    setClickedTab('buy');
+    handleBuyClick(e);
+    setTimeout(() => setClickedTab(null), 300);
+  };
+
+  // Handle Rent button click with animation
+  const handleRentClickWithAnimation = (e) => {
+    e?.preventDefault();
+    setClickedTab('rent');
+    handleRentClick(e);
     setTimeout(() => setClickedTab(null), 300);
   };
 
   return (
     <nav 
-      className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-16 z-20 shadow-sm"
+      className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-16 z-20 shadow-sm"
       role="navigation"
       aria-label="Main navigation"
     >
@@ -116,19 +133,19 @@ const HorizontalNavigation = () => {
                     ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }
-                  ${clickedTab === item.path ? 'scale-95 transform' : 'scale-100'}
-                  whitespace-nowrap
+                  ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
+                  whitespace-nowrap cursor-pointer
                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
                 `}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon 
                   size={18} 
-                  className={`flex-shrink-0 ${
+                  className={`flex-shrink-0 transition-transform duration-300 ${
                     active 
                       ? 'text-orange-600 dark:text-orange-400' 
                       : 'text-gray-500 dark:text-gray-400'
-                  }`} 
+                  } ${clickedTab === item.path ? 'rotate-12 scale-110' : 'rotate-0 scale-100'}`} 
                 />
                 <span>{item.label}</span>
                 {item.showBadge && item.badgeCount > 0 && (
@@ -141,7 +158,7 @@ const HorizontalNavigation = () => {
           {/* Buy and Rent Buttons - Desktop */}
           <div className="flex items-center gap-1 ml-2">
             <button
-              onClick={handleBuyClick}
+              onClick={handleBuyClickWithAnimation}
               className={`
                 relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                 border-b-2 border-transparent
@@ -149,24 +166,24 @@ const HorizontalNavigation = () => {
                   ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }
-                ${clickedTab === 'buy' ? 'scale-95 transform' : 'scale-100'}
-                whitespace-nowrap
+                ${clickedTab === 'buy' ? 'scale-95 transform active:scale-90' : 'scale-100'}
+                whitespace-nowrap cursor-pointer
                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
               `}
               aria-label="Filter by Buy"
             >
               <ShoppingBag 
                 size={18} 
-                className={`flex-shrink-0 ${
+                className={`flex-shrink-0 transition-transform duration-300 ${
                   isBuyActive()
                     ? 'text-orange-600 dark:text-orange-400' 
                     : 'text-gray-500 dark:text-gray-400'
-                }`} 
+                } ${clickedTab === 'buy' ? 'rotate-12 scale-110' : 'rotate-0 scale-100'}`} 
               />
               <span>Buy</span>
             </button>
             <button
-              onClick={handleRentClick}
+              onClick={handleRentClickWithAnimation}
               className={`
                 relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
                 border-b-2 border-transparent
@@ -174,26 +191,26 @@ const HorizontalNavigation = () => {
                   ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }
-                ${clickedTab === 'rent' ? 'scale-95 transform' : 'scale-100'}
-                whitespace-nowrap
+                ${clickedTab === 'rent' ? 'scale-95 transform active:scale-90' : 'scale-100'}
+                whitespace-nowrap cursor-pointer
                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
               `}
               aria-label="Filter by Rent"
             >
               <Home 
                 size={18} 
-                className={`flex-shrink-0 ${
+                className={`flex-shrink-0 transition-transform duration-300 ${
                   isRentActive()
                     ? 'text-orange-600 dark:text-orange-400' 
                     : 'text-gray-500 dark:text-gray-400'
-                }`} 
+                } ${clickedTab === 'rent' ? 'rotate-12 scale-110' : 'rotate-0 scale-100'}`} 
               />
               <span>Rent</span>
             </button>
           </div>
           
-          {/* Rest of navigation items */}
-          {navItems.slice(1).map((item) => {
+          {/* Saved Properties - After Rent */}
+          {navItems.slice(1, 2).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             
@@ -209,19 +226,58 @@ const HorizontalNavigation = () => {
                     ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }
-                  ${clickedTab === item.path ? 'scale-95 transform' : 'scale-100'}
-                  whitespace-nowrap
+                  ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
+                  whitespace-nowrap cursor-pointer
                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
                 `}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon 
                   size={18} 
-                  className={`flex-shrink-0 ${
+                  className={`flex-shrink-0 transition-transform duration-300 ${
                     active 
                       ? 'text-orange-600 dark:text-orange-400' 
                       : 'text-gray-500 dark:text-gray-400'
-                  }`} 
+                  } ${clickedTab === item.path ? 'rotate-12 scale-110' : 'rotate-0 scale-100'}`} 
+                />
+                <span>{item.label}</span>
+                {item.showBadge && item.badgeCount > 0 && (
+                  <UnreadCountBadge count={item.badgeCount} />
+                )}
+              </Link>
+            );
+          })}
+          
+          {/* Rest of navigation items */}
+          {navItems.slice(2).map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => handleNavClick(item.path)}
+                className={`
+                  relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
+                  border-b-2 border-transparent
+                  ${active
+                    ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }
+                  ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
+                  whitespace-nowrap cursor-pointer
+                  focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
+                `}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon 
+                  size={18} 
+                  className={`flex-shrink-0 transition-transform duration-300 ${
+                    active 
+                      ? 'text-orange-600 dark:text-orange-400' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  } ${clickedTab === item.path ? 'rotate-12 scale-110' : 'rotate-0 scale-100'}`} 
                 />
                 <span>{item.label}</span>
                 {item.showBadge && item.badgeCount > 0 && (
@@ -246,19 +302,21 @@ const HorizontalNavigation = () => {
                 onClick={() => handleNavClick(item.path)}
                 className={`
                   relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
-                  flex-shrink-0
+                  flex-shrink-0 cursor-pointer
                   ${active
                     ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }
-                  ${clickedTab === item.path ? 'scale-95 transform' : 'scale-100'}
+                  ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
                 `}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon 
                   size={16} 
-                  className="flex-shrink-0" 
+                  className={`flex-shrink-0 transition-transform duration-300 ${
+                    clickedTab === item.path ? 'rotate-12 scale-110' : 'rotate-0 scale-100'
+                  }`} 
                 />
                 <span className="whitespace-nowrap">{item.label}</span>
                 {item.showBadge && item.badgeCount > 0 && (
@@ -271,43 +329,53 @@ const HorizontalNavigation = () => {
           {/* Buy and Rent Buttons - Mobile */}
           <div className="flex items-center gap-2 ml-2">
             <button
-              onClick={handleBuyClick}
+              onClick={handleBuyClickWithAnimation}
               className={`
                 relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
-                flex-shrink-0
+                flex-shrink-0 cursor-pointer
                 ${isBuyActive()
                   ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }
-                ${clickedTab === 'buy' ? 'scale-95 transform' : 'scale-100'}
+                ${clickedTab === 'buy' ? 'scale-95 transform active:scale-90' : 'scale-100'}
                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
               `}
               aria-label="Filter by Buy"
             >
-              <ShoppingBag size={16} className="flex-shrink-0" />
+              <ShoppingBag 
+                size={16} 
+                className={`flex-shrink-0 transition-transform duration-300 ${
+                  clickedTab === 'buy' ? 'rotate-12 scale-110' : 'rotate-0 scale-100'
+                }`} 
+              />
               <span className="whitespace-nowrap">Buy</span>
             </button>
             <button
-              onClick={handleRentClick}
+              onClick={handleRentClickWithAnimation}
               className={`
                 relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
-                flex-shrink-0
+                flex-shrink-0 cursor-pointer
                 ${isRentActive()
                   ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }
-                ${clickedTab === 'rent' ? 'scale-95 transform' : 'scale-100'}
+                ${clickedTab === 'rent' ? 'scale-95 transform active:scale-90' : 'scale-100'}
                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
               `}
               aria-label="Filter by Rent"
             >
-              <Home size={16} className="flex-shrink-0" />
+              <Home 
+                size={16} 
+                className={`flex-shrink-0 transition-transform duration-300 ${
+                  clickedTab === 'rent' ? 'rotate-12 scale-110' : 'rotate-0 scale-100'
+                }`} 
+              />
               <span className="whitespace-nowrap">Rent</span>
             </button>
           </div>
           
-          {/* Rest of navigation items - Mobile */}
-          {navItems.slice(1).map((item) => {
+          {/* Saved Properties - Mobile - After Rent */}
+          {navItems.slice(1, 2).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             
@@ -318,19 +386,57 @@ const HorizontalNavigation = () => {
                 onClick={() => handleNavClick(item.path)}
                 className={`
                   relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
-                  flex-shrink-0
+                  flex-shrink-0 cursor-pointer
                   ${active
                     ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }
-                  ${clickedTab === item.path ? 'scale-95 transform' : 'scale-100'}
+                  ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
                 `}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon 
                   size={16} 
-                  className="flex-shrink-0" 
+                  className={`flex-shrink-0 transition-transform duration-300 ${
+                    clickedTab === item.path ? 'rotate-12 scale-110' : 'rotate-0 scale-100'
+                  }`} 
+                />
+                <span className="whitespace-nowrap">{item.label}</span>
+                {item.showBadge && item.badgeCount > 0 && (
+                  <UnreadCountBadge count={item.badgeCount} />
+                )}
+              </Link>
+            );
+          })}
+          
+          {/* Rest of navigation items - Mobile */}
+          {navItems.slice(2).map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => handleNavClick(item.path)}
+                className={`
+                  relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out
+                  flex-shrink-0 cursor-pointer
+                  ${active
+                    ? 'bg-orange-500 dark:bg-orange-600 text-white shadow-sm'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }
+                  ${clickedTab === item.path ? 'scale-95 transform active:scale-90' : 'scale-100'}
+                  focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
+                `}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon 
+                  size={16} 
+                  className={`flex-shrink-0 transition-transform duration-300 ${
+                    clickedTab === item.path ? 'rotate-12 scale-110' : 'rotate-0 scale-100'
+                  }`} 
                 />
                 <span className="whitespace-nowrap">{item.label}</span>
                 {item.showBadge && item.badgeCount > 0 && (

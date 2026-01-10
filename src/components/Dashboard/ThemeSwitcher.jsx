@@ -23,13 +23,16 @@ const ThemeSwitcher = () => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        className="flex items-center gap-2 p-2 rounded-lg transition-colors"
+        style={{ backgroundColor: 'transparent' }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         aria-label="Change theme"
       >
-        <CurrentIcon size={20} className="text-gray-600 dark:text-gray-300" />
+        <CurrentIcon size={20} className="text-white" />
         <ChevronDown
           size={16}
-          className={`text-gray-600 dark:text-gray-300 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 

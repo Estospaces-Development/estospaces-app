@@ -19,8 +19,8 @@ const DashboardSaved = () => {
           <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
             <Heart size={48} className="text-gray-400 dark:text-gray-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Saved Properties</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-orange-500 mb-2">No Saved Properties</h2>
+          <p className="text-gray-600 dark:text-orange-400 mb-6 text-center max-w-md">
             Start exploring properties and save your favorites to see them here.
           </p>
           <a
@@ -39,8 +39,8 @@ const DashboardSaved = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Saved Properties</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500">Saved Properties</h1>
+          <p className="text-sm text-gray-600 dark:text-orange-400 mt-1">
             {savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'} saved
           </p>
         </div>

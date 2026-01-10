@@ -74,3 +74,4 @@ const ContractViewer = ({ contract, onClose }) => {
 
 export default ContractViewer;
 
+
