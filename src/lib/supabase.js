@@ -25,28 +25,44 @@ const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 let supabase = null;
 
 if (isSupabaseConfigured) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            detectSessionInUrl: true,
-            // Storage configuration for persistent sessions
-            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-            storageKey: 'supabase.auth.token',
-            // Use PKCE flow for better security (recommended by Supabase)
-            flowType: 'pkce',
-        },
-        // Simplified configuration - removed custom headers that might cause issues
-    });
-    
-    if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.log('✅ Supabase client initialized');
+    try {
+        supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                // Storage configuration for persistent sessions
+                storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+                storageKey: 'supabase.auth.token',
+                // Use PKCE flow for better security (recommended by Supabase)
+                // Note: PKCE works for both OAuth and email/password
+                flowType: 'pkce',
+            }
+        });
+        
+        if (import.meta.env.DEV) {
+            // eslint-disable-next-line no-console
+            console.log('✅ Supabase client initialized', {
+                url: supabaseUrl?.substring(0, 30) + '...',
+                hasKey: !!supabaseAnonKey
+            });
+        }
+    } catch (initError) {
+        console.error('❌ Failed to initialize Supabase client:', initError);
+        if (import.meta.env.DEV) {
+            // eslint-disable-next-line no-console
+            console.error('Supabase initialization error:', initError);
+        }
     }
 } else if (import.meta.env.DEV) {
     // Only show warnings in development mode
     // eslint-disable-next-line no-console
     console.warn('⚠️ Supabase credentials not found. See SUPABASE_SETUP.md for setup instructions');
+    // eslint-disable-next-line no-console
+    console.warn('Missing:', {
+        url: !supabaseUrl,
+        key: !supabaseAnonKey
+    });
 }
 
 // Helper function to check if Supabase is available

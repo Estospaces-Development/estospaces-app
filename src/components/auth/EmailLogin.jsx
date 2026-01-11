@@ -113,11 +113,16 @@ const EmailLogin = () => {
         // Set loading state and prevent concurrent attempts
         isSigningIn.current = true;
         setLoading(true);
+        
+        // Track if component is still mounted
+        let isMounted = true;
 
         try {
             // Check network connectivity first
             if (!navigator.onLine) {
-                setGeneralError('No internet connection. Please check your network and try again.');
+                if (isMounted) {
+                    setGeneralError('No internet connection. Please check your network and try again.');
+                }
                 isSigningIn.current = false;
                 setLoading(false);
                 return;
@@ -125,80 +130,176 @@ const EmailLogin = () => {
 
             if (!supabase) {
                 console.error('❌ Supabase client not available');
-                setGeneralError('Authentication service not available. Please refresh and try again.');
+                if (isMounted) {
+                    setGeneralError('Authentication service not available. Please refresh and try again.');
+                }
                 isSigningIn.current = false;
                 setLoading(false);
                 return;
             }
 
-            console.log('🔐 Attempting sign in...', { email });
+            // Trim email to remove whitespace
+            const trimmedEmail = email.trim();
             
-            // Use timeout-protected sign-in helper
-            const result = await signInWithTimeout(email, password, AUTH_TIMEOUTS.SIGN_IN);
-            const { data, error } = result || {};
+            console.log('🔐 Attempting sign in...', { email: trimmedEmail });
+            console.log('🔧 Supabase client status:', {
+                isAvailable: isSupabaseAvailable(),
+                hasClient: !!supabase,
+                supabaseUrl: supabase?.supabaseUrl?.substring(0, 30) + '...'
+            });
+            
+            // Direct sign-in call with better error handling
+            let data, error;
+            try {
+                const signInResult = await supabase.auth.signInWithPassword({ 
+                    email: trimmedEmail, 
+                    password 
+                });
+                data = signInResult.data;
+                error = signInResult.error;
+            } catch (signInError) {
+                console.error('❌ Sign in exception:', signInError);
+                error = {
+                    message: signInError.message || 'An unexpected error occurred during sign-in'
+                };
+            }
+            
+            // Check if component unmounted during sign-in
+            if (!isMounted) {
+                return;
+            }
 
             console.log('📨 Sign in response:', {
                 hasData: !!data,
                 hasSession: !!data?.session,
                 hasUser: !!data?.user,
+                userId: data?.user?.id,
+                userEmail: data?.user?.email,
                 hasError: !!error,
                 errorMessage: error?.message,
-                timedOut: result?.timedOut,
-                aborted: result?.aborted
+                errorStatus: error?.status
             });
 
             if (error) {
-                console.error('❌ Sign in error:', error);
-                const msg = error.message?.toLowerCase() || '';
-                if (result?.timedOut || msg.includes('timeout') || msg.includes('taking too long')) {
-                    setGeneralError('The server is taking too long to respond. This might be due to a slow connection or server issues. Please try again in a moment.');
-                } else if (msg.includes('email') && !msg.includes('credentials')) {
-                    setEmailError(error.message);
-                } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
-                    setPasswordError('Invalid email or password');
-                } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+                console.error('❌ Sign in error details:', {
+                    message: error.message,
+                    status: error.status,
+                    name: error.name,
+                    fullError: error
+                });
+                
+                if (!isMounted) return;
+                
+                const msg = (error.message || '').toLowerCase();
+                const status = error.status;
+                
+                // Handle specific error cases
+                if (status === 400 || msg.includes('invalid login credentials') || (msg.includes('invalid') && msg.includes('password'))) {
+                    setPasswordError('Invalid email or password. Please check your credentials and try again.');
+                    setEmailError('');
+                } else if (msg.includes('email not confirmed') || msg.includes('email not verified')) {
+                    setGeneralError('Please verify your email address before signing in. Check your inbox for a verification link.');
+                } else if (msg.includes('too many requests') || msg.includes('rate limit')) {
+                    setGeneralError('Too many sign-in attempts. Please wait a few minutes and try again.');
+                } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch') || msg.includes('networkerror')) {
                     setGeneralError('Network error. Please check your internet connection and try again.');
+                } else if (msg.includes('timeout') || msg.includes('taking too long')) {
+                    setGeneralError('The server is taking too long to respond. Please try again in a moment.');
                 } else {
                     setGeneralError(error.message || 'Sign-in failed. Please try again.');
                 }
-            } else if (data?.session) {
-                // Successful login - get role and redirect
-                console.log('✅ Session obtained, getting user role...');
-                const role = await getUserRole(data.session.user);
-                const redirectPath = getRedirectPath(role, from);
+            } else if (data?.session && data?.user) {
+                // Successful login - verify session is stored
+                console.log('✅ Session obtained, verifying storage...');
+                
+                // Double-check session is accessible
+                const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+                
+                if (!isMounted) return;
+                
+                if (!verifiedSession) {
+                    console.error('❌ Session not persisted after sign-in');
+                    setGeneralError('Session could not be saved. Please try again.');
+                    isSigningIn.current = false;
+                    setLoading(false);
+                    return;
+                }
+                
+                console.log('✅ Session verified and stored');
+                
+                try {
+                    const role = await getUserRole(verifiedSession.user);
+                    
+                    if (!isMounted) return;
+                    
+                    const redirectPath = getRedirectPath(role, from);
 
-                // Debug logging (only in development)
-                if (import.meta.env.DEV) {
-                    // eslint-disable-next-line no-console
                     console.log('✅ Login successful:', {
-                        userId: data.session.user.id,
-                        email: data.session.user.email,
+                        userId: verifiedSession.user.id,
+                        email: verifiedSession.user.email,
                         role,
                         redirectPath,
                         from
                     });
-                    // eslint-disable-next-line no-console
-                    console.log('🔄 Navigating to:', redirectPath);
-                }
 
-                // Force a small delay to ensure state is set
-                setTimeout(() => {
-                    console.log('⏭️  Executing navigation...');
+                    // Clear any previous errors
+                    setGeneralError('');
+                    setEmailError('');
+                    setPasswordError('');
+
+                    // Small delay to ensure all state is updated
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    
+                    if (!isMounted) return;
+
+                    // Navigate to dashboard
+                    console.log('🔄 Navigating to:', redirectPath);
                     navigate(redirectPath, { replace: true });
-                }, 100);
+                } catch (roleError) {
+                    console.error('❌ Error getting user role:', roleError);
+                    if (!isMounted) return;
+                    
+                    // Even if role fetch fails, redirect to user dashboard as fallback
+                    const redirectPath = getRedirectPath('user', from);
+                    console.log('⚠️ Using fallback redirect to:', redirectPath);
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    
+                    if (!isMounted) return;
+                    navigate(redirectPath, { replace: true });
+                }
             } else {
                 // No session returned - unexpected state
+                if (!isMounted) return;
                 console.error('❌ No session in response');
                 setGeneralError('Sign-in failed. Please try again.');
             }
         } catch (error) {
             console.error('❌ Unexpected error during sign in:', error);
-            setGeneralError('An unexpected error occurred. Please try again.');
+            if (isMounted) {
+                setGeneralError('An unexpected error occurred. Please try again.');
+            }
         } finally {
-            isSigningIn.current = false;
-            setLoading(false);
+            if (isMounted) {
+                isSigningIn.current = false;
+                setLoading(false);
+            }
         }
     };
+
+    // Show loading state while checking session
+    if (checkingSession) {
+        return (
+            <AuthLayout image={building}>
+                <div className="flex flex-col items-center">
+                    <div className="mb-8">
+                        <img src={logo} alt="Estospaces" className="h-10" />
+                    </div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-4 text-gray-600 dark:text-gray-400">Checking session...</p>
+                </div>
+            </AuthLayout>
+        );
+    }
 
     return (
         <AuthLayout image={building}>
