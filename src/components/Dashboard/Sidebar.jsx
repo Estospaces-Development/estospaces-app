@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Search,
@@ -18,6 +18,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useMessages } from '../../contexts/MessagesContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { getUserVerificationStatus } from '../../services/verificationService';
 
@@ -42,10 +43,13 @@ const UnreadCountBadge = ({ isOpen }) => {
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
   const [loadingVerification, setLoadingVerification] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/user/dashboard' },
@@ -62,6 +66,32 @@ const Sidebar = ({ isOpen, onToggle }) => {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      if (signOut) {
+        await signOut();
+      } else {
+        // Fallback: clear localStorage and sign out from Supabase
+        await supabase.auth.signOut();
+        localStorage.removeItem('managerVerified');
+        localStorage.removeItem('leads');
+      }
+      // Navigate to home page after signout
+      navigate('/');
+      // Force a page reload to clear any cached state
+      window.location.href = '/';
+    } catch (error) {
+      // On error, still clear storage and navigate
+      localStorage.removeItem('managerVerified');
+      localStorage.removeItem('leads');
+      navigate('/');
+      window.location.href = '/';
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   // Get current user and verification status
@@ -259,12 +289,14 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
             {/* Sign Out */}
             <button
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 w-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 group ${
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 w-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 group disabled:opacity-50 disabled:cursor-not-allowed ${
                 !isOpen && 'justify-center'
               }`}
             >
-              <LogOut size={20} className="flex-shrink-0 text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400" />
-              {isOpen && <span className="text-xs font-medium whitespace-nowrap">Sign Out</span>}
+              <LogOut size={20} className={`flex-shrink-0 text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 ${signingOut ? 'animate-spin' : ''}`} />
+              {isOpen && <span className="text-xs font-medium whitespace-nowrap">{signingOut ? 'Signing out...' : 'Sign Out'}</span>}
             </button>
           </div>
         </div>

@@ -37,9 +37,22 @@ const AdminChatDashboard = () => {
     const [ticketPriorityFilter, setTicketPriorityFilter] = useState('all'); // 'all' | 'low' | 'medium' | 'high'
 
     const handleLogout = async () => {
-        if (supabase) {
-            await supabase.auth.signOut();
+        try {
+            if (supabase) {
+                await supabase.auth.signOut();
+            }
+            // Clear localStorage
+            localStorage.removeItem('managerVerified');
+            localStorage.removeItem('leads');
+            // Navigate and force reload
             navigate('/admin/login');
+            window.location.href = '/admin/login';
+        } catch (error) {
+            // On error, still clear storage and navigate
+            localStorage.removeItem('managerVerified');
+            localStorage.removeItem('leads');
+            navigate('/admin/login');
+            window.location.href = '/admin/login';
         }
     };
 

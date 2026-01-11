@@ -1,21 +1,33 @@
 import { Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import SatelliteMap from './SatelliteMap';
+import { getRecentActivity } from '../../services/recentActivityService';
 
 const RecentActivity = () => {
-  const activities = [
-    {
-      type: 'New Application',
-      name: 'Mike Wilson',
-      property: 'Modern Downtown apartment',
-      date: '1/10/2025',
-    },
-    {
-      type: 'Viewing Scheduled',
-      name: 'Sarah Johnson',
-      property: 'tommorow',
-      date: '',
-    },
-  ];
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setLoading(true);
+      try {
+        const result = await getRecentActivity(10);
+        if (result.data) {
+          setActivities(result.data);
+        }
+      } catch (error) {
+        // Handle error silently
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchActivities, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:scale-[1.01] hover:brightness-105 dark:hover:brightness-110">
@@ -29,7 +41,12 @@ const RecentActivity = () => {
         </div>
 
       <div className="space-y-4 mb-6">
-        {activities.map((activity, index) => (
+        {loading ? (
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400">Loading activities...</div>
+        ) : activities.length === 0 ? (
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400">No recent activity</div>
+        ) : (
+          activities.map((activity, index) => (
           <div key={index} className="flex items-start gap-3 p-2 rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900/50 hover:scale-[1.02] cursor-pointer group/item">
             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0 transition-all duration-300 group-hover/item:scale-150 group-hover/item:shadow-lg group-hover/item:shadow-blue-500/50"></div>
             <div className="flex-1">
@@ -42,7 +59,8 @@ const RecentActivity = () => {
               )}
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Satellite Map */}

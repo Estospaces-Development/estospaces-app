@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { isSupabaseAvailable } from '../../lib/supabase';
+import { getUserRole, getRedirectPath } from '../../utils/authHelpers';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -20,62 +21,61 @@ const EmailLogin = () => {
     const [passwordError, setPasswordError] = useState('');
     const [generalError, setGeneralError] = useState('');
 
+    // Ref to prevent multiple concurrent sign-in attempts
+    const isSigningIn = useRef(false);
+
     // Get the intended destination from location state
     const from = location.state?.from?.pathname;
 
-    // Check if user is already logged in
+    // Check if user is already logged in - simplified to avoid abort issues
     useEffect(() => {
+        let isMounted = true;
+
         const checkExistingSession = async () => {
+            // Skip if supabase not configured
             if (!isSupabaseAvailable()) {
                 setCheckingSession(false);
                 return;
             }
 
             try {
+                // Import supabase directly to avoid wrapper issues
+                const { supabase } = await import('../../lib/supabase');
+                if (!supabase || !isMounted) {
+                    setCheckingSession(false);
+                    return;
+                }
+
+                // Quick session check from localStorage (should be instant)
                 const { data: { session } } = await supabase.auth.getSession();
-                
+
+                if (!isMounted) return;
+
                 if (session) {
                     // User is already logged in, redirect based on role
-                    await redirectBasedOnRole(session.user);
+                    console.log('✅ Existing session found, redirecting...');
+                    const role = await getUserRole(session.user);
+                    if (isMounted) {
+                        const redirectPath = getRedirectPath(role, from);
+                        console.log('🔄 Redirecting to:', redirectPath);
+                        navigate(redirectPath, { replace: true });
+                    }
+                } else {
+                    setCheckingSession(false);
                 }
             } catch (err) {
-                console.error('Error checking session:', err);
-            } finally {
-                setCheckingSession(false);
+                // Silently handle errors - just let user sign in
+                console.log('Session check skipped:', err.message);
+                if (isMounted) setCheckingSession(false);
             }
         };
 
         checkExistingSession();
-    }, []);
 
-    // Helper function to redirect based on user role
-    const redirectBasedOnRole = async (user) => {
-        const userRole = user?.user_metadata?.role;
-        
-        // Check profile for role if not in metadata
-        let role = userRole;
-        if (!role) {
-            try {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', user.id)
-                    .single();
-                role = profile?.role || 'user';
-            } catch {
-                role = 'user';
-            }
-        }
-
-        // Redirect to the intended destination or dashboard based on role
-        if (from) {
-            navigate(from, { replace: true });
-        } else if (role === 'manager') {
-            navigate('/manager/dashboard', { replace: true });
-        } else {
-            navigate('/user/dashboard', { replace: true });
-        }
-    };
+        return () => {
+            isMounted = false;
+        };
+    }, [navigate, from]);
 
     const validateEmail = (value) => {
         if (!value) return 'Email is required';
@@ -92,6 +92,11 @@ const EmailLogin = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
 
+        // Prevent multiple concurrent sign-in attempts
+        if (isSigningIn.current || loading) {
+            return;
+        }
+
         // Check if Supabase is configured
         if (!isSupabaseAvailable()) {
             setGeneralError('Authentication service is not configured. Please contact support.');
@@ -107,31 +112,97 @@ const EmailLogin = () => {
 
         if (emailErr || passErr) return;
 
+        // Set loading state and prevent concurrent attempts
+        isSigningIn.current = true;
         setLoading(true);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            // Check network connectivity first
+            if (!navigator.onLine) {
+                setGeneralError('No internet connection. Please check your network and try again.');
+                isSigningIn.current = false;
+                setLoading(false);
+                return;
+            }
+
+            // Import supabase directly
+            const { supabase } = await import('../../lib/supabase');
+            
+            if (!supabase) {
+                console.error('❌ Supabase client not available');
+                setGeneralError('Authentication service not available. Please refresh and try again.');
+                isSigningIn.current = false;
+                setLoading(false);
+                return;
+            }
+
+            console.log('🔐 Attempting sign in...', { email });
+            
+            // Direct sign-in call
+            const startTime = Date.now();
+            const { data, error } = await supabase.auth.signInWithPassword({ 
+                email, 
+                password 
+            });
+            const duration = Date.now() - startTime;
+            console.log(`⏱️ Sign in took ${duration}ms`);
+
+            console.log('📨 Sign in response:', {
+                hasData: !!data,
+                hasSession: !!data?.session,
+                hasError: !!error,
+                errorMessage: error?.message
             });
 
             if (error) {
-                const msg = error.message.toLowerCase();
-                if (msg.includes('email') && !msg.includes('credentials')) {
+                console.error('❌ Sign in error:', error);
+                const msg = error.message?.toLowerCase() || '';
+                if (msg.includes('timeout') || msg.includes('taking too long')) {
+                    setGeneralError('The server is taking too long to respond. This might be due to a slow connection or server issues. Please try again in a moment.');
+                } else if (msg.includes('email') && !msg.includes('credentials')) {
                     setEmailError(error.message);
                 } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
                     setPasswordError('Invalid email or password');
+                } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+                    setGeneralError('Network error. Please check your internet connection and try again.');
                 } else {
-                    setGeneralError(error.message);
+                    setGeneralError(error.message || 'Sign-in failed. Please try again.');
                 }
-            } else if (data.session) {
-                // Successful login - redirect based on role
-                await redirectBasedOnRole(data.session.user);
+            } else if (data?.session) {
+                // Successful login - get role and redirect
+                console.log('✅ Session obtained, getting user role...');
+                const role = await getUserRole(data.session.user);
+                const redirectPath = getRedirectPath(role, from);
+
+                // Debug logging (only in development)
+                if (import.meta.env.DEV) {
+                    // eslint-disable-next-line no-console
+                    console.log('✅ Login successful:', {
+                        userId: data.session.user.id,
+                        email: data.session.user.email,
+                        role,
+                        redirectPath,
+                        from
+                    });
+                    // eslint-disable-next-line no-console
+                    console.log('🔄 Navigating to:', redirectPath);
+                }
+
+                // Force a small delay to ensure state is set
+                setTimeout(() => {
+                    console.log('⏭️  Executing navigation...');
+                    navigate(redirectPath, { replace: true });
+                }, 100);
+            } else {
+                // No session returned - unexpected state
+                console.error('❌ No session in response');
+                setGeneralError('Sign-in failed. Please try again.');
             }
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('❌ Unexpected error during sign in:', error);
             setGeneralError('An unexpected error occurred. Please try again.');
         } finally {
+            isSigningIn.current = false;
             setLoading(false);
         }
     };
@@ -143,11 +214,11 @@ const EmailLogin = () => {
                 <div className="mb-8">
                     <img src={logo} alt="Estospaces" className="h-10" />
                 </div>
-                
+
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2 text-center">
                     Sign in to continue
                 </h2>
-                
+
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 text-center">
                     Enter your email and password
                 </p>
@@ -164,9 +235,8 @@ const EmailLogin = () => {
                                 setEmail(e.target.value);
                                 setEmailError('');
                             }}
-                            className={`w-full px-4 py-3 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
-                                emailError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
-                            }`}
+                            className={`w-full px-4 py-3 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${emailError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
+                                }`}
                         />
                         {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
                     </div>
@@ -183,9 +253,8 @@ const EmailLogin = () => {
                                     setPassword(e.target.value);
                                     setPasswordError('');
                                 }}
-                                className={`w-full px-4 py-3 pr-12 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
-                                    passwordError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
-                                }`}
+                                className={`w-full px-4 py-3 pr-12 border rounded-md outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${passwordError ? 'border-red-400 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'
+                                    }`}
                             />
                             <button
                                 type="button"
@@ -215,11 +284,15 @@ const EmailLogin = () => {
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
-                </form>
 
-                {generalError && (
-                    <p className="text-red-500 text-sm mt-4 text-center">{generalError}</p>
-                )}
+                    {/* General Error Message */}
+                    {generalError && (
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-center gap-2">
+                            <AlertCircle className="text-red-500 dark:text-red-400 flex-shrink-0" size={18} />
+                            <p className="text-red-600 dark:text-red-400 text-sm">{generalError}</p>
+                        </div>
+                    )}
+                </form>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-6">
                     Don't have an account?{' '}

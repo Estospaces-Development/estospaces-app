@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 
+// Helper to check if error is an AbortError
+const isAbortError = (error) => {
+    if (!error) return false;
+    return (
+        error.name === 'AbortError' ||
+        error.message?.includes('aborted') ||
+        error.message?.includes('AbortError') ||
+        error.code === 'ABORT_ERR'
+    );
+};
+
 const ManagerProtectedRoute = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [authenticated, setAuthenticated] = useState(false);
@@ -9,135 +20,213 @@ const ManagerProtectedRoute = ({ children }) => {
     const location = useLocation();
 
     useEffect(() => {
+        let isMounted = true;
+        let timeoutId;
+        let subscription;
+
         const checkAuth = async () => {
             if (!isSupabaseAvailable()) {
-                setAuthenticated(false);
-                setIsManager(false);
-                setLoading(false);
+                if (isMounted) {
+                    setAuthenticated(false);
+                    setIsManager(false);
+                    setLoading(false);
+                }
                 return;
             }
 
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                // Direct session check - simpler and more reliable
+                console.log('🔍 ManagerProtectedRoute: Checking session...');
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-                if (!session) {
+                if (!isMounted) return;
+
+                if (sessionError) {
+                    console.log('❌ Session check error:', sessionError);
                     setAuthenticated(false);
                     setIsManager(false);
                     setLoading(false);
                     return;
                 }
 
+                if (!session) {
+                    console.log('❌ No session found');
+                    setAuthenticated(false);
+                    setIsManager(false);
+                    setLoading(false);
+                    return;
+                }
+
+                console.log('✅ Session found:', session.user.email);
                 setAuthenticated(true);
 
                 // Check role from user metadata first
                 const userRole = session.user?.user_metadata?.role;
                 
+                if (import.meta.env.DEV) {
+                    // eslint-disable-next-line no-console
+                    console.log('✅ Manager route check:', {
+                        userId: session.user.id,
+                        email: session.user.email,
+                        userRole
+                    });
+                }
+                
                 // If user_metadata has manager role, set it immediately but still check profile
                 if (userRole === 'manager') {
                     setIsManager(true);
-                    // Continue to check profile to ensure consistency
                 }
 
-                // Check profile for role (always check, even if user_metadata says manager)
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single();
+                // Check profile for role with timeout (5 seconds)
+                try {
+                    const profilePromise = supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', session.user.id)
+                        .single();
+                    const profileTimeoutPromise = new Promise((_, reject) => {
+                        timeoutId = setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
+                    });
 
-                if (error) {
-                    // Profile doesn't exist or error fetching - log but don't fail
-                    console.log('Profile fetch result:', error.code, error.message);
-                    
-                    // If profile doesn't exist (PGRST116), role should be in user_metadata
-                    // Only set isManager to false if we explicitly got a profile with a different role
-                    if (error.code !== 'PGRST116' && profile) {
-                        // Profile exists but doesn't have manager role
+                    const { data: profile, error } = await Promise.race([profilePromise, profileTimeoutPromise]);
+                    clearTimeout(timeoutId);
+
+                    if (!isMounted) return;
+
+                    if (error) {
+                        // If profile doesn't exist (PGRST116), use user_metadata role
+                        if (error.code === 'PGRST116') {
+                            setIsManager(userRole === 'manager');
+                        } else {
+                            // Other error - use user_metadata as fallback
+                            setIsManager(userRole === 'manager');
+                        }
+                    } else if (profile?.role === 'manager') {
+                        setIsManager(true);
+                    } else if (profile?.role) {
                         setIsManager(false);
-                    } else if (error.code === 'PGRST116') {
-                        // Profile doesn't exist yet - rely on user_metadata which was already checked
-                        console.log('Profile not found, using user_metadata role:', userRole);
-                        setIsManager(userRole === 'manager');
                     } else {
-                        // Other error - default to false but log it
-                        console.warn('Error checking profile, defaulting to false:', error);
-                        setIsManager(false);
+                        setIsManager(userRole === 'manager');
                     }
-                } else if (profile?.role === 'manager') {
-                    // Profile confirms manager role
-                    setIsManager(true);
-                } else if (profile?.role) {
-                    // Profile exists with a different role - override user_metadata
-                    setIsManager(false);
-                } else {
-                    // Profile exists but no role - use user_metadata (already checked above)
-                    // Keep existing isManager state (set from user_metadata check)
+                } catch (profileErr) {
+                    // Timeout or other error - use user_metadata as fallback
+                    clearTimeout(timeoutId);
+                    // Silently ignore abort errors
+                    if (isAbortError(profileErr)) return;
+                    if (isMounted && userRole !== undefined) {
+                        setIsManager(userRole === 'manager');
+                    }
                 }
             } catch (err) {
-                console.error('Error checking manager auth:', err);
-                setAuthenticated(false);
-                setIsManager(false);
+                // Session fetch failed or timed out
+                clearTimeout(timeoutId);
+                // Silently ignore abort errors
+                if (isAbortError(err)) return;
+                if (isMounted) {
+                    setAuthenticated(false);
+                    setIsManager(false);
+                    setLoading(false);
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
         checkAuth();
 
-        // Listen for auth changes
+        // Listen for auth changes - but don't aggressively re-check
         if (!isSupabaseAvailable()) {
-            return;
+            return () => {
+                isMounted = false;
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                }
+            };
         }
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (!session) {
-                setAuthenticated(false);
-                setIsManager(false);
-                return;
-            }
+        try {
+            const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                if (!isMounted) return;
 
-            setAuthenticated(true);
-
-            // Check role from user_metadata
-            const userRole = session.user?.user_metadata?.role;
-            if (userRole === 'manager') {
-                setIsManager(true);
-                // Continue to check profile for consistency
-            }
-
-            // Check profile for role (always check, even if user_metadata says manager)
-            try {
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (profileError) {
-                    // Profile doesn't exist - rely on user_metadata which was already checked
-                    if (profileError.code === 'PGRST116') {
-                        console.log('Profile not found in auth listener, using user_metadata role:', userRole);
-                        setIsManager(userRole === 'manager');
-                    } else {
-                        console.warn('Error fetching profile in auth listener:', profileError);
-                        setIsManager(userRole === 'manager'); // Fallback to user_metadata
-                    }
-                } else if (profile?.role === 'manager') {
-                    setIsManager(true);
-                } else if (profile?.role) {
-                    setIsManager(false);
-                } else {
-                    // Profile exists but no role - use user_metadata
-                    setIsManager(userRole === 'manager');
+                // Only react to actual auth state changes, not token refresh
+                if (event === 'TOKEN_REFRESHED') {
+                    // Token was refreshed - session is still valid, do nothing
+                    return;
                 }
-            } catch (err) {
-                console.error('Error checking profile in auth listener:', err);
-                setIsManager(userRole === 'manager'); // Fallback to user_metadata
-            }
-        });
 
-        return () => subscription.unsubscribe();
-    }, []);
+                if (!session) {
+                    setAuthenticated(false);
+                    setIsManager(false);
+                    return;
+                }
+
+                setAuthenticated(true);
+
+                // Check role from user_metadata
+                const userRole = session.user?.user_metadata?.role;
+                
+                if (userRole === 'manager') {
+                    setIsManager(true);
+                }
+
+                // Check profile for role (with timeout)
+                try {
+                    const profilePromise = supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', session.user.id)
+                        .single();
+                    const profileTimeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
+                    });
+
+                    const { data: profile, error } = await Promise.race([profilePromise, profileTimeoutPromise]);
+
+                    if (!isMounted) return;
+
+                    if (error) {
+                        // Silently ignore abort errors
+                        if (isAbortError(error)) return;
+                        setIsManager(userRole === 'manager');
+                    } else if (profile?.role === 'manager') {
+                        setIsManager(true);
+                    } else if (profile?.role) {
+                        setIsManager(false);
+                    } else {
+                        setIsManager(userRole === 'manager');
+                    }
+                } catch (err) {
+                    // Silently ignore abort errors
+                    if (isAbortError(err)) return;
+                    if (isMounted && userRole !== undefined) {
+                        setIsManager(userRole === 'manager');
+                    }
+                }
+            });
+            subscription = authSubscription;
+        } catch (err) {
+            // Auth listener setup failed - not critical
+            if (!isAbortError(err)) {
+                // Only log non-abort errors in dev
+                if (import.meta.env.DEV) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Failed to set up auth listener:', err);
+                }
+            }
+        }
+
+        return () => {
+            isMounted = false;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            if (subscription) {
+                subscription.unsubscribe();
+            }
+        };
+    }, []); // Only run once on mount
 
     if (loading) {
         return (

@@ -76,7 +76,41 @@ const PropertyCard = ({ property, onViewDetails }) => {
     navigate(`/user/dashboard/property/${property.id}?action=buy`);
   };
 
-  const images = property.images || [property.image].filter(Boolean).slice(0, 4);
+  // Handle images - support multiple field name variations from database
+  // Priority: images (array) -> image (single) -> image_url -> thumbnail_url -> photo
+  const getPropertyImages = () => {
+    // If images array exists and is not empty
+    if (property.images && Array.isArray(property.images) && property.images.length > 0) {
+      return property.images.slice(0, 4);
+    }
+    
+    // If images is a JSON string, parse it
+    if (typeof property.images === 'string') {
+      try {
+        const parsed = JSON.parse(property.images);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.slice(0, 4);
+        }
+      } catch {
+        // Not valid JSON, might be a single URL
+        if (property.images.startsWith('http')) {
+          return [property.images];
+        }
+      }
+    }
+    
+    // Fallback to other possible field names
+    const singleImage = property.image || property.image_url || property.thumbnail_url || 
+                        property.photo || property.main_image;
+    
+    if (singleImage) {
+      return [singleImage].filter(Boolean);
+    }
+    
+    return [];
+  };
+  
+  const images = getPropertyImages();
   const hasMultipleImages = images.length > 1;
 
   const nextImage = (e) => {
@@ -123,7 +157,9 @@ const PropertyCard = ({ property, onViewDetails }) => {
                 alt={property.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/400x300?text=Property+Image';
+                  // If image fails to load, try to use a default property placeholder
+                  e.target.onerror = null; // Prevent infinite loop
+                  e.target.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
                 }}
               />
               

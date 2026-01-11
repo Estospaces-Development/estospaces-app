@@ -29,7 +29,7 @@ export const getUKProperties = async ({
 
     let query = supabase
       .from('properties')
-      .select('*', { count: 'exact' })
+      .select('*, images', { count: 'exact' })
       .eq('country', country);
     
     // Support status='online' OR 'active'

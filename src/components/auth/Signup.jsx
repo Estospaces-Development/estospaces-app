@@ -91,8 +91,7 @@ const Signup = () => {
                     setSuccess(true);
                 }
             }
-        } catch (err) {
-            console.error('Signup error:', err);
+        } catch {
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
