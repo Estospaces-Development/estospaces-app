@@ -33,8 +33,8 @@ if (isSupabaseConfigured) {
             // Storage configuration for persistent sessions
             storage: typeof window !== 'undefined' ? window.localStorage : undefined,
             storageKey: 'supabase.auth.token',
-            // Use implicit flow instead of PKCE for simpler auth
-            flowType: 'implicit',
+            // Use PKCE flow for better security (recommended by Supabase)
+            flowType: 'pkce',
         },
         // Simplified configuration - removed custom headers that might cause issues
     });

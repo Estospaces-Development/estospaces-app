@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isSupabaseAvailable } from '../../lib/supabase';
-import { getUserRole, getRedirectPath } from '../../utils/authHelpers';
+import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { getUserRole, getRedirectPath, signInWithTimeout, AUTH_TIMEOUTS } from '../../utils/authHelpers';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -39,8 +39,6 @@ const EmailLogin = () => {
             }
 
             try {
-                // Import supabase directly to avoid wrapper issues
-                const { supabase } = await import('../../lib/supabase');
                 if (!supabase || !isMounted) {
                     setCheckingSession(false);
                     return;
@@ -125,9 +123,6 @@ const EmailLogin = () => {
                 return;
             }
 
-            // Import supabase directly
-            const { supabase } = await import('../../lib/supabase');
-            
             if (!supabase) {
                 console.error('❌ Supabase client not available');
                 setGeneralError('Authentication service not available. Please refresh and try again.');
@@ -138,26 +133,24 @@ const EmailLogin = () => {
 
             console.log('🔐 Attempting sign in...', { email });
             
-            // Direct sign-in call
-            const startTime = Date.now();
-            const { data, error } = await supabase.auth.signInWithPassword({ 
-                email, 
-                password 
-            });
-            const duration = Date.now() - startTime;
-            console.log(`⏱️ Sign in took ${duration}ms`);
+            // Use timeout-protected sign-in helper
+            const result = await signInWithTimeout(email, password, AUTH_TIMEOUTS.SIGN_IN);
+            const { data, error } = result || {};
 
             console.log('📨 Sign in response:', {
                 hasData: !!data,
                 hasSession: !!data?.session,
+                hasUser: !!data?.user,
                 hasError: !!error,
-                errorMessage: error?.message
+                errorMessage: error?.message,
+                timedOut: result?.timedOut,
+                aborted: result?.aborted
             });
 
             if (error) {
                 console.error('❌ Sign in error:', error);
                 const msg = error.message?.toLowerCase() || '';
-                if (msg.includes('timeout') || msg.includes('taking too long')) {
+                if (result?.timedOut || msg.includes('timeout') || msg.includes('taking too long')) {
                     setGeneralError('The server is taking too long to respond. This might be due to a slow connection or server issues. Please try again in a moment.');
                 } else if (msg.includes('email') && !msg.includes('credentials')) {
                     setEmailError(error.message);
