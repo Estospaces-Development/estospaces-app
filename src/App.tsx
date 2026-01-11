@@ -44,6 +44,9 @@ import PropertyDetail from './pages/PropertyDetail';
 // Auth Components
 import { Login, EmailLogin, Signup, ResetPassword, AuthCallback } from './components/auth';
 
+// Public Pages
+import PropertySearch from './pages/PropertySearch';
+
 function App() {
   return (
     <ThemeProvider>
@@ -64,6 +67,10 @@ function App() {
                       <Route path="/auth/signup" element={<Signup />} />
                       <Route path="/auth/reset-password" element={<ResetPassword />} />
                       <Route path="/auth/callback" element={<AuthCallback />} />
+
+                      {/* Public Property Search */}
+                      <Route path="/properties/search" element={<PropertySearch />} />
+                      <Route path="/property/:id" element={<PropertyDetail />} />
 
                       {/* Manager Dashboard Routes - Protected */}
                       <Route

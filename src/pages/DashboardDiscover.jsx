@@ -63,27 +63,52 @@ const DashboardDiscover = () => {
     };
   }, [searchQuery]);
 
-  // Fetch properties from API based on activeTab
+  // Fetch properties from API based on activeTab and all filters
   const fetchPropertiesFromAPI = useCallback(async (type = 'all', reset = true) => {
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams({
-        page: '1',
+        page: reset ? '1' : pagination.page.toString(),
         limit: '20',
         country: 'UK',
       });
 
+      // Apply listing type filter
       if (type === 'buy' || type === 'sale') {
-        params.append('type', 'buy');
+        params.append('type', 'sale');
       } else if (type === 'rent') {
         params.append('type', 'rent');
       }
       // 'all' → no type parameter
 
+      // Apply location filter
       if (locationQuery) {
         params.append('postcode', locationQuery);
+      }
+
+      // Apply search query
+      if (searchQuery) {
+        params.append('q', searchQuery);
+      }
+
+      // Apply price range filters
+      if (priceRange.min !== null) {
+        params.append('min_price', priceRange.min.toString());
+      }
+      if (priceRange.max !== null) {
+        params.append('max_price', priceRange.max.toString());
+      }
+
+      // Apply beds filter
+      if (beds !== null) {
+        params.append('bedrooms', beds.toString());
+      }
+
+      // Apply baths filter
+      if (baths !== null) {
+        params.append('bathrooms', baths.toString());
       }
 
       // Use the Vite proxy endpoint (in dev) or direct API (in prod)
@@ -107,7 +132,7 @@ const DashboardDiscover = () => {
       }
 
       setProperties(result.data || []);
-      setTotalCount(result.pagination?.total || 0);
+      setTotalCount(result.pagination?.total || result.count || 0);
     } catch (err) {
       if (import.meta.env.DEV) {
         console.error('Error fetching properties from API:', err);
@@ -118,12 +143,32 @@ const DashboardDiscover = () => {
     } finally {
       setLoading(false);
     }
-  }, [locationQuery]);
+  }, [locationQuery, searchQuery, priceRange, beds, baths, pagination.page]);
 
-  // Fetch properties when activeTab changes
+  // Fetch properties when activeTab or filters change
   useEffect(() => {
     fetchPropertiesFromAPI(activeTab, true);
   }, [activeTab, fetchPropertiesFromAPI]);
+
+  // Re-fetch when price range, beds, or baths change (with debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPropertiesFromAPI(activeTab, true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [priceRange.min, priceRange.max, beds, baths]);
+
+  // Re-fetch when location changes (with debounce)
+  useEffect(() => {
+    if (!showSuggestions) {
+      const timer = setTimeout(() => {
+        fetchPropertiesFromAPI(activeTab, true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [locationQuery, showSuggestions]);
 
   // Update propertyType when activeTab changes
   useEffect(() => {
