@@ -12,7 +12,7 @@ import NearbyPropertiesMap from '../components/Dashboard/NearbyPropertiesMap';
 import PropertyDiscoverySection from '../components/Dashboard/PropertyDiscoverySection';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
-import { useLocation } from '../contexts/LocationContext';
+import { useUserLocation } from '../contexts/LocationContext';
 import { useProperties } from '../contexts/PropertiesContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
@@ -21,7 +21,7 @@ const DashboardLocationBased = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { savedProperties } = useSavedProperties();
-  const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useLocation();
+  const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useUserLocation();
   const { currentUser, fetchProperties: fetchSupabaseProperties } = useProperties();
   const { activeTab, setActiveTab } = usePropertyFilter();
   

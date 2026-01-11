@@ -20,27 +20,30 @@ export const PropertyFilterProvider = ({ children }) => {
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
 
-  // Update tab and sync with URL if on discover page
-  const setActiveTabWithSync = useCallback((tab) => {
+  // Update tab state only - navigation is handled separately by the caller
+  const setActiveTabWithSync = useCallback((tab, shouldNavigate = false) => {
     setActiveTab(tab);
     
-    // If on discover page, update URL
-    if (location.pathname === '/user/dashboard/discover') {
-      const searchParams = new URLSearchParams(location.search);
-      if (tab === 'all') {
-        searchParams.delete('type');
-      } else if (tab === 'buy') {
-        searchParams.set('type', 'buy');
-      } else if (tab === 'rent') {
-        searchParams.set('type', 'rent');
-      }
-      navigate(`/user/dashboard/discover?${searchParams.toString()}`, { replace: true });
-    } else {
-      // If not on discover page, navigate to discover with the filter
-      if (tab === 'all') {
-        navigate('/user/dashboard/discover');
+    // Only navigate if explicitly requested
+    if (shouldNavigate) {
+      if (location.pathname === '/user/dashboard/discover') {
+        // If already on discover page, just update the URL
+        const searchParams = new URLSearchParams(location.search);
+        if (tab === 'all') {
+          searchParams.delete('type');
+        } else if (tab === 'buy') {
+          searchParams.set('type', 'buy');
+        } else if (tab === 'rent') {
+          searchParams.set('type', 'rent');
+        }
+        navigate(`/user/dashboard/discover?${searchParams.toString()}`, { replace: true });
       } else {
-        navigate(`/user/dashboard/discover?type=${tab}`);
+        // Navigate to discover page with the filter
+        if (tab === 'all') {
+          navigate('/user/dashboard/discover');
+        } else {
+          navigate(`/user/dashboard/discover?type=${tab}`);
+        }
       }
     }
   }, [location, navigate]);

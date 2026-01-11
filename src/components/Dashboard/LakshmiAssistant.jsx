@@ -3,7 +3,7 @@ import { MessageCircle, X, Send, Bot, ArrowRight, Mic, MicOff, Loader2, MapPin, 
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useProperties } from '../../contexts/PropertiesContext';
-import { useLocation } from '../../contexts/LocationContext';
+import { useUserLocation } from '../../contexts/LocationContext';
 import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
 import * as propertyDataService from '../../services/propertyDataService';
 import * as propertiesService from '../../services/propertiesService';
@@ -11,7 +11,7 @@ import * as propertiesService from '../../services/propertiesService';
 const LakshmiAssistant = () => {
   const navigate = useNavigate();
   const { currentUser, viewedProperties, savedProperties: contextSavedProps, appliedProperties } = useProperties();
-  const { activeLocation } = useLocation();
+  const { activeLocation } = useUserLocation();
   const { savedProperties: savedProps } = useSavedProperties();
   
   const [isOpen, setIsOpen] = useState(false);

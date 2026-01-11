@@ -58,7 +58,10 @@ const HorizontalNavigation = () => {
   const isBuyActive = () => {
     if (location.pathname === '/user/dashboard/discover') {
       const searchParams = new URLSearchParams(location.search);
-      return searchParams.get('type') === 'buy';
+      const type = searchParams.get('type');
+      const tab = searchParams.get('tab');
+      // Active if type=buy OR tab=buy OR no type/tab specified (default to buy)
+      return type === 'buy' || tab === 'buy' || (!type && !tab);
     }
     return false;
   };
@@ -66,7 +69,9 @@ const HorizontalNavigation = () => {
   const isRentActive = () => {
     if (location.pathname === '/user/dashboard/discover') {
       const searchParams = new URLSearchParams(location.search);
-      return searchParams.get('type') === 'rent';
+      const type = searchParams.get('type');
+      const tab = searchParams.get('tab');
+      return type === 'rent' || tab === 'rent';
     }
     return false;
   };
@@ -74,14 +79,12 @@ const HorizontalNavigation = () => {
   // Handle Buy/Rent clicks with animation
   const handleBuyClick = (e) => {
     e?.preventDefault();
-    setActiveTab('buy');
-    navigate('/user/dashboard/discover?type=buy');
+    setActiveTab('buy', true); // Pass true to trigger navigation
   };
 
   const handleRentClick = (e) => {
     e?.preventDefault();
-    setActiveTab('rent');
-    navigate('/user/dashboard/discover?type=rent');
+    setActiveTab('rent', true); // Pass true to trigger navigation
   };
 
   // Handle navigation link clicks with animation

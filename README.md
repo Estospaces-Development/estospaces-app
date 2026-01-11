@@ -523,6 +523,23 @@ The application is fully compatible with all modern browsers:
 
 The Supabase client includes fallback configuration to ensure reliable API connections across all browsers.
 
+## 🔄 Recent Updates (January 2026)
+
+### Navigation System Overhaul
+- **Independent Tab Navigation**: All dashboard tabs (Dashboard, Buy, Rent, Saved Properties, My Applications, Viewings, Messages, Payments, Contracts, Profile, Help & Support) now navigate independently without conflicts
+- **Fixed Tab Switching**: Clicking on any navigation tab now correctly routes to that page without unexpected redirects
+- **URL Parameter Support**: Both `?tab=buy` and `?type=buy` URL patterns are now supported for property filtering
+
+### Context Improvements
+- **LocationContext**: Renamed `useLocation` to `useUserLocation` to avoid conflicts with React Router's `useLocation` hook
+- **PropertyFilterContext**: `setActiveTab` now accepts an optional second parameter (`shouldNavigate`) to control whether navigation should occur - preventing unwanted redirects when updating filter state
+
+### Bug Fixes
+- Fixed issue where clicking Messages, Saved Properties, or other tabs would redirect to the Buy page
+- Fixed loading state issues on property discovery pages
+- Improved Supabase client initialization with fallback credentials for reliable cross-browser support
+- Enhanced HMR (Hot Module Replacement) compatibility
+
 ## 📊 Database Schema
 
 The application uses Supabase PostgreSQL with the following key tables:
