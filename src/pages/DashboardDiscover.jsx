@@ -49,13 +49,6 @@ const DashboardDiscover = () => {
       newOnly = showNewOnly
     } = options;
 
-    // Check Supabase availability
-    if (!supabase) {
-      setError('Database connection not available.');
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -178,7 +171,7 @@ const DashboardDiscover = () => {
       } else if (tab === 'rent') {
         title = 'Commercial Properties to Rent';
         subtitle = 'Find commercial spaces to rent';
-      } else {
+    } else {
         title = 'Commercial Properties';
         subtitle = 'Browse commercial real estate';
       }
@@ -225,27 +218,44 @@ const DashboardDiscover = () => {
     const locationFromUrl = searchParams.get('location');
     const newFromUrl = searchParams.get('new');
     
-    const effectiveTab = tabFromUrl || activeTab || 'buy';
-    const effectiveCategory = typeFromUrl || 'all';
+    // Handle both URL formats: ?tab=rent OR ?type=rent (legacy)
+    let effectiveTab = 'buy';
+    let effectiveCategory = 'all';
+    
+    // Determine effective tab
+    if (tabFromUrl === 'buy' || tabFromUrl === 'rent') {
+      effectiveTab = tabFromUrl;
+    } else if (typeFromUrl === 'buy' || typeFromUrl === 'rent') {
+      // Legacy URL format: ?type=buy or ?type=rent
+      effectiveTab = typeFromUrl;
+    } else if (activeTab === 'buy' || activeTab === 'rent') {
+      effectiveTab = activeTab;
+    }
+    
+    // Determine effective category
+    if (typeFromUrl === 'residential' || typeFromUrl === 'commercial') {
+      effectiveCategory = typeFromUrl;
+    }
+    
     const effectiveLocation = locationFromUrl || '';
     const effectiveNewOnly = newFromUrl === 'true';
     
-    // Update context if needed
+    // Update context
     if (effectiveTab !== activeTab) {
       setActiveTabFromContext(effectiveTab);
     }
     
-    // Set states based on URL params
-    setPropertyType(effectiveTab === 'buy' ? 'sale' : effectiveTab === 'rent' ? 'rent' : 'all');
+    // Set states
+    setPropertyType(effectiveTab === 'buy' ? 'sale' : 'rent');
     setPropertyCategory(effectiveCategory);
     setShowNewOnly(effectiveNewOnly);
-    if (effectiveLocation && effectiveLocation !== locationQuery) {
+    if (effectiveLocation) {
       setLocationQuery(effectiveLocation);
     }
     
     updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
     
-    // Fetch immediately
+    // Fetch properties
     fetchPropertiesFromSupabase({
       tab: effectiveTab,
       category: effectiveCategory,

@@ -513,6 +513,16 @@ Authentication is handled via Supabase Auth. The platform integrates with Supaba
 - Role-based access (manager vs user)
 - Robust sign-out with timeout handling
 
+## 🌐 Browser Compatibility
+
+The application is fully compatible with all modern browsers:
+- **Google Chrome** (recommended)
+- **Safari**
+- **Firefox**
+- **Microsoft Edge**
+
+The Supabase client includes fallback configuration to ensure reliable API connections across all browsers.
+
 ## 📊 Database Schema
 
 The application uses Supabase PostgreSQL with the following key tables:
