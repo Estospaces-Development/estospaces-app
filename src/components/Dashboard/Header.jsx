@@ -18,6 +18,15 @@ const Header = () => {
   // Get user display name and email
   const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'User');
   const userEmail = user?.email || '';
+  const firstName = profile?.first_name || displayName?.split(' ')[0] || 'there';
+
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   const notifications = [
     { id: 1, title: 'New property available', message: 'A new property matches your criteria', time: '2m ago' },
@@ -66,25 +75,37 @@ const Header = () => {
     <header className="h-16 bg-primary dark:bg-[#0a0a0a] sticky top-0 z-30 shadow-sm border-b border-primary/80 dark:border-gray-800">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
         {/* Left side - Logo - Clickable to go to dashboard */}
-        <Link
-          to="/user/dashboard"
-          className="flex items-center gap-1.5 hover:opacity-80 transition-opacity duration-200 cursor-pointer no-underline"
-          aria-label="Navigate to dashboard"
-        >
-          <img 
-            ref={logoRef}
-            src={logoIcon} 
-            alt="Estospaces Logo" 
-            className="h-8 w-auto object-contain transition-all duration-300"
-            style={{ 
-              filter: 'brightness(0) invert(1)',
-              WebkitFilter: 'brightness(0) invert(1)'
-            }}
-          />
-          <span className="text-xl font-bold text-white dark:text-orange-500 transition-colors duration-300 hover:text-white/90" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-            Estospaces
-          </span>
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link
+            to="/user/dashboard"
+            className="flex items-center gap-1.5 hover:opacity-80 transition-opacity duration-200 cursor-pointer no-underline"
+            aria-label="Navigate to dashboard"
+          >
+            <img 
+              ref={logoRef}
+              src={logoIcon} 
+              alt="Estospaces Logo" 
+              className="h-8 w-auto object-contain transition-all duration-300"
+              style={{ 
+                filter: 'brightness(0) invert(1)',
+                WebkitFilter: 'brightness(0) invert(1)'
+              }}
+            />
+            <span className="text-xl font-bold text-white dark:text-orange-500 transition-colors duration-300 hover:text-white/90" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+              Estospaces
+            </span>
+          </Link>
+
+          {/* Welcome Message */}
+          <div className="hidden md:flex flex-col">
+            <span className="text-white/90 text-sm font-medium">
+              {getGreeting()}, <span className="text-white font-semibold capitalize">{firstName}</span>! 👋
+            </span>
+            <span className="text-white/60 text-xs">
+              Find your perfect home today
+            </span>
+          </div>
+        </div>
 
         {/* Right side - Notifications, User */}
         <div className="flex items-center gap-4">

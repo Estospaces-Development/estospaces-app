@@ -4,6 +4,7 @@ import { useApplications, APPLICATION_STATUS } from '../contexts/ApplicationsCon
 import ApplicationCard from '../components/Dashboard/Applications/ApplicationCard';
 import ApplicationDetail from '../components/Dashboard/Applications/ApplicationDetail';
 import ApplicationCardSkeleton from '../components/Dashboard/Applications/ApplicationCardSkeleton';
+import NewApplicationModal from '../components/Dashboard/Applications/NewApplicationModal';
 
 const DashboardApplications = () => {
   const {
@@ -26,6 +27,7 @@ const DashboardApplications = () => {
 
   const [viewMode, setViewMode] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
+  const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
 
   const applicationsRequiringAction = getApplicationsRequiringAction();
   const deadlineWarnings = getApplicationsWithDeadlineWarnings();
@@ -100,7 +102,7 @@ const DashboardApplications = () => {
               </p>
             </div>
             <button
-              onClick={() => window.location.href = '/user/dashboard/discover'}
+              onClick={() => setShowNewApplicationModal(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow-md"
             >
               <Plus size={18} />
@@ -296,6 +298,12 @@ const DashboardApplications = () => {
           </div>
         )}
       </div>
+
+      {/* New Application Modal */}
+      <NewApplicationModal
+        isOpen={showNewApplicationModal}
+        onClose={() => setShowNewApplicationModal(false)}
+      />
     </div>
   );
 };

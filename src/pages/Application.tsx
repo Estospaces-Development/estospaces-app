@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   FileText, 
   Clock, 
@@ -21,22 +23,27 @@ import {
   Download,
   Share2,
   FileDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Loader2
 } from 'lucide-react';
 
 interface Application {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   propertyInterested: string;
+  propertyId?: string;
   status: string;
   score: number;
   budget: string;
   lastContact: string;
+  applicationData?: any;
 }
 
 const Application = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -48,6 +55,7 @@ const Application = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [scoreFilter, setScoreFilter] = useState('all');
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [newApplication, setNewApplication] = useState({
     name: '',
     email: '',
@@ -56,38 +64,104 @@ const Application = () => {
     notes: '',
   });
 
-  const [applications, setApplications] = useState<Application[]>([
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      propertyInterested: 'Modern Downtown Apartment',
-      status: 'New Application',
-      score: 85,
-      budget: '$2,500/mo',
-      lastContact: '2 days ago',
-    },
-    {
-      id: '2',
-      name: 'Michel Chen',
-      email: 'michel.chen@email.com',
-      propertyInterested: 'Luxury Condo with City View',
-      status: 'In Review',
-      score: 92,
-      budget: '$3,200/mo',
-      lastContact: '1 day ago',
-    },
-    {
-      id: '3',
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@email.com',
-      propertyInterested: 'Spacious Penthouse',
-      status: 'Approved',
-      score: 78,
-      budget: '$4,500/mo',
-      lastContact: '3 days ago',
-    },
-  ]);
+  const [applications, setApplications] = useState<Application[]>([]);
+
+  // Fetch applications from Supabase
+  const fetchApplications = useCallback(async () => {
+    if (!isSupabaseAvailable()) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Fetch all applications (for managers)
+      const { data, error } = await supabase
+        .from('applied_properties')
+        .select(`
+          id,
+          user_id,
+          property_id,
+          status,
+          application_data,
+          created_at,
+          updated_at,
+          properties (
+            id,
+            title,
+            price,
+            listing_type
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform to match the Application interface
+      const transformedApps: Application[] = (data || []).map((item: any) => {
+        const appData = item.application_data || {};
+        const personalInfo = appData.personal_info || {};
+        const property = item.properties || {};
+        
+        // Calculate time since last update
+        const lastUpdate = new Date(item.updated_at || item.created_at);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+        let lastContact = 'Just now';
+        if (diffDays === 1) lastContact = '1 day ago';
+        else if (diffDays > 1) lastContact = `${diffDays} days ago`;
+        else if (diffDays === 0) {
+          const diffHours = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60));
+          if (diffHours > 0) lastContact = `${diffHours} hours ago`;
+        }
+
+        // Map status to display format
+        const statusMap: Record<string, string> = {
+          'pending': 'New Application',
+          'under_review': 'In Review',
+          'approved': 'Approved',
+          'rejected': 'Rejected',
+          'withdrawn': 'Withdrawn',
+          'documents_requested': 'Documents Required'
+        };
+
+        // Calculate score based on completeness of application
+        let score = 60;
+        if (personalInfo.full_name) score += 10;
+        if (personalInfo.email) score += 10;
+        if (personalInfo.phone) score += 5;
+        if (appData.financial_info?.annual_income) score += 10;
+        if (appData.financial_info?.employment_status === 'employed') score += 5;
+
+        return {
+          id: item.id,
+          name: personalInfo.full_name || 'Unknown Applicant',
+          email: personalInfo.email || 'No email provided',
+          phone: personalInfo.phone || '',
+          propertyInterested: property.title || appData.property_title || 'Property',
+          propertyId: item.property_id,
+          status: statusMap[item.status] || 'New Application',
+          score: Math.min(score, 100),
+          budget: property.price 
+            ? `£${property.price.toLocaleString()}${property.listing_type === 'rent' ? '/mo' : ''}`
+            : 'Not specified',
+          lastContact,
+          applicationData: appData,
+        };
+      });
+
+      setApplications(transformedApps);
+    } catch (err) {
+      console.error('Error fetching applications:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch = 
@@ -148,9 +222,63 @@ const Application = () => {
     }
   };
 
-  const handleDeleteApplication = (id: string) => {
+  const handleDeleteApplication = async (id: string) => {
+    if (!isSupabaseAvailable()) {
     setApplications(applications.filter(app => app.id !== id));
     setShowDeleteConfirm(null);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('applied_properties')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setApplications(applications.filter(app => app.id !== id));
+    } catch (err) {
+      console.error('Error deleting application:', err);
+    } finally {
+      setShowDeleteConfirm(null);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    // Map display status back to DB status
+    const statusMap: Record<string, string> = {
+      'New Application': 'pending',
+      'In Review': 'under_review',
+      'Approved': 'approved',
+      'Rejected': 'rejected',
+      'Withdrawn': 'withdrawn',
+      'Documents Required': 'documents_requested'
+    };
+
+    const dbStatus = statusMap[newStatus] || 'pending';
+
+    if (!isSupabaseAvailable()) {
+      setApplications(applications.map(app => 
+        app.id === id ? { ...app, status: newStatus } : app
+      ));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('applied_properties')
+        .update({ status: dbStatus, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setApplications(applications.map(app => 
+        app.id === id ? { ...app, status: newStatus, lastContact: 'Just now' } : app
+      ));
+    } catch (err) {
+      console.error('Error updating application status:', err);
+    }
   };
 
   const handleExport = (format: 'pdf' | 'excel') => {
@@ -214,6 +342,17 @@ const Application = () => {
       setSelectedApplications(filteredApplications.map(app => app.id));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 size={40} className="animate-spin text-orange-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading applications...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 font-sans">
@@ -419,14 +558,23 @@ const Application = () => {
                     <div className="text-sm text-gray-900 dark:text-white">{app.propertyInterested}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
-                      app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                      app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                      'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                    }`}>
-                      {app.status}
-                    </span>
+                    <select
+                      value={app.status}
+                      onChange={(e) => handleUpdateStatus(app.id, e.target.value)}
+                      className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${
+                        app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                        app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                        app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                        app.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                      }`}
+                    >
+                      <option value="New Application">New Application</option>
+                      <option value="In Review">In Review</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                      <option value="Documents Required">Documents Required</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">{app.score}</div>

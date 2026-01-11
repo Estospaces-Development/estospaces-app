@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 const ApplicationsContext = createContext();
 
@@ -13,6 +15,7 @@ export const useApplications = () => {
 // Application status stages
 export const APPLICATION_STATUS = {
   DRAFT: 'draft',
+  PENDING: 'pending',
   SUBMITTED: 'submitted',
   UNDER_REVIEW: 'under_review',
   DOCUMENTS_REQUESTED: 'documents_requested',
@@ -21,169 +24,208 @@ export const APPLICATION_STATUS = {
   WITHDRAWN: 'withdrawn',
 };
 
-// Mock data - in production, this would come from an API
-const mockApplications = [
-  {
-    id: 'app-1',
-    referenceId: 'APP-2025-001',
-    propertyId: 'prop-1',
-    propertyTitle: 'Modern Downtown Apartment',
-    propertyAddress: '123 Main St, Downtown',
-    propertyImage: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
-    propertyType: 'apartment',
-    propertyPrice: 450000,
-    agentId: 'agent-1',
-    agentName: 'Sarah Johnson',
-    agentAgency: 'Prime Realty Group',
-    agentEmail: 'sarah@primerealty.com',
-    status: APPLICATION_STATUS.UNDER_REVIEW,
-    submittedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    requiresAction: true,
-    conversationId: 'conv-1',
-    personalInfo: {
-      fullName: 'Prajol Annamudu',
-      email: 'viewer@estospaces.com',
-      phone: '+1 (555) 123-4567',
-      dateOfBirth: '1990-01-15',
-    },
-    financialInfo: {
-      annualIncome: 75000,
-      employmentStatus: 'employed',
-      employer: 'Tech Corp',
-    },
-    documents: [
-      {
-        id: 'doc-1',
-        name: 'ID_Proof.pdf',
-        type: 'application/pdf',
-        status: 'approved',
-        uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        url: '#',
-      },
-      {
-        id: 'doc-2',
-        name: 'Income_Statement.pdf',
-        type: 'application/pdf',
-        status: 'pending',
-        uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        url: '#',
-      },
-    ],
-    notes: 'Interested in viewing this property soon.',
-  },
-  {
-    id: 'app-2',
-    referenceId: 'APP-2025-002',
-    propertyId: 'prop-2',
-    propertyTitle: 'Luxury Condo with Ocean View',
-    propertyAddress: '456 Ocean Drive, Beachfront',
-    propertyImage: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400',
-    propertyType: 'condo',
-    propertyPrice: 750000,
-    agentId: 'agent-2',
-    agentName: 'Michael Chen',
-    agentAgency: 'Elite Properties',
-    agentEmail: 'michael@eliteproperties.com',
-    status: APPLICATION_STATUS.DOCUMENTS_REQUESTED,
-    submittedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    requiresAction: true,
-    conversationId: 'conv-2',
-    personalInfo: {
-      fullName: 'Prajol Annamudu',
-      email: 'viewer@estospaces.com',
-      phone: '+1 (555) 123-4567',
-      dateOfBirth: '1990-01-15',
-    },
-    financialInfo: {
-      annualIncome: 75000,
-      employmentStatus: 'employed',
-      employer: 'Tech Corp',
-    },
-    documents: [
-      {
-        id: 'doc-3',
-        name: 'Bank_Statement.pdf',
-        type: 'application/pdf',
-        status: 'rejected',
-        uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        url: '#',
-        rejectionReason: 'Document is not clear. Please upload a clearer version.',
-      },
-    ],
-    notes: '',
-  },
-  {
-    id: 'app-3',
-    referenceId: 'APP-2025-003',
-    propertyId: 'prop-3',
-    propertyTitle: 'Spacious Family Home',
-    propertyAddress: '789 Pine Street, Residential',
-    propertyImage: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400',
-    propertyType: 'house',
-    propertyPrice: 320000,
-    agentId: 'agent-3',
-    agentName: 'Emily Rodriguez',
-    agentAgency: 'City View Realty',
-    agentEmail: 'emily@cityview.com',
-    status: APPLICATION_STATUS.SUBMITTED,
-    submittedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    deadline: null,
-    requiresAction: false,
-    conversationId: null,
-    personalInfo: {
-      fullName: 'Prajol Annamudu',
-      email: 'viewer@estospaces.com',
-      phone: '+1 (555) 123-4567',
-      dateOfBirth: '1990-01-15',
-    },
-    financialInfo: {
-      annualIncome: 75000,
-      employmentStatus: 'employed',
-      employer: 'Tech Corp',
-    },
-    documents: [],
-    notes: '',
-  },
-];
-
 export const ApplicationsProvider = ({ children }) => {
-  const [applications, setApplications] = useState(() => {
-    // Load from localStorage or use mock data
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('estospaces-applications');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          return mockApplications;
-        }
-      }
-    }
-    return mockApplications;
-  });
-
+  const { user } = useAuth();
+  const [applications, setApplications] = useState([]);
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, status, propertyType
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState('all');
   const [dateRangeFilter, setDateRangeFilter] = useState({ start: null, end: null });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Save to localStorage whenever applications change
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('estospaces-applications', JSON.stringify(applications));
+  // Fetch applications from Supabase
+  const fetchApplications = useCallback(async () => {
+    if (!user?.id || !isSupabaseAvailable()) {
+      setApplications([]);
+      setIsLoading(false);
+      return;
     }
-  }, [applications]);
 
-  // Get filtered and sorted applications
-  const getFilteredApplications = useCallback(() => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('applied_properties')
+        .select(`
+          id,
+          user_id,
+          property_id,
+          status,
+          application_data,
+          created_at,
+          updated_at,
+          properties (
+            id,
+            title,
+            address_line_1,
+            city,
+            postcode,
+            price,
+            property_type,
+            listing_type,
+            image_urls,
+            contact_name,
+            contact_email,
+            contact_phone,
+            company
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      // Transform data to match our application format
+      const transformedApplications = (data || []).map((item, index) => {
+        const property = item.properties || {};
+        const appData = item.application_data || {};
+        
+        let images = [];
+        try {
+          images = property.image_urls 
+            ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls))
+            : [];
+        } catch (e) {
+          images = [];
+        }
+
+        return {
+          id: item.id,
+          referenceId: `APP-${new Date(item.created_at).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
+          propertyId: item.property_id,
+          propertyTitle: property.title || appData.property_title || 'Property',
+          propertyAddress: property.address_line_1 || `${property.city || ''} ${property.postcode || ''}`.trim() || 'UK',
+          propertyImage: images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+          propertyType: property.property_type || 'apartment',
+          propertyPrice: property.price || appData.property_price || 0,
+          listingType: property.listing_type || appData.listing_type || 'sale',
+          agentId: null,
+          agentName: property.contact_name || appData.agent_name || 'Agent',
+          agentAgency: property.company || appData.agent_company || '',
+          agentEmail: property.contact_email || appData.agent_email || '',
+          agentPhone: property.contact_phone || appData.agent_phone || '',
+          status: item.status || APPLICATION_STATUS.PENDING,
+          submittedDate: item.created_at,
+          lastUpdated: item.updated_at || item.created_at,
+          deadline: appData.deadline || null,
+          requiresAction: item.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED,
+          conversationId: appData.conversation_id || null,
+          personalInfo: appData.personal_info || {},
+          financialInfo: appData.financial_info || {},
+          documents: appData.documents || [],
+          notes: appData.notes || '',
+        };
+      });
+
+      setApplications(transformedApplications);
+    } catch (err) {
+      console.error('Error fetching applications:', err);
+      setError(err.message);
+      setApplications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
+
+  // Fetch on mount and when user changes
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
+
+  // Create a new application
+  const createApplication = useCallback(async (applicationData) => {
+    if (!user?.id || !isSupabaseAvailable()) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    try {
+      const { data, error: insertError } = await supabase
+        .from('applied_properties')
+        .insert({
+          user_id: user.id,
+          property_id: applicationData.property_id || null,
+          status: APPLICATION_STATUS.PENDING,
+          application_data: {
+            property_title: applicationData.property_title,
+            property_address: applicationData.property_address,
+            property_price: applicationData.property_price,
+            property_type: applicationData.property_type || 'apartment',
+            listing_type: applicationData.listing_type || 'rent',
+            agent_name: applicationData.agent_name,
+            agent_email: applicationData.agent_email,
+            agent_phone: applicationData.agent_phone,
+            agent_company: applicationData.agent_company,
+            personal_info: applicationData.personal_info || {},
+            financial_info: applicationData.financial_info || {},
+            notes: applicationData.notes || '',
+            move_in_date: applicationData.move_in_date,
+            employment_status: applicationData.employment_status,
+            annual_income: applicationData.annual_income,
+          },
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Refresh applications list
+      await fetchApplications();
+      
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error creating application:', err);
+      return { success: false, error: err.message };
+    }
+  }, [user?.id, fetchApplications]);
+
+  // Update application status
+  const updateApplicationStatus = useCallback(async (applicationId, newStatus) => {
+    if (!isSupabaseAvailable()) {
+      return { success: false, error: 'Database not available' };
+    }
+
+    try {
+      const { error: updateError } = await supabase
+        .from('applied_properties')
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', applicationId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setApplications(prev => 
+        prev.map(app => 
+          app.id === applicationId 
+            ? { ...app, status: newStatus, lastUpdated: new Date().toISOString() }
+            : app
+        )
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating application:', err);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  // Withdraw application
+  const withdrawApplication = useCallback(async (applicationId) => {
+    return updateApplicationStatus(applicationId, APPLICATION_STATUS.WITHDRAWN);
+  }, [updateApplicationStatus]);
+
+  // Get selected application
+  const selectedApplication = applications.find(app => app.id === selectedApplicationId);
+
+  // Filter applications
+  const filteredApplications = React.useMemo(() => {
     let filtered = [...applications];
 
     // Apply status filter
@@ -228,184 +270,50 @@ export const ApplicationsProvider = ({ children }) => {
     });
   }, [applications, statusFilter, propertyTypeFilter, dateRangeFilter, searchQuery]);
 
-  // Create a new application
-  const createApplication = useCallback((propertyData, agentData) => {
-    const newApplication = {
-      id: `app-${Date.now()}`,
-      referenceId: `APP-${new Date().getFullYear()}-${String(applications.length + 1).padStart(3, '0')}`,
-      propertyId: propertyData.id,
-      propertyTitle: propertyData.title,
-      propertyAddress: propertyData.address,
-      propertyImage: propertyData.image,
-      propertyType: propertyData.type || 'apartment',
-      propertyPrice: propertyData.price,
-      agentId: agentData.id,
-      agentName: agentData.name,
-      agentAgency: agentData.agency || '',
-      agentEmail: agentData.email || '',
-      status: APPLICATION_STATUS.DRAFT,
-      submittedDate: null,
-      lastUpdated: new Date().toISOString(),
-      deadline: null,
-      requiresAction: false,
-      conversationId: null,
-      personalInfo: {},
-      financialInfo: {},
-      documents: [],
-      notes: '',
-    };
-
-    setApplications((prev) => [newApplication, ...prev]);
-    setSelectedApplicationId(newApplication.id);
-    return newApplication.id;
-  }, [applications.length]);
-
-  // Update application
-  const updateApplication = useCallback((applicationId, updates) => {
-    setApplications((prev) =>
-      prev.map((app) =>
-        app.id === applicationId
-          ? { ...app, ...updates, lastUpdated: new Date().toISOString() }
-          : app
-      )
-    );
-  }, []);
-
-  // Submit application
-  const submitApplication = useCallback((applicationId) => {
-    setApplications((prev) =>
-      prev.map((app) =>
-        app.id === applicationId
-          ? {
-              ...app,
-              status: APPLICATION_STATUS.SUBMITTED,
-              submittedDate: new Date().toISOString(),
-              lastUpdated: new Date().toISOString(),
-            }
-          : app
-      )
-    );
-  }, []);
-
-  // Withdraw application
-  const withdrawApplication = useCallback((applicationId) => {
-    setApplications((prev) =>
-      prev.map((app) =>
-        app.id === applicationId
-          ? {
-              ...app,
-              status: APPLICATION_STATUS.WITHDRAWN,
-              lastUpdated: new Date().toISOString(),
-            }
-          : app
-      )
-    );
-  }, []);
-
-  // Add document
-  const addDocument = useCallback((applicationId, document) => {
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === applicationId) {
-          return {
-            ...app,
-            documents: [...app.documents, document],
-            lastUpdated: new Date().toISOString(),
-          };
-        }
-        return app;
-      })
-    );
-  }, []);
-
-  // Update document
-  const updateDocument = useCallback((applicationId, documentId, updates) => {
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === applicationId) {
-          return {
-            ...app,
-            documents: app.documents.map((doc) =>
-              doc.id === documentId ? { ...doc, ...updates } : doc
-            ),
-            lastUpdated: new Date().toISOString(),
-          };
-        }
-        return app;
-      })
-    );
-  }, []);
-
-  // Delete document
-  const deleteDocument = useCallback((applicationId, documentId) => {
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === applicationId) {
-          return {
-            ...app,
-            documents: app.documents.filter((doc) => doc.id !== documentId),
-            lastUpdated: new Date().toISOString(),
-          };
-        }
-        return app;
-      })
-    );
-  }, []);
-
-  // Get application by ID
-  const getApplication = useCallback(
-    (applicationId) => {
-      return applications.find((app) => app.id === applicationId);
-    },
-    [applications]
-  );
-
   // Get applications requiring action
   const getApplicationsRequiringAction = useCallback(() => {
-    return applications.filter((app) => app.requiresAction && app.status !== APPLICATION_STATUS.WITHDRAWN);
+    return applications.filter((app) => app.requiresAction);
   }, [applications]);
 
-  // Get applications with deadline warnings
+  // Get applications with deadline warnings (within 5 days)
   const getApplicationsWithDeadlineWarnings = useCallback(() => {
-    const now = new Date();
-    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    
+    const fiveDaysFromNow = new Date();
+    fiveDaysFromNow.setDate(fiveDaysFromNow.getDate() + 5);
+
     return applications.filter((app) => {
       if (!app.deadline) return false;
-      const deadline = new Date(app.deadline);
-      return deadline <= threeDaysFromNow && deadline > now;
+      const deadlineDate = new Date(app.deadline);
+      return deadlineDate <= fiveDaysFromNow && deadlineDate > new Date();
     });
   }, [applications]);
 
   const value = {
-    applications: getFilteredApplications(),
+    applications: filteredApplications,
     allApplications: applications,
+    selectedApplication,
     selectedApplicationId,
     setSelectedApplicationId,
-    filter,
-    setFilter,
+    isLoading,
+    error,
+    searchQuery,
+    setSearchQuery,
     statusFilter,
     setStatusFilter,
     propertyTypeFilter,
     setPropertyTypeFilter,
     dateRangeFilter,
     setDateRangeFilter,
-    searchQuery,
-    setSearchQuery,
-    isLoading,
     createApplication,
-    updateApplication,
-    submitApplication,
+    updateApplicationStatus,
     withdrawApplication,
-    addDocument,
-    updateDocument,
-    deleteDocument,
-    getApplication,
+    fetchApplications,
     getApplicationsRequiringAction,
     getApplicationsWithDeadlineWarnings,
-    APPLICATION_STATUS,
   };
 
-  return <ApplicationsContext.Provider value={value}>{children}</ApplicationsContext.Provider>;
+  return (
+    <ApplicationsContext.Provider value={value}>
+      {children}
+    </ApplicationsContext.Provider>
+  );
 };
-

@@ -130,15 +130,6 @@ const DashboardFooter = () => {
                         {/* Social Media Icons */}
                         <div className="flex items-center gap-4">
                             <a 
-                                href="https://www.facebook.com/estospaces" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-orange-600 transition-colors"
-                                aria-label="Facebook"
-                            >
-                                <span className="text-lg font-bold">f</span>
-                            </a>
-                            <a 
                                 href="https://x.com/ESTOSPACES" 
                                 target="_blank" 
                                 rel="noopener noreferrer"
@@ -148,7 +139,7 @@ const DashboardFooter = () => {
                                 <Twitter size={18} />
                             </a>
                             <a 
-                                href="https://www.instagram.com/estospaces/" 
+                                href="https://www.instagram.com/estospaces/ram" 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-gray-400 hover:text-orange-600 transition-colors"
@@ -157,7 +148,7 @@ const DashboardFooter = () => {
                                 <Instagram size={18} />
                             </a>
                             <a 
-                                href="https://www.linkedin.com/company/estospaces-solutions-private-limited" 
+                                href="https://www.linkedin.com/company/estospaces-solutions-private-limited/?viewAsMember=true" 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-gray-400 hover:text-orange-600 transition-colors"

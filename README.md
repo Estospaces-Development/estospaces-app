@@ -105,8 +105,11 @@ A modern, responsive property search and management dashboard for property seeke
 - **Property Management**
   - Saved/favorited properties with real-time sync
   - Property applications tracking with modern card design
+  - New Application modal with multi-step form (Property Selection → Personal Details → Review)
   - Stat cards (Total, Pending, Approved, Action Required)
-  - Scheduled viewings management
+  - Scheduled viewings management with Supabase integration
+  - Schedule viewing directly from property detail page
+  - Cancel/manage viewings with status tracking (Pending, Confirmed, Cancelled, Completed)
   - Property reviews
 
 - **User Profile**
@@ -516,8 +519,9 @@ The application uses Supabase PostgreSQL with the following key tables:
 
 - **properties**: Property listings with fields for title, price, location, images, property_type, listing_type, etc.
 - **saved_properties**: User saved/favorited properties
-- **applied_properties**: Property applications
+- **applied_properties**: Property applications with status tracking
 - **viewed_properties**: Property view tracking
+- **viewings**: Scheduled property viewings with date, time, and status
 - **profiles**: User profiles with verification status and role information
 
 See `supabase/` directory for migration files.
@@ -541,6 +545,12 @@ For support:
 - **User Dashboard**: support@estospaces.com
 - Visit the Help & Support page in the respective dashboard
 - Use the Contact Us page at `/contact`
+
+## 🔗 Social Media
+
+- **LinkedIn**: [Estospaces Solutions](https://www.linkedin.com/company/estospaces-solutions-private-limited/?viewAsMember=true)
+- **Instagram**: [@estospaces](https://www.instagram.com/estospaces/ram)
+- **Twitter/X**: [@ESTOSPACES](https://x.com/ESTOSPACES)
 
 ---
 

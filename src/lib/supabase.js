@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -7,7 +7,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 // Create Supabase client
-/** @type {SupabaseClient | null} */
 let supabase = null;
 
 if (isSupabaseConfigured) {
@@ -19,8 +18,7 @@ if (isSupabaseConfigured) {
         },
     });
 } else {
-    console.warn('⚠️ Supabase credentials not found. Authentication features will not work until you add credentials to .env.local');
-    console.warn('📖 See SUPABASE_SETUP.md for setup instructions');
+    console.warn('⚠️ Supabase credentials not found. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env file');
 }
 
 // Helper function to check if Supabase is available

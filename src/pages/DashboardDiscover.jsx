@@ -49,11 +49,9 @@ const DashboardDiscover = () => {
       newOnly = showNewOnly
     } = options;
 
-    console.log('DashboardDiscover: Fetching properties...', { tab, category, location, newOnly, propertyType, page });
-    
-    if (!isSupabaseAvailable()) {
-      console.error('DashboardDiscover: Supabase not available');
-      setError('Database connection not available. Please check your configuration.');
+    // Check Supabase availability
+    if (!supabase) {
+      setError('Database connection not available.');
       setLoading(false);
       return;
     }
@@ -79,7 +77,6 @@ const DashboardDiscover = () => {
 
       // Apply listing type filter
       if (listingTypeFilter) {
-        console.log('DashboardDiscover: Filtering by listing_type:', listingTypeFilter);
         query = query.eq('listing_type', listingTypeFilter);
       }
 
@@ -148,19 +145,16 @@ const DashboardDiscover = () => {
       // Order by created_at descending (newest first)
       query = query.order('created_at', { ascending: false });
 
-      console.log('DashboardDiscover: Executing query...');
       const { data, error: fetchError, count } = await query;
 
       if (fetchError) {
-        console.error('DashboardDiscover: Query error:', fetchError);
         throw fetchError;
       }
 
-      console.log('DashboardDiscover: Fetched', data?.length, 'properties, total count:', count);
       setProperties(data || []);
       setTotalCount(count || 0);
     } catch (err) {
-      console.error('DashboardDiscover: Error fetching properties:', err);
+      console.error('Error fetching properties:', err);
       setError(err.message || 'Failed to fetch properties');
       setProperties([]);
       setTotalCount(0);
@@ -206,126 +200,77 @@ const DashboardDiscover = () => {
     setPageSubtitle(subtitle);
   };
 
-  // Parse URL params and initialize filters on mount
+  // Track last fetched params to prevent duplicate fetches
+  const lastFetchParams = React.useRef('');
+
+  // Get effective filter values from URL or state
+  const getEffectiveFilters = () => {
+    const tabFromUrl = searchParams.get('tab');
+    const typeFromUrl = searchParams.get('type');
+    const locationFromUrl = searchParams.get('location');
+    const newFromUrl = searchParams.get('new');
+    
+    return {
+      tab: tabFromUrl || activeTab || 'buy',
+      category: typeFromUrl || propertyCategory || 'all',
+      location: locationFromUrl || locationQuery || '',
+      newOnly: newFromUrl === 'true' || showNewOnly
+    };
+  };
+
+  // Fetch on mount and when URL params change
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     const typeFromUrl = searchParams.get('type');
     const locationFromUrl = searchParams.get('location');
     const newFromUrl = searchParams.get('new');
     
-    console.log('DashboardDiscover: Component mounted with URL params:', { tabFromUrl, typeFromUrl, locationFromUrl, newFromUrl });
-    
-    // Determine effective values
     const effectiveTab = tabFromUrl || activeTab || 'buy';
     const effectiveCategory = typeFromUrl || 'all';
     const effectiveLocation = locationFromUrl || '';
     const effectiveNewOnly = newFromUrl === 'true';
     
     // Update context if needed
-    if (tabFromUrl && tabFromUrl !== activeTab) {
-      setActiveTabFromContext(tabFromUrl);
+    if (effectiveTab !== activeTab) {
+      setActiveTabFromContext(effectiveTab);
     }
     
     // Set states based on URL params
-    if (effectiveTab === 'buy') {
-      setPropertyType('sale');
-    } else if (effectiveTab === 'rent') {
-      setPropertyType('rent');
-    }
-    
-    setPropertyCategory(effectiveCategory);
-    setShowNewOnly(effectiveNewOnly);
-    if (effectiveLocation) {
-      setLocationQuery(effectiveLocation);
-    }
-    
-    // Update page title
-    updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
-    
-    // Fetch with all parameters
-    fetchPropertiesFromSupabase({
-      tab: effectiveTab,
-      category: effectiveCategory,
-      location: effectiveLocation,
-      newOnly: effectiveNewOnly
-    });
-  }, []);
-
-  // Fetch when URL search params change (for footer link navigation)
-  useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
-    const typeFromUrl = searchParams.get('type');
-    const locationFromUrl = searchParams.get('location');
-    const newFromUrl = searchParams.get('new');
-    
-    const effectiveTab = tabFromUrl || activeTab || 'buy';
-    const effectiveCategory = typeFromUrl || 'all';
-    const effectiveLocation = locationFromUrl || '';
-    const effectiveNewOnly = newFromUrl === 'true';
-    
-    console.log('DashboardDiscover: URL params changed:', { effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly });
-    
-    // Update states
-    if (effectiveTab === 'buy') {
-      setPropertyType('sale');
-    } else if (effectiveTab === 'rent') {
-      setPropertyType('rent');
-    }
-    
+    setPropertyType(effectiveTab === 'buy' ? 'sale' : effectiveTab === 'rent' ? 'rent' : 'all');
     setPropertyCategory(effectiveCategory);
     setShowNewOnly(effectiveNewOnly);
     if (effectiveLocation && effectiveLocation !== locationQuery) {
       setLocationQuery(effectiveLocation);
     }
     
-    // Update page title
     updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
     
-    setPage(1);
+    // Fetch immediately
     fetchPropertiesFromSupabase({
       tab: effectiveTab,
       category: effectiveCategory,
       location: effectiveLocation,
       newOnly: effectiveNewOnly
     });
-  }, [searchParams]);
+  }, [searchParams, page]);
 
-  // Fetch when page changes
-  useEffect(() => {
-    if (page > 1) {
-      const tabFromUrl = searchParams.get('tab');
-      const typeFromUrl = searchParams.get('type');
-      const locationFromUrl = searchParams.get('location');
-      const newFromUrl = searchParams.get('new');
-      
-      fetchPropertiesFromSupabase({
-        tab: tabFromUrl || activeTab || 'buy',
-        category: typeFromUrl || propertyCategory,
-        location: locationFromUrl || locationQuery,
-        newOnly: newFromUrl === 'true' || showNewOnly
-      });
-    }
-  }, [page]);
-
-  // Debounced search effect for filter changes
+  // Debounced search - only for user typing in search/filter fields
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
+    // Don't debounce if there's no search query yet (initial state)
+    if (!searchQuery && !priceRange.min && !priceRange.max && !beds && !baths) {
+      return;
+    }
+
     debounceTimerRef.current = setTimeout(() => {
-      const tabFromUrl = searchParams.get('tab');
-      const typeFromUrl = searchParams.get('type');
-      const locationFromUrl = searchParams.get('location');
-      const newFromUrl = searchParams.get('new');
-      
-      fetchPropertiesFromSupabase({
-        tab: tabFromUrl || activeTab || 'buy',
-        category: typeFromUrl || propertyCategory,
-        location: locationFromUrl || locationQuery,
-        newOnly: newFromUrl === 'true' || showNewOnly
-      });
-    }, 400);
+      const { tab, category, location, newOnly } = getEffectiveFilters();
+      lastFetchParams.current = ''; // Reset to force fetch
+      setPage(1);
+      fetchPropertiesFromSupabase({ tab, category, location, newOnly });
+    }, 300);
 
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
