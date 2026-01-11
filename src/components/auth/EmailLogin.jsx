@@ -56,13 +56,21 @@ const EmailLogin = () => {
         let role = userRole;
         if (!role) {
             try {
-                const { data: profile } = await supabase
+                // Add timeout to prevent hanging
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+                );
+                
+                const profilePromise = supabase
                     .from('profiles')
                     .select('role')
                     .eq('id', user.id)
                     .single();
+                
+                const { data: profile } = await Promise.race([profilePromise, timeoutPromise]);
                 role = profile?.role || 'user';
-            } catch {
+            } catch (err) {
+                console.log('Could not fetch profile role, defaulting to user:', err);
                 role = 'user';
             }
         }
@@ -110,10 +118,17 @@ const EmailLogin = () => {
         setLoading(true);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            // Add timeout to prevent hanging
+            const loginPromise = supabase.auth.signInWithPassword({
                 email,
                 password,
             });
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 10000)
+            );
+            
+            const { data, error } = await Promise.race([loginPromise, timeoutPromise]);
 
             if (error) {
                 const msg = error.message.toLowerCase();
@@ -124,14 +139,27 @@ const EmailLogin = () => {
                 } else {
                     setGeneralError(error.message);
                 }
-            } else if (data.session) {
-                // Successful login - redirect based on role
-                await redirectBasedOnRole(data.session.user);
+                setLoading(false);
+            } else if (data?.session) {
+                // Successful login - redirect immediately using window.location for reliability
+                const userRole = data.session.user?.user_metadata?.role;
+                
+                let redirectPath = '/user/dashboard';
+                if (from) {
+                    redirectPath = from;
+                } else if (userRole === 'manager') {
+                    redirectPath = '/manager/dashboard';
+                }
+                
+                // Use window.location for reliable navigation after login
+                window.location.href = redirectPath;
+            } else {
+                setGeneralError('Login failed. Please try again.');
+                setLoading(false);
             }
         } catch (error) {
             console.error('Login error:', error);
-            setGeneralError('An unexpected error occurred. Please try again.');
-        } finally {
+            setGeneralError(error.message || 'An unexpected error occurred. Please try again.');
             setLoading(false);
         }
     };

@@ -11,8 +11,15 @@ const ApplicationFilters = ({
   setPropertyTypeFilter,
   dateRangeFilter,
   setDateRangeFilter,
+  showFilters: externalShowFilters,
+  setShowFilters: externalSetShowFilters,
+  hideToggleButton = false,
 }) => {
-  const [showFilters, setShowFilters] = useState(false);
+  const [internalShowFilters, setInternalShowFilters] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const showFilters = externalShowFilters !== undefined ? externalShowFilters : internalShowFilters;
+  const setShowFilters = externalSetShowFilters || setInternalShowFilters;
 
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
@@ -62,21 +69,36 @@ const ApplicationFilters = ({
         />
       </div>
 
-      {/* Filter Toggle */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          <Filter size={16} />
-          <span>Filters</span>
+      {/* Filter Toggle - only show if not hidden */}
+      {!hideToggleButton && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Filter size={16} />
+            <span>Filters</span>
+            {hasActiveFilters && (
+              <span className="ml-1 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+                Active
+              </span>
+            )}
+          </button>
           {hasActiveFilters && (
-            <span className="ml-1 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
-              Active
-            </span>
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            >
+              <X size={16} />
+              <span>Clear Filters</span>
+            </button>
           )}
-        </button>
-        {hasActiveFilters && (
+        </div>
+      )}
+      
+      {/* Clear filters button when toggle is hidden but filters are active */}
+      {hideToggleButton && hasActiveFilters && (
+        <div className="flex justify-end">
           <button
             onClick={clearFilters}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
@@ -84,8 +106,8 @@ const ApplicationFilters = ({
             <X size={16} />
             <span>Clear Filters</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Filter Panel */}
       {showFilters && (

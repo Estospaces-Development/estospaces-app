@@ -87,16 +87,35 @@ A modern, responsive property search and management dashboard for property seeke
 
 - **Property Discovery**
   - Browse and search properties with advanced filtering
-  - Buy/Rent tabs with real-time property filtering
-  - Saved Properties tab with badge count
+  - Buy/Rent tabs with real-time property filtering from Supabase
+  - Smart search by postcode, street, address, keyword, or title
+  - Filter by location, property type, price range, beds, and baths
+  - Residential and commercial property categories
+  - New homes filter (properties listed in last 30 days)
   - Interactive map showing nearby properties
   - Property detail pages with market insights and analytics
+  - Grid and map view toggle
+
+- **Quick Action CTAs**
+  - Buy Property - Browse homes for sale
+  - Rent Property - Explore rental options
+  - Saved Properties - View all saved properties with count
+  - My Applications - Track application progress
 
 - **Property Management**
-  - Saved/favorited properties
-  - Property applications tracking
+  - Saved/favorited properties with real-time sync
+  - Property applications tracking with modern card design
+  - Stat cards (Total, Pending, Approved, Action Required)
   - Scheduled viewings management
   - Property reviews
+
+- **User Profile**
+  - Profile photo upload with camera overlay
+  - Personal information with keyboard navigation (Enter to next field)
+  - UK postcode auto-detection with address suggestions
+  - Address auto-fill from postcode lookup
+  - Document uploads (ID, Proof of Address, Employment Proof)
+  - User verification steps (Email, Phone, Identity, Address)
 
 - **Communication**
   - Real-time messaging with brokers/agencies
@@ -111,10 +130,21 @@ A modern, responsive property search and management dashboard for property seeke
 - **User Experience**
   - AI Assistant (Lakshmi) for property search and navigation help
   - Welcome animation for first-time users
-  - Glassmorphism hero search card
+  - Modern hero section with family-in-front-of-house background
   - Smooth navigation animations and page transitions
   - Dark mode theme support
   - Responsive horizontal navigation
+  - Smart "Back" navigation for policy pages
+
+### 📄 Legal & Support Pages
+
+- **Privacy Policy** - Comprehensive data protection information
+- **Cookie Policy** - Cookie usage and management details
+- **Terms & Conditions** - Service terms and user agreements
+- **Contact Us** - Interactive contact form with validation
+- **FAQ** - Searchable FAQ with category filters and accordion answers
+
+All pages feature smart navigation that returns users to their previous location (dashboard or landing page).
 
 ### 🎨 UI/UX Features
 
@@ -139,6 +169,16 @@ A modern, responsive property search and management dashboard for property seeke
   - Adaptive typography
   - Mobile-friendly navigation
   - Smooth animations and transitions
+  - CSS animations (fadeIn, slideUp, slideDown, scaleIn)
+  - Hover effects with lift and shadow transitions
+  - Color-coded property type badges
+
+- **Polished Components**
+  - Property cards with rounded corners and hover effects
+  - Application cards with modern horizontal layout
+  - Stat cards with visual indicators
+  - Error/notification banners with slide-down animations
+  - Loading skeletons for better perceived performance
 
 ### 🤖 AI Features
 
@@ -164,7 +204,8 @@ A modern, responsive property search and management dashboard for property seeke
 - **Backend Services**
   - Supabase for authentication, database, and real-time subscriptions
   - Express.js API server for property listings
-  - Zoopla API integration for real-time UK property listings (with Supabase fallback)
+  - Postcodes.io API for UK postcode validation
+  - OpenStreetMap Nominatim API for address lookup
 
 - **State Management**
   - React Context API for global state
@@ -173,18 +214,23 @@ A modern, responsive property search and management dashboard for property seeke
   - ThemeContext for theme management
   - SavedPropertiesContext for user saved properties
   - PropertyFilterContext for Buy/Rent filtering
+  - ApplicationsContext for user applications
+  - LocationContext for geolocation features
+  - AuthContext for authentication state
   - localStorage for data persistence
 
 - **Components**
   - Reusable UI components
   - Layout components (Sidebar for Manager, Horizontal Navigation for User, Header, MainLayout)
   - Chart components (Pie Chart, Bar Chart, Line Chart)
-  - Form components with validation
+  - Form components with validation and keyboard navigation
   - Modal components for user interactions
   - Satellite map component with Leaflet.js integration
   - Calendar component for appointment scheduling
   - Back button component for navigation
   - Verification modal for user verification flow
+  - Property card with hover effects and type badges
+  - Application card with status indicators
 
 - **Responsive Design**
   - Mobile-first approach
@@ -206,12 +252,12 @@ A modern, responsive property search and management dashboard for property seeke
    ```bash
    git clone https://github.com/Estospaces/estospaces-app.git
    cd estospaces-app
-   git checkout Dashboards
+   git checkout user-dahboard
    ```
 
 2. **Install dependencies**
    ```bash
-   npm install
+   npm install --legacy-peer-deps
    # or
    yarn install
    ```
@@ -261,8 +307,14 @@ A modern, responsive property search and management dashboard for property seeke
 #### User Dashboard
 - **Main Dashboard**: `http://localhost:5173/user/dashboard`
 - **Discover Properties (All)**: `http://localhost:5173/user/dashboard/discover`
-- **Discover Properties (Buy)**: `http://localhost:5173/user/dashboard/discover?type=buy`
-- **Discover Properties (Rent)**: `http://localhost:5173/user/dashboard/discover?type=rent`
+- **Discover Properties (Buy)**: `http://localhost:5173/user/dashboard/discover?tab=buy`
+- **Discover Properties (Rent)**: `http://localhost:5173/user/dashboard/discover?tab=rent`
+- **Homes for Sale**: `http://localhost:5173/user/dashboard/discover?tab=buy&type=residential`
+- **Homes for Rent**: `http://localhost:5173/user/dashboard/discover?tab=rent&type=residential`
+- **Commercial for Sale**: `http://localhost:5173/user/dashboard/discover?tab=buy&type=commercial`
+- **Commercial to Rent**: `http://localhost:5173/user/dashboard/discover?tab=rent&type=commercial`
+- **New Homes**: `http://localhost:5173/user/dashboard/discover?new=true&tab=buy`
+- **Location Filter**: `http://localhost:5173/user/dashboard/discover?location=london`
 - **Saved Properties**: `http://localhost:5173/user/dashboard/saved`
 - **Property Detail**: `http://localhost:5173/user/dashboard/property/:id`
 - **My Applications**: `http://localhost:5173/user/dashboard/applications`
@@ -274,6 +326,13 @@ A modern, responsive property search and management dashboard for property seeke
 - **Settings**: `http://localhost:5173/user/dashboard/settings`
 - **Help & Support**: `http://localhost:5173/user/dashboard/help`
 - **Profile**: `http://localhost:5173/user/dashboard/profile`
+
+#### Legal & Support Pages
+- **Privacy Policy**: `http://localhost:5173/privacy`
+- **Cookie Policy**: `http://localhost:5173/cookies`
+- **Terms & Conditions**: `http://localhost:5173/terms`
+- **Contact Us**: `http://localhost:5173/contact`
+- **FAQ**: `http://localhost:5173/faq`
 
 ### API Endpoints
 
@@ -317,15 +376,36 @@ src/
 ├── components/
 │   ├── Admin/              # Manager-specific components
 │   ├── Dashboard/          # User dashboard components
+│   │   ├── Applications/   # Application card components
+│   │   ├── Header.jsx      # Dashboard header with sign-out
+│   │   ├── PropertyCard.jsx # Property display card
+│   │   ├── DashboardFooter.jsx # Footer with search links
+│   │   └── VerificationSection.jsx # User verification steps
 │   ├── chatbot/            # AI chatbot components
 │   ├── layout/             # Layout components (Sidebar, Header)
 │   └── ui/                 # Reusable UI components
 ├── contexts/               # React Context providers
+│   ├── AuthContext.tsx     # Authentication state
+│   ├── ApplicationsContext.jsx # Applications data
+│   ├── SavedPropertiesContext.jsx # Saved properties
+│   ├── PropertyFilterContext.jsx # Property filters
+│   └── ...
 ├── layouts/                # Page layout wrappers
 ├── pages/                  # Page components
+│   ├── DashboardLocationBased.jsx # Main user dashboard
+│   ├── DashboardDiscover.jsx # Property discovery
+│   ├── DashboardProfile.jsx # User profile
+│   ├── DashboardApplications.jsx # Applications list
+│   ├── PrivacyPolicy.jsx   # Privacy policy page
+│   ├── CookiePolicy.jsx    # Cookie policy page
+│   ├── TermsConditions.jsx # Terms page
+│   ├── ContactUs.jsx       # Contact form page
+│   ├── FAQ.jsx             # FAQ page
+│   └── ...
 ├── services/               # API services
+│   └── postcodeService.js  # UK postcode lookup
 ├── App.tsx                 # Main app component with routing
-├── index.css               # Global styles and theme definitions
+├── index.css               # Global styles, animations, and theme
 └── main.tsx                # Application entry point
 ```
 
@@ -343,7 +423,8 @@ src/
 - **Supabase**: Backend services (authentication, database, real-time subscriptions)
 - **Express.js**: API server for property listings
 - **Leaflet.js**: Interactive maps for property locations
-- **Zoopla API**: Real-time UK property listings integration (with Supabase fallback)
+- **Postcodes.io**: UK postcode validation and geocoding
+- **OpenStreetMap Nominatim**: Address lookup service
 
 ## 🎨 Theme & Typography System
 
@@ -385,6 +466,7 @@ The user dashboard features smooth animations for enhanced user experience:
 - **Page Transitions**: Smooth fade + slide transitions (200ms) when navigating between pages
 - **Easing**: ease-out timing function for natural motion
 - **Framer Motion**: Powered by Framer Motion for performant animations
+- **CSS Animations**: fadeIn, slideUp, slideDown, scaleIn for UI elements
 
 ## 🗺️ Map Integration
 
@@ -421,17 +503,18 @@ The payments page uses a placeholder Stripe integration. To integrate real payme
 ## 🔐 Authentication
 
 Authentication is handled via Supabase Auth. The platform integrates with Supabase for:
-- User authentication
-- Session management
-- User profile data
+- User authentication with email/password
+- Session management with automatic refresh
+- User profile data with verification status
 - Property ownership (agent_id)
 - Role-based access (manager vs user)
+- Robust sign-out with timeout handling
 
 ## 📊 Database Schema
 
 The application uses Supabase PostgreSQL with the following key tables:
 
-- **properties**: Property listings with fields for title, price, location, images, etc.
+- **properties**: Property listings with fields for title, price, location, images, property_type, listing_type, etc.
 - **saved_properties**: User saved/favorited properties
 - **applied_properties**: Property applications
 - **viewed_properties**: Property view tracking
@@ -457,9 +540,11 @@ For support:
 - **Manager Dashboard**: manager@estospaces.com
 - **User Dashboard**: support@estospaces.com
 - Visit the Help & Support page in the respective dashboard
+- Use the Contact Us page at `/contact`
 
 ---
 
-**Branch**: Dashboards (Merged with user-dashboard)  
+**Branch**: user-dahboard  
 **Repository**: https://github.com/Estospaces/estospaces-app  
+**Live Demo**: https://estospaces-app.vercel.app  
 Built with ❤️ by the Estospaces team

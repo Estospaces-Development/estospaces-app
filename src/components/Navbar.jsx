@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogIn, UserPlus, User, LayoutDashboard, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, LogIn, UserPlus, User, LayoutDashboard, Settings, LogOut, ChevronDown, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoIcon from '../assets/logo-icon.png';
 import { useChat } from '../contexts/ChatContext';
@@ -9,6 +9,7 @@ const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
     const profileMenuRef = useRef(null);
     const { closeChat } = useChat();
     const { isAuthenticated, profile, getDisplayName, getAvatarUrl, getRole, signOut } = useAuth();
@@ -26,21 +27,59 @@ const Navbar = () => {
     }, []);
 
     const handleSignOut = async () => {
-        await signOut();
+        setIsSigningOut(true);
         setIsProfileMenuOpen(false);
-        navigate('/');
+        setIsMobileMenuOpen(false);
+        
+        // Create a timeout promise to ensure we redirect even if sign out hangs
+        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        const signOutPromise = (async () => {
+            try {
+                if (signOut) {
+                    await signOut();
+                }
+            } catch (error) {
+                console.error('Error during sign out:', error);
+            }
+        })();
+        
+        // Wait for either sign out to complete or timeout (whichever comes first)
+        await Promise.race([signOutPromise, timeoutPromise]);
+        
+        // Clear any local storage auth data
+        try {
+            localStorage.removeItem('supabase.auth.token');
+            localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
+            sessionStorage.clear();
+        } catch (e) {
+            // Ignore storage errors
+        }
+        
+        // Force redirect to home page
+        window.location.href = '/';
     };
 
     const handleNavigateToDashboard = () => {
         setIsProfileMenuOpen(false);
         handleNavClick();
-        navigate('/manager/dashboard');
+        const role = getRole();
+        if (role === 'user') {
+            navigate('/user/dashboard');
+        } else {
+            navigate('/manager/dashboard');
+        }
     };
 
     const handleNavigateToProfile = () => {
         setIsProfileMenuOpen(false);
         handleNavClick();
-        navigate('/manager/dashboard/profile');
+        const role = getRole();
+        if (role === 'user') {
+            navigate('/user/dashboard/profile');
+        } else {
+            navigate('/manager/dashboard/profile');
+        }
     };
 
     useEffect(() => {
@@ -164,10 +203,15 @@ const Navbar = () => {
                                         <div className="border-t border-gray-100 pt-1">
                                             <button
                                                 onClick={handleSignOut}
-                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                                disabled={isSigningOut}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <LogOut size={18} />
-                                                Sign Out
+                                                {isSigningOut ? (
+                                                    <Loader2 size={18} className="animate-spin" />
+                                                ) : (
+                                                    <LogOut size={18} />
+                                                )}
+                                                {isSigningOut ? 'Signing Out...' : 'Sign Out'}
                                             </button>
                                         </div>
                                     </div>
@@ -247,20 +291,14 @@ const Navbar = () => {
                                 </div>
                                 
                                 <button 
-                                    onClick={() => {
-                                        handleNavClick();
-                                        navigate('/manager/dashboard');
-                                    }}
+                                    onClick={handleNavigateToDashboard}
                                     className="text-gray-800 dark:text-gray-100 font-medium hover:text-primary dark:hover:text-primary flex items-center gap-2 py-2 transition-colors"
                                 >
                                     <LayoutDashboard size={18} />
                                     Dashboard
                                 </button>
                                 <button 
-                                    onClick={() => {
-                                        handleNavClick();
-                                        navigate('/manager/dashboard/profile');
-                                    }}
+                                    onClick={handleNavigateToProfile}
                                     className="text-gray-800 dark:text-gray-100 font-medium hover:text-primary dark:hover:text-primary flex items-center gap-2 py-2 transition-colors"
                                 >
                                     <Settings size={18} />
@@ -271,10 +309,15 @@ const Navbar = () => {
                                         handleNavClick();
                                         handleSignOut();
                                     }}
-                                    className="text-red-600 font-medium hover:text-red-700 flex items-center gap-2 py-2"
+                                    disabled={isSigningOut}
+                                    className="text-red-600 font-medium hover:text-red-700 flex items-center gap-2 py-2 disabled:opacity-50"
                                 >
-                                    <LogOut size={18} />
-                                    Sign Out
+                                    {isSigningOut ? (
+                                        <Loader2 size={18} className="animate-spin" />
+                                    ) : (
+                                        <LogOut size={18} />
+                                    )}
+                                    {isSigningOut ? 'Signing Out...' : 'Sign Out'}
                                 </button>
                             </div>
                         ) : (

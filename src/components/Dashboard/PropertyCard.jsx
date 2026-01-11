@@ -113,7 +113,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
   return (
     <>
-      <div className="bg-white dark:bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-300 hover:shadow-lg transition-all duration-300 group">
+      <div className="bg-white dark:bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
         {/* Image Carousel */}
         <div className="relative h-56 bg-gray-200 overflow-hidden">
           {images.length > 0 ? (
@@ -172,8 +172,14 @@ const PropertyCard = ({ property, onViewDetails }) => {
           {/* Property Type Badge */}
           {property.type && (
             <div className="absolute top-3 left-3">
-              <span className="bg-white/90 backdrop-blur-sm text-gray-800 px-2.5 py-1 rounded-md text-sm font-medium">
-                {property.type}
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${
+                property.type?.toLowerCase() === 'rent' 
+                  ? 'bg-blue-500 text-white' 
+                  : property.type?.toLowerCase() === 'sale' 
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white/95 backdrop-blur-sm text-gray-800'
+              }`}>
+                {property.type === 'Sale' ? 'For Sale' : property.type === 'Rent' ? 'For Rent' : property.type}
               </span>
             </div>
           )}

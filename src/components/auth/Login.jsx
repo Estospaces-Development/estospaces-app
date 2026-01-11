@@ -27,21 +27,35 @@ const Login = () => {
             }
 
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                // Add timeout to prevent hanging
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Session check timeout')), 5000)
+                );
+                
+                const sessionPromise = supabase.auth.getSession();
+                const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
                 
                 if (session) {
                     // User is already logged in, redirect based on role
                     const userRole = session.user?.user_metadata?.role;
                     
-                    // Check profile for role if not in metadata
+                    // Check profile for role if not in metadata (with timeout)
                     let role = userRole;
                     if (!role) {
-                        const { data: profile } = await supabase
-                            .from('profiles')
-                            .select('role')
-                            .eq('id', session.user.id)
-                            .single();
-                        role = profile?.role || 'user';
+                        try {
+                            const profileTimeout = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Profile timeout')), 3000)
+                            );
+                            const profilePromise = supabase
+                                .from('profiles')
+                                .select('role')
+                                .eq('id', session.user.id)
+                                .single();
+                            const { data: profile } = await Promise.race([profilePromise, profileTimeout]);
+                            role = profile?.role || 'user';
+                        } catch {
+                            role = 'user';
+                        }
                     }
 
                     // Redirect to the intended destination or dashboard based on role
@@ -96,7 +110,8 @@ const Login = () => {
 
     const goToEmail = () => {
         setActive('email');
-        navigate('/auth/sign-in-email');
+        // Pass the location state through to EmailLogin
+        navigate('/auth/sign-in-email', { state: location.state });
     };
 
     return (

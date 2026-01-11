@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { MessagesProvider } from './contexts/MessagesContext';
 import { PropertyFilterProvider } from './contexts/PropertyFilterContext';
 import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
+import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
 import UserProtectedRoute from './components/Admin/UserProtectedRoute';
@@ -44,6 +45,13 @@ import PropertyDetail from './pages/PropertyDetail';
 // Auth Components
 import { Login, EmailLogin, Signup, ResetPassword, AuthCallback } from './components/auth';
 
+// Public Pages
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import CookiePolicy from './pages/CookiePolicy';
+import TermsConditions from './pages/TermsConditions';
+import ContactUs from './pages/ContactUs';
+import FAQ from './pages/FAQ';
+
 function App() {
   return (
     <ThemeProvider>
@@ -52,9 +60,10 @@ function App() {
           <LeadProvider>
             <MessagesProvider>
               <SavedPropertiesProvider>
-                <Router>
-                  <PropertyFilterProvider>
-                    <Routes>
+                <ApplicationsProvider>
+                  <Router>
+                    <PropertyFilterProvider>
+                      <Routes>
                       {/* Landing Page */}
                       <Route path="/" element={<Home />} />
 
@@ -64,6 +73,13 @@ function App() {
                       <Route path="/auth/signup" element={<Signup />} />
                       <Route path="/auth/reset-password" element={<ResetPassword />} />
                       <Route path="/auth/callback" element={<AuthCallback />} />
+
+                      {/* Public Pages */}
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/cookies" element={<CookiePolicy />} />
+                      <Route path="/terms" element={<TermsConditions />} />
+                      <Route path="/contact" element={<ContactUs />} />
+                      <Route path="/faq" element={<FAQ />} />
 
                       {/* Manager Dashboard Routes - Protected */}
                       <Route
@@ -352,9 +368,10 @@ function App() {
                           </UserProtectedRoute>
                         }
                       />
-                    </Routes>
-                  </PropertyFilterProvider>
-                </Router>
+                      </Routes>
+                    </PropertyFilterProvider>
+                  </Router>
+                </ApplicationsProvider>
               </SavedPropertiesProvider>
             </MessagesProvider>
           </LeadProvider>

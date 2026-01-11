@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Twitter, Instagram, Linkedin } from 'lucide-react';
 
 const DashboardFooter = () => {
@@ -13,44 +14,19 @@ const DashboardFooter = () => {
                         <h3 className="text-sm font-bold uppercase mb-4" style={{ color: '#1e3a5f' }}>ESTOSPACES.COM</h3>
                         <ul className="space-y-2 text-sm">
                             <li>
-                                <a href="/contact" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/contact" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Contact Us
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/find-agent" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Find an Agent
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/sitemap" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Sitemap
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/careers" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Careers
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/faq" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/faq" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     FAQ
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/mobile-apps" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Mobile Apps
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/promote-property" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Promote Your Property
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/privacy-settings" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Change privacy settings
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -60,54 +36,29 @@ const DashboardFooter = () => {
                         <h3 className="text-sm font-bold uppercase mb-4" style={{ color: '#1e3a5f' }}>Search</h3>
                         <ul className="space-y-2 text-sm">
                             <li>
-                                <a href="/search-homes-for-sale" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?tab=buy&type=residential" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Search homes for sale
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/search-homes-for-rent" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?tab=rent&type=residential" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Search homes for rent
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/commercial-for-sale" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?tab=buy&type=commercial" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Commercial for sale
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/commercial-to-rent" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?tab=rent&type=commercial" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Commercial to rent
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/overseas-homes-for-sale" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Overseas homes for sale
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/search-sold-house-prices" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Search sold house prices
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/find-agent" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Find an agent
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/student-accommodation" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Student accommodation
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/retirement-homes" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Retirement homes
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/new-homes" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?new=true&tab=buy" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     New homes
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -117,49 +68,34 @@ const DashboardFooter = () => {
                         <h3 className="text-sm font-bold uppercase mb-4" style={{ color: '#1e3a5f' }}>Locations</h3>
                         <ul className="space-y-2 text-sm">
                             <li>
-                                <a href="/locations/major-towns-cities-uk" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?location=uk" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Major towns and cities in the UK
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/locations/london" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?location=london" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     London
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/locations/cornwall" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?location=cornwall" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Cornwall
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/locations/glasgow" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?location=glasgow" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Glasgow
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/locations/cardiff" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?location=cardiff" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Cardiff
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/locations/edinburgh" className="text-gray-700 hover:text-orange-600 transition-colors">
+                                <Link to="/user/dashboard/discover?location=edinburgh" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     Edinburgh
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/locations/spain" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Spain
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/locations/france" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    France
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/locations/portugal" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Portugal
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -173,26 +109,22 @@ const DashboardFooter = () => {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         {/* Copyright */}
                         <p className="text-sm text-gray-700">
-                            2026 Copyright Reserved
+                            © 2026 Estospaces. All rights reserved.
                         </p>
 
                         {/* Policy Links */}
                         <div className="flex items-center gap-4 text-sm text-gray-700">
-                            <a href="/privacy" className="hover:text-orange-600 transition-colors">
+                            <Link to="/privacy" className="hover:text-orange-600 transition-colors">
                                 Privacy Policy
-                            </a>
+                            </Link>
                             <span className="text-gray-400">|</span>
-                            <a href="/cookies" className="hover:text-orange-600 transition-colors">
+                            <Link to="/cookies" className="hover:text-orange-600 transition-colors">
                                 Cookie Policy
-                            </a>
+                            </Link>
                             <span className="text-gray-400">|</span>
-                            <a href="/terms" className="hover:text-orange-600 transition-colors">
+                            <Link to="/terms" className="hover:text-orange-600 transition-colors">
                                 Terms & Conditions
-                            </a>
-                            <span className="text-gray-400">|</span>
-                            <a href="/hosting-terms" className="hover:text-orange-600 transition-colors">
-                                Hosting Terms
-                            </a>
+                            </Link>
                         </div>
 
                         {/* Social Media Icons */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, User, ChevronDown } from 'lucide-react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { Bell, User, ChevronDown, Loader2, LogOut, Settings, HelpCircle } from 'lucide-react';
 import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import logoIcon from '../../assets/logo-icon.png';
@@ -12,6 +12,7 @@ const Header = () => {
   const isDashboard = location.pathname.startsWith('/user/dashboard');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const logoRef = React.useRef(null);
 
   // Get user display name and email
@@ -24,13 +25,50 @@ const Header = () => {
     { id: 3, title: 'Contract updated', message: 'Your contract has been updated', time: '3h ago' },
   ];
 
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    setUserMenuOpen(false);
+    
+    // Create a timeout promise to ensure we redirect even if sign out hangs
+    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    const signOutPromise = (async () => {
+      try {
+        // Try to sign out via AuthContext first
+        if (signOut) {
+          await signOut();
+        } else if (isSupabaseAvailable()) {
+          // Fallback to direct Supabase sign out
+          await supabase.auth.signOut();
+        }
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
+    })();
+    
+    // Wait for either sign out to complete or timeout (whichever comes first)
+    await Promise.race([signOutPromise, timeoutPromise]);
+    
+    // Clear any local storage auth data
+    try {
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
+      sessionStorage.clear();
+    } catch (e) {
+      // Ignore storage errors
+    }
+    
+    // Force redirect to landing page
+    window.location.href = '/';
+  };
+
   return (
     <header className="h-16 bg-primary dark:bg-[#0a0a0a] sticky top-0 z-30 shadow-sm border-b border-primary/80 dark:border-gray-800">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
-        {/* Left side - Logo */}
-        <button
-          onClick={() => navigate('/user/dashboard')}
-          className="flex items-center gap-1.5 hover:opacity-90 transition-opacity duration-200 cursor-pointer"
+        {/* Left side - Logo - Clickable to go to dashboard */}
+        <Link
+          to="/user/dashboard"
+          className="flex items-center gap-1.5 hover:opacity-80 transition-opacity duration-200 cursor-pointer no-underline"
           aria-label="Navigate to dashboard"
         >
           <img 
@@ -39,14 +77,14 @@ const Header = () => {
             alt="Estospaces Logo" 
             className="h-8 w-auto object-contain transition-all duration-300"
             style={{ 
-              filter: 'brightness(0) saturate(100%) invert(77%) sepia(95%) saturate(2500%) hue-rotate(345deg) brightness(1.6) contrast(1.2) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))',
-              WebkitFilter: 'brightness(0) saturate(100%) invert(77%) sepia(95%) saturate(2500%) hue-rotate(345deg) brightness(1.6) contrast(1.2) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))'
+              filter: 'brightness(0) invert(1)',
+              WebkitFilter: 'brightness(0) invert(1)'
             }}
           />
-          <span className="text-xl font-bold text-white dark:text-orange-500 transition-colors duration-300" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+          <span className="text-xl font-bold text-white dark:text-orange-500 transition-colors duration-300 hover:text-white/90" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
             Estospaces
           </span>
-        </button>
+        </Link>
 
         {/* Right side - Notifications, User */}
         <div className="flex items-center gap-4">
@@ -121,19 +159,23 @@ const Header = () => {
                   className="fixed inset-0 z-40"
                   onClick={() => setUserMenuOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                  <div className="p-2">
-                    <div className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">{displayName}</div>
-                    <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400">{userEmail}</div>
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                  {/* User Info */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{displayName}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{userEmail}</div>
                   </div>
-                  <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+                  
+                  {/* Menu Items */}
+                  <div className="p-2">
                     <button 
                       onClick={() => {
                         setUserMenuOpen(false);
                         navigate('/user/dashboard/settings');
                       }}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
+                      <Settings size={18} className="text-gray-400" />
                       Account Settings
                     </button>
                     <button 
@@ -141,31 +183,26 @@ const Header = () => {
                         setUserMenuOpen(false);
                         navigate('/user/dashboard/help');
                       }}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
+                      <HelpCircle size={18} className="text-gray-400" />
                       Help & Support
                     </button>
+                  </div>
+                  
+                  {/* Sign Out */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 p-2">
                     <button 
-                      onClick={async () => {
-                        setUserMenuOpen(false);
-                        // Handle logout
-                        try {
-                          if (signOut) {
-                            await signOut();
-                          } else if (isSupabaseAvailable()) {
-                            await supabase.auth.signOut();
-                          }
-                          // Navigate to home page after logout
-                          navigate('/');
-                        } catch (error) {
-                          console.error('Error signing out:', error);
-                          // Fallback navigation
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Log Out
+                      {isSigningOut ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <LogOut size={18} />
+                      )}
+                      {isSigningOut ? 'Signing Out...' : 'Log Out'}
                     </button>
                   </div>
                 </div>
