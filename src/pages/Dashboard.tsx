@@ -14,6 +14,9 @@ import BarChart from '../components/ui/BarChart';
 import LineChart from '../components/ui/LineChart';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 import { getDashboardStats } from '../services/dashboardStatsService';
+import { getLeads, updateLeadStatus } from '../services/leadsService';
+import { getApplications, updateApplicationStatus, deleteApplication } from '../services/applicationsService';
+import { getAnalyticsData } from '../services/analyticsService';
 
 interface Lead {
   id: string;
@@ -43,6 +46,21 @@ interface Application {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { properties, deleteProperty } = useProperties();
+  
+  // Debug: Log property image data in development
+  useEffect(() => {
+    if (import.meta.env.DEV && properties.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log('Dashboard properties image data:', properties.slice(0, 3).map(p => ({
+        id: p.id,
+        title: p.title,
+        images: p.images,
+        media: p.media,
+        imageCount: p.images?.length || 0
+      })));
+    }
+  }, [properties]);
+  
   const [activeTab, setActiveTab] = useState('overview');
   const [applicationSearch, setApplicationSearch] = useState('');
   const [applicationStatusFilter, setApplicationStatusFilter] = useState('all');
@@ -73,6 +91,11 @@ const Dashboard = () => {
     conversionRateChange: '+0%',
   });
   const [statsLoading, setStatsLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(true);
+  const [leadsError, setLeadsError] = useState<string | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   // Fetch dashboard statistics
   useEffect(() => {
@@ -82,9 +105,11 @@ const Dashboard = () => {
         const result = await getDashboardStats();
         if (result.data) {
           setDashboardStats(result.data);
+        } else if (result.error) {
+          // Handle error silently, keep default values
         }
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        // Handle error silently
       } finally {
         setStatsLoading(false);
       }
@@ -96,140 +121,85 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Sample leads data
-  const leads: Lead[] = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      propertyInterested: 'Modern Downtown Apartment',
-      status: 'New Lead',
-      score: 85,
-      budget: '$2,500/mo',
-      lastContact: '2 days ago',
-      phone: '+1 (555) 123-4567',
-    },
-    {
-      id: '2',
-      name: 'Michel Chen',
-      email: 'michel.chen@email.com',
-      propertyInterested: 'Luxury Condo with City View',
-      status: 'In Progress',
-      score: 92,
-      budget: '$3,200/mo',
-      lastContact: '1 day ago',
-      phone: '+1 (555) 234-5678',
-    },
-    {
-      id: '3',
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@email.com',
-      propertyInterested: 'Spacious Penthouse',
-      status: 'Approved',
-      score: 78,
-      budget: '$4,500/mo',
-      lastContact: '3 days ago',
-      phone: '+1 (555) 345-6789',
-    },
-    {
-      id: '4',
-      name: 'David Smith',
-      email: 'david.smith@email.com',
-      propertyInterested: 'Modern Downtown Apartment',
-      status: 'New Lead',
-      score: 88,
-      budget: '$2,800/mo',
-      lastContact: '5 hours ago',
-      phone: '+1 (555) 456-7890',
-    },
-    {
-      id: '5',
-      name: 'Jessica Williams',
-      email: 'jessica.williams@email.com',
-      propertyInterested: 'Luxury Condo with City View',
-      status: 'In Progress',
-      score: 90,
-      budget: '$3,500/mo',
-      lastContact: '12 hours ago',
-      phone: '+1 (555) 567-8901',
-    },
-  ];
+  // Fetch leads from API
+  useEffect(() => {
+    const fetchLeads = async () => {
+      setLeadsLoading(true);
+      setLeadsError(null);
+      try {
+        const result = await getLeads();
+        if (result.data) {
+          setLeads(result.data);
+        } else if (result.error) {
+          setLeadsError(result.error);
+          setLeads([]);
+        }
+      } catch (error) {
+        setLeadsError('Failed to load leads');
+        setLeads([]);
+      } finally {
+        setLeadsLoading(false);
+      }
+    };
 
-  // Sample applications data
-  const [applicationsList, setApplicationsList] = useState<Application[]>([
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      propertyInterested: 'Modern Downtown Apartment',
-      status: 'Approved',
-      score: 85,
-      budget: '$2,500/mo',
-      submittedDate: '2025-01-10',
-      lastContact: '2 days ago',
-      phone: '+1 (555) 123-4567',
-    },
-    {
-      id: '2',
-      name: 'Michel Chen',
-      email: 'michel.chen@email.com',
-      propertyInterested: 'Luxury Condo with City View',
-      status: 'Pending',
-      score: 92,
-      budget: '$3,200/mo',
-      submittedDate: '2025-01-12',
-      lastContact: '1 day ago',
-      phone: '+1 (555) 234-5678',
-    },
-    {
-      id: '3',
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@email.com',
-      propertyInterested: 'Spacious Penthouse',
-      status: 'Approved',
-      score: 78,
-      budget: '$4,500/mo',
-      submittedDate: '2025-01-08',
-      lastContact: '3 days ago',
-      phone: '+1 (555) 345-6789',
-    },
-    {
-      id: '4',
-      name: 'David Smith',
-      email: 'david.smith@email.com',
-      propertyInterested: 'Modern Downtown Apartment',
-      status: 'Pending',
-      score: 88,
-      budget: '$2,800/mo',
-      submittedDate: '2025-01-13',
-      lastContact: '5 hours ago',
-      phone: '+1 (555) 456-7890',
-    },
-    {
-      id: '5',
-      name: 'Jessica Williams',
-      email: 'jessica.williams@email.com',
-      propertyInterested: 'Luxury Condo with City View',
-      status: 'Rejected',
-      score: 65,
-      budget: '$3,500/mo',
-      submittedDate: '2025-01-05',
-      lastContact: '1 week ago',
-      phone: '+1 (555) 567-8901',
-    },
-    {
-      id: '6',
-      name: 'Michael Brown',
-      email: 'michael.brown@email.com',
-      propertyInterested: 'Spacious Penthouse',
-      status: 'Approved',
-      score: 95,
-      budget: '$5,000/mo',
-      submittedDate: '2025-01-09',
-      lastContact: '4 days ago',
-      phone: '+1 (555) 678-9012',
-    },
-  ]);
+    fetchLeads();
+    // Refresh leads every 30 seconds
+    const interval = setInterval(fetchLeads, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch analytics data
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const result = await getAnalyticsData();
+        if (result.data) {
+          setAnalyticsData(result.data);
+        }
+      } catch (error) {
+        // Handle error silently
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  // Real leads data from API
+  const leadsList: Lead[] = leads || [];
+
+  // Fetch applications from API
+  const [applicationsList, setApplicationsList] = useState<Application[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(true);
+  const [applicationsError, setApplicationsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      setApplicationsLoading(true);
+      setApplicationsError(null);
+      try {
+        const result = await getApplications();
+        if (result.data) {
+          setApplicationsList(result.data);
+        } else if (result.error) {
+          setApplicationsError(result.error);
+          setApplicationsList([]);
+        }
+      } catch (error) {
+        setApplicationsError('Failed to load applications');
+        setApplicationsList([]);
+      } finally {
+        setApplicationsLoading(false);
+      }
+    };
+
+    fetchApplications();
+    // Refresh applications every 30 seconds
+    const interval = setInterval(fetchApplications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter applications based on search and status
   const filteredApplications = applicationsList.filter((app) => {
@@ -247,28 +217,63 @@ const Dashboard = () => {
     new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime()
   );
 
-  const handleDeleteApplication = (id: string) => {
-    setApplicationsList((prev) => prev.filter((app) => app.id !== id));
-    setShowDeleteConfirm(null);
+  const handleDeleteApplication = async (id: string) => {
+    try {
+      const result = await deleteApplication(id);
+      if (result.error) {
+        alert(`Failed to delete application: ${result.error}`);
+        return;
+      }
+      // Refresh applications list
+      const appsResult = await getApplications();
+      if (appsResult.data) {
+        setApplicationsList(appsResult.data);
+      }
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      alert('Failed to delete application');
+    }
   };
 
-  const handleApproveApplication = (id: string) => {
-    setApplicationsList((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status: 'Approved' } : app))
-    );
+  const handleApproveApplication = async (id: string) => {
+    try {
+      const result = await updateApplicationStatus(id, 'Approved');
+      if (result.error) {
+        alert(`Failed to approve application: ${result.error}`);
+        return;
+      }
+      // Refresh applications list
+      const appsResult = await getApplications();
+      if (appsResult.data) {
+        setApplicationsList(appsResult.data);
+      }
+    } catch (error) {
+      alert('Failed to approve application');
+    }
   };
 
-  const handleRejectApplication = (id: string) => {
-    setApplicationsList((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status: 'Rejected' } : app))
-    );
+  const handleRejectApplication = async (id: string) => {
+    try {
+      const result = await updateApplicationStatus(id, 'Rejected');
+      if (result.error) {
+        alert(`Failed to reject application: ${result.error}`);
+        return;
+      }
+      // Refresh applications list
+      const appsResult = await getApplications();
+      if (appsResult.data) {
+        setApplicationsList(appsResult.data);
+      }
+    } catch (error) {
+      alert('Failed to reject application');
+    }
   };
 
   // Export functions
   const handleExportLeads = (format: 'pdf' | 'excel') => {
     const dataToExport = selectedLeads.length > 0 
-      ? leads.filter(l => selectedLeads.includes(l.id))
-      : leads;
+      ? leadsList.filter(l => selectedLeads.includes(l.id))
+      : leadsList;
     
     const exportData = {
       title: 'Leads Report',
@@ -360,7 +365,7 @@ const Dashboard = () => {
       try {
         await navigator.share(shareData);
       } catch (err) {
-        console.log('Share cancelled or failed');
+        // Share cancelled or failed - silently handle
       }
     } else {
       navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}`);
@@ -379,7 +384,7 @@ const Dashboard = () => {
       try {
         await navigator.share(shareData);
       } catch (err) {
-        console.log('Share cancelled or failed');
+        // Share cancelled or failed - silently handle
       }
     } else {
       navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
@@ -398,7 +403,7 @@ const Dashboard = () => {
       try {
         await navigator.share(shareData);
       } catch (err) {
-        console.log('Share cancelled or failed');
+        // Share cancelled or failed - silently handle
       }
     } else {
       navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}`);
@@ -406,47 +411,6 @@ const Dashboard = () => {
     }
   };
 
-  const mockProperties = [
-    {
-      name: 'Modern Downtown Apartment',
-      address: '123 Main St.Downtown',
-      beds: 2,
-      bathrooms: 2,
-      sqft: 1200,
-      rating: 4.8,
-      reviews: 24,
-      listedDate: '2 weeks ago',
-      tags: ['Apartment', 'Balcony', 'Gym'],
-      image: '',
-      status: 'Available',
-    },
-    {
-      name: 'Luxury condo with City',
-      address: '456, High St.Midtown',
-      beds: 3,
-      bathrooms: 2,
-      sqft: 1500,
-      rating: 4.9,
-      reviews: 18,
-      listedDate: '1 weeks ago',
-      tags: ['Condo', 'Water view', 'Conciongo'],
-      image: '',
-      status: 'Available',
-    },
-    {
-      name: 'Spacious Penthouse',
-      address: '321 Sky, tower, Uptown',
-      beds: 3,
-      bathrooms: 3,
-      sqft: 2200,
-      rating: 4.9,
-      reviews: 31,
-      listedDate: '5 days ago',
-      tags: ['Penthhouse', 'Terrance', 'City view'],
-      image: '',
-      status: 'Available',
-    },
-  ];
 
   return (
     <div className="space-y-6 font-sans relative">
@@ -579,7 +543,9 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">Total Leads</p>
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">{leads.length}</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white">
+                    {leadsLoading ? '...' : leadsList.length}
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-500 rounded-lg">
                   <Users className="w-6 h-6 text-white" />
@@ -591,7 +557,7 @@ const Dashboard = () => {
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">New Leads</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">
-                    {leads.filter((l) => l.status === 'New Lead').length}
+                    {leadsLoading ? '...' : leadsList.filter((l) => l.status === 'New Lead').length}
                   </p>
                 </div>
                 <div className="p-3 bg-green-500 rounded-lg">
@@ -604,7 +570,7 @@ const Dashboard = () => {
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">In Progress</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">
-                    {leads.filter((l) => l.status === 'In Progress').length}
+                    {leadsLoading ? '...' : leadsList.filter((l) => l.status === 'In Progress').length}
                   </p>
                 </div>
                 <div className="p-3 bg-yellow-500 rounded-lg">
@@ -617,7 +583,7 @@ const Dashboard = () => {
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">Approved</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">
-                    {leads.filter((l) => l.status === 'Approved').length}
+                    {leadsLoading ? '...' : leadsList.filter((l) => l.status === 'Approved').length}
                   </p>
                 </div>
                 <div className="p-3 bg-purple-500 rounded-lg">
@@ -626,6 +592,27 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* Error State */}
+          {leadsError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-red-800 dark:text-red-400">Error loading leads: {leadsError}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {leadsLoading && !leadsError && (
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center">
+              <p className="text-gray-500 dark:text-gray-400">Loading leads...</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!leadsLoading && !leadsError && leadsList.length === 0 && (
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center">
+              <p className="text-gray-500 dark:text-gray-400">No leads found</p>
+            </div>
+          )}
 
           {/* Search and Filter Bar for Leads */}
           <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
@@ -749,8 +736,8 @@ const Dashboard = () => {
                     <th className="px-6 py-3 text-left caption text-gray-500 dark:text-gray-400 uppercase">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {leads.map((lead) => (
+                <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
+                  {!leadsLoading && !leadsError && leadsList.map((lead) => (
                     <tr key={lead.id} className="transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:scale-[1.01] cursor-pointer hover:shadow-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
@@ -1082,40 +1069,40 @@ const Dashboard = () => {
         <div className="space-y-6">
           {/* Application Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-primary/20 dark:border-primary/30 p-4 transition-colors duration-300">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">Total Applications</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">{applicationsList.length}</p>
                 </div>
-                <div className="p-3 bg-blue-500 rounded-lg">
-                  <FileText className="w-6 h-6 text-white" />
+                <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg">
+                  <FileText className="w-6 h-6 text-primary dark:text-primary-light" />
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-green-500/20 dark:border-green-500/30 p-4 transition-colors duration-300">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">Approved</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">{approvedApplications.length}</p>
                 </div>
-                <div className="p-3 bg-green-500 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-white" />
+                <div className="p-3 bg-green-500/10 dark:bg-green-500/20 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-yellow-500/20 dark:border-yellow-500/30 p-4 transition-colors duration-300">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">Pending</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">{pendingApplications.length}</p>
                 </div>
-                <div className="p-3 bg-yellow-500 rounded-lg">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="p-3 bg-yellow-500/10 dark:bg-yellow-500/20 rounded-lg">
+                  <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-red-500/20 dark:border-red-500/30 p-4 transition-colors duration-300">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="secondary-label text-gray-600 dark:text-gray-400 mb-1">Rejected</p>
@@ -1123,8 +1110,8 @@ const Dashboard = () => {
                     {applicationsList.filter((app) => app.status === 'Rejected').length}
                   </p>
                 </div>
-                <div className="p-3 bg-red-500 rounded-lg">
-                  <XCircle className="w-6 h-6 text-white" />
+                <div className="p-3 bg-red-500/10 dark:bg-red-500/20 rounded-lg">
+                  <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                 </div>
               </div>
             </div>
@@ -1231,15 +1218,15 @@ const Dashboard = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-primary/5 dark:bg-primary/10 border-b border-primary/20 dark:border-primary/30">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Budget</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Applicant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Property</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Budget</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Submitted</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
@@ -1804,430 +1791,223 @@ const Dashboard = () => {
             })()}
           </div>
 
-          {/* Future Property Analysis */}
-          <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Lightbulb className="w-6 h-6 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Future Property Rate Analysis & Predictions</h2>
-            </div>
-
-            {(() => {
-              // Sample property data with predictions
-              const propertyPredictions = [
-                {
-                  id: '1',
-                  name: 'Modern Downtown Apartment',
-                  currentRate: 450000,
-                  predictedRate1Month: 465000,
-                  predictedRate2Months: 480000,
-                  trend: 'increasing',
-                  location: 'Downtown',
-                  propertyType: 'Apartment'
-                },
-                {
-                  id: '2',
-                  name: 'Luxury Condo with City View',
-                  currentRate: 3500,
-                  predictedRate1Month: 3625,
-                  predictedRate2Months: 3750,
-                  trend: 'increasing',
-                  location: 'City Center',
-                  propertyType: 'Condo'
-                },
-                {
-                  id: '3',
-                  name: 'Spacious Penthouse',
-                  currentRate: 6500,
-                  predictedRate1Month: 6300,
-                  predictedRate2Months: 6100,
-                  trend: 'decreasing',
-                  location: 'Uptown',
-                  propertyType: 'Penthouse'
-                },
-                {
-                  id: '4',
-                  name: 'Suburban Family Home',
-                  currentRate: 320000,
-                  predictedRate1Month: 332000,
-                  predictedRate2Months: 345000,
-                  trend: 'increasing',
-                  location: 'Suburbs',
-                  propertyType: 'House'
-                },
-                {
-                  id: '5',
-                  name: 'Beachfront Villa',
-                  currentRate: 850000,
-                  predictedRate1Month: 880000,
-                  predictedRate2Months: 910000,
-                  trend: 'increasing',
-                  location: 'Coastal',
-                  propertyType: 'Villa'
-                }
-              ];
-
-              // Calculate overall statistics
-              const totalProperties = propertyPredictions.length;
-              const increasingProperties = propertyPredictions.filter(p => p.trend === 'increasing').length;
-              const decreasingProperties = propertyPredictions.filter(p => p.trend === 'decreasing').length;
-              const avgIncrease1Month = propertyPredictions.reduce((sum, p) => {
-                const change = ((p.predictedRate1Month - p.currentRate) / p.currentRate) * 100;
-                return sum + change;
-              }, 0) / totalProperties;
-              const avgIncrease2Months = propertyPredictions.reduce((sum, p) => {
-                const change = ((p.predictedRate2Months - p.currentRate) / p.currentRate) * 100;
-                return sum + change;
-              }, 0) / totalProperties;
-
-              return (
-                <>
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Properties Increasing</p>
-                        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-400">{increasingProperties}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">of {totalProperties} properties</p>
-                    </div>
-                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Properties Decreasing</p>
-                        <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
-                      </div>
-                      <p className="text-2xl font-bold text-red-700 dark:text-red-400">{decreasingProperties}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">of {totalProperties} properties</p>
-                    </div>
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Increase (1 Month)</p>
-                        <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">+{avgIncrease1Month.toFixed(1)}%</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Next month</p>
-                    </div>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Increase (2 Months)</p>
-                        <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">+{avgIncrease2Months.toFixed(1)}%</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">In 2 months</p>
-                    </div>
-                  </div>
-
-                  {/* Prediction Chart */}
-                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-4">Rate Prediction Trend (Next 2 Months)</h3>
-                    <LineChart
-                      data={[
-                        { label: 'Current', value: propertyPredictions[0].currentRate / 1000 },
-                        { label: '+1 Month', value: propertyPredictions[0].predictedRate1Month / 1000 },
-                        { label: '+2 Months', value: propertyPredictions[0].predictedRate2Months / 1000 },
-                      ]}
-                      height={200}
-                      color="#FF6B35"
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 text-center">Sample: {propertyPredictions[0].name}</p>
-                  </div>
-
-                  {/* Property Predictions Table */}
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-4">Property Rate Predictions</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 dark:bg-gray-900">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Property</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Current Rate</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">+1 Month</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">+2 Months</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Change</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trend</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Recommendation</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
-                          {propertyPredictions.map((property) => {
-                            const change1Month = ((property.predictedRate1Month - property.currentRate) / property.currentRate) * 100;
-                            const change2Months = ((property.predictedRate2Months - property.currentRate) / property.currentRate) * 100;
-                            const isRental = property.currentRate < 10000;
-                            
-                            return (
-                              <tr key={property.id} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                                <td className="px-4 py-3">
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{property.name}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">{property.location} • {property.propertyType}</p>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                  {isRental ? `$${property.currentRate.toLocaleString()}/mo` : `$${property.currentRate.toLocaleString()}`}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                  {isRental ? `$${property.predictedRate1Month.toLocaleString()}/mo` : `$${property.predictedRate1Month.toLocaleString()}`}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                  {isRental ? `$${property.predictedRate2Months.toLocaleString()}/mo` : `$${property.predictedRate2Months.toLocaleString()}`}
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  <div className="space-y-1">
-                                    <span className={`font-medium ${change1Month >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                      {change1Month >= 0 ? '+' : ''}{change1Month.toFixed(1)}% (1M)
-                                    </span>
-                                    <br />
-                                    <span className={`font-medium ${change2Months >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                      {change2Months >= 0 ? '+' : ''}{change2Months.toFixed(1)}% (2M)
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  {property.trend === 'increasing' ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
-                                      <TrendingUp className="w-3 h-3" />
-                                      Increasing
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
-                                      <TrendingDown className="w-3 h-3" />
-                                      Decreasing
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {property.trend === 'increasing' ? (
-                                    <div className="text-xs">
-                                      <p className="text-green-600 dark:text-green-400 font-medium">
-                                        Increase by {change2Months.toFixed(1)}%
-                                      </p>
-                                      <p className="text-gray-500 dark:text-gray-400 mt-1">
-                                        Suggested: {isRental 
-                                          ? `$${Math.round(property.currentRate * (1 + change2Months / 100)).toLocaleString()}/mo`
-                                          : `$${Math.round(property.currentRate * (1 + change2Months / 100)).toLocaleString()}`
-                                        }
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <div className="text-xs">
-                                      <p className="text-red-600 dark:text-red-400 font-medium">
-                                        Consider holding
-                                      </p>
-                                      <p className="text-gray-500 dark:text-gray-400 mt-1">
-                                        Market may recover
-                                      </p>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Agent Recommendations */}
-                  <div className="p-4 bg-gradient-to-r from-primary/10 to-orange-100 dark:from-primary/20 dark:to-orange-900/20 rounded-lg border border-primary/20 dark:border-primary/30">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-2">Recommendations for Estate Agents</h3>
-                        <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            <span>
-                              <strong>Next 2 Months Strategy:</strong> Based on market predictions, you can increase rates by an average of <strong className="text-green-600 dark:text-green-400">{avgIncrease2Months.toFixed(1)}%</strong> across {increasingProperties} properties.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            <span>
-                              <strong>Immediate Action (1 Month):</strong> Consider increasing rates by <strong className="text-blue-600 dark:text-blue-400">{avgIncrease1Month.toFixed(1)}%</strong> for properties showing upward trends to maximize revenue.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            <span>
-                              <strong>Properties to Focus On:</strong> {propertyPredictions.filter(p => p.trend === 'increasing').map(p => p.name).join(', ')} show strong growth potential.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            <span>
-                              <strong>Market Timing:</strong> The predicted {avgIncrease2Months > 0 ? 'increase' : 'decrease'} suggests this is an {avgIncrease2Months > 0 ? 'optimal' : 'cautious'} time to adjust rates. Monitor market conditions weekly.
-                            </span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
+          {/* Future Property Rate Analysis - Removed: No real prediction API available */}
 
           {/* Charts Row 1: Pie Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Application Status Distribution */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Application Status Distribution</h2>
-              <PieChart
-                data={[
-                  { label: 'Approved', value: approvedApplications.length, color: '#10b981' },
-                  { label: 'Pending', value: pendingApplications.length, color: '#f59e0b' },
-                  { label: 'Rejected', value: applicationsList.filter((app) => app.status === 'Rejected').length, color: '#ef4444' },
-                ]}
-                size={200}
-              />
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Application Status Distribution</h2>
+              {applicationsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : (
+                <PieChart
+                  data={[
+                    { label: 'Approved', value: approvedApplications.length, color: '#10b981' },
+                    { label: 'Pending', value: pendingApplications.length, color: '#f59e0b' },
+                    { label: 'Rejected', value: applicationsList.filter((app) => app.status === 'Rejected').length, color: '#ef4444' },
+                  ]}
+                  size={200}
+                />
+              )}
             </div>
 
             {/* Lead Status Distribution */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Lead Status Distribution</h2>
-              <PieChart
-                data={[
-                  { label: 'New Leads', value: leads.filter((l) => l.status === 'New Lead').length, color: '#3b82f6' },
-                  { label: 'In Progress', value: leads.filter((l) => l.status === 'In Progress').length, color: '#f59e0b' },
-                  { label: 'Approved', value: leads.filter((l) => l.status === 'Approved').length, color: '#10b981' },
-                ]}
-                size={200}
-              />
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Lead Status Distribution</h2>
+              {leadsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : (
+                <PieChart
+                  data={[
+                    { label: 'New Leads', value: leadsList.filter((l) => l.status === 'New Lead').length, color: '#3b82f6' },
+                    { label: 'In Progress', value: leadsList.filter((l) => l.status === 'In Progress').length, color: '#f59e0b' },
+                    { label: 'Approved', value: leadsList.filter((l) => l.status === 'Approved').length, color: '#10b981' },
+                  ]}
+                  size={200}
+                />
+              )}
             </div>
           </div>
 
           {/* Charts Row 2: Bar Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Property Performance Bar Chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Property Performance Comparison</h2>
-              <BarChart
-                data={[
-                  { label: 'Modern Downtown', value: 45, color: '#FF6B35' },
-                  { label: 'Luxury Condo', value: 38, color: '#3b82f6' },
-                  { label: 'Spacious Penthouse', value: 52, color: '#10b981' },
-                ]}
-                title="Property Views"
-                height={200}
-              />
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Property Performance Comparison</h2>
+              {analyticsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : analyticsData?.propertyPerformance && analyticsData.propertyPerformance.length > 0 ? (
+                <BarChart
+                  data={analyticsData.propertyPerformance.slice(0, 5).map((p, idx) => ({
+                    label: p.property.length > 20 ? p.property.substring(0, 20) + '...' : p.property,
+                    value: p.views,
+                    color: ['#FF6B35', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'][idx % 5],
+                  }))}
+                  title="Property Views"
+                  height={200}
+                />
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">No data available</p>
+                </div>
+              )}
             </div>
 
             {/* Applications by Property */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Applications by Property</h2>
-              <BarChart
-                data={[
-                  { label: 'Modern Downtown', value: 12, color: '#8b5cf6' },
-                  { label: 'Luxury Condo', value: 8, color: '#f59e0b' },
-                  { label: 'Spacious Penthouse', value: 15, color: '#ef4444' },
-                ]}
-                title="Applications Received"
-                height={200}
-              />
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Applications by Property</h2>
+              {analyticsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : analyticsData?.applicationsByProperty && analyticsData.applicationsByProperty.length > 0 ? (
+                <BarChart
+                  data={analyticsData.applicationsByProperty.slice(0, 5).map((p, idx) => ({
+                    label: p.label.length > 20 ? p.label.substring(0, 20) + '...' : p.label,
+                    value: p.value,
+                    color: ['#8b5cf6', '#f59e0b', '#ef4444', '#10b981', '#3b82f6'][idx % 5],
+                  }))}
+                  title="Applications Received"
+                  height={200}
+                />
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">No data available</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Charts Row 3: Line Chart and Property Performance Table */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Revenue Trend Line Chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Revenue Trend (Line Chart)</h2>
-              <LineChart
-                data={[
-                  { label: 'Jan', value: 15000 },
-                  { label: 'Feb', value: 18000 },
-                  { label: 'Mar', value: 22000 },
-                  { label: 'Apr', value: 25000 },
-                  { label: 'May', value: 28000 },
-                  { label: 'Jun', value: 32000 },
-                ]}
-                height={200}
-                color="#FF6B35"
-              />
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Revenue Trend (Line Chart)</h2>
+              {analyticsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : analyticsData?.revenueTrend && analyticsData.revenueTrend.length > 0 ? (
+                <LineChart
+                  data={analyticsData.revenueTrend}
+                  height={200}
+                  color="#FF6B35"
+                />
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">No data available</p>
+                </div>
+              )}
             </div>
 
             {/* Property Performance Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Property Performance</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Views</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applications</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conversion</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {[
-                      { property: 'Modern Downtown Apartment', views: 45, applications: 12, conversionRate: 26.7 },
-                      { property: 'Luxury Condo with City View', views: 38, applications: 8, conversionRate: 21.1 },
-                      { property: 'Spacious Penthouse', views: 52, applications: 15, conversionRate: 28.8 },
-                    ].map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900">{item.property}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{item.views}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{item.applications}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-primary h-2 rounded-full"
-                                style={{ width: `${item.conversionRate}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-900">{item.conversionRate}%</span>
-                          </div>
-                        </td>
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Property Performance</h2>
+              {analyticsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : analyticsData?.propertyPerformance && analyticsData.propertyPerformance.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-900">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Property</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Views</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Applications</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Conversion</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                      {analyticsData.propertyPerformance.slice(0, 5).map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900">
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.property}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.views}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.applications}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div
+                                  className="bg-primary h-2 rounded-full"
+                                  style={{ width: `${item.conversionRate}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900 dark:text-white">{item.conversionRate}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">No data available</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Charts Row 4: Lead Analytics and Additional Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Lead Analytic */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Lead Analytic</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Total Leads</span>
-                  <span className="text-lg font-semibold text-gray-800">247</span>
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Lead Analytic</h2>
+              {analyticsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                  ))}
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Total Properties</span>
-                  <span className="text-lg font-semibold text-gray-800">{properties.length || 120}</span>
+              ) : analyticsData?.leadAnalytics ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Leads</span>
+                    <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData.leadAnalytics.totalLeads}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Properties</span>
+                    <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData.leadAnalytics.totalProperties}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</span>
+                    <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData.leadAnalytics.conversionRate}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Rejected</span>
+                    <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData.leadAnalytics.passed}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Conversion Rate</span>
-                  <span className="text-lg font-semibold text-gray-800">14.7%</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Passed</span>
-                  <span className="text-lg font-semibold text-gray-800">36</span>
-                </div>
-              </div>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">No data available</p>
+              )}
             </div>
 
             {/* Monthly Applications Trend */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Monthly Applications Trend</h2>
-              <LineChart
-                data={[
-                  { label: 'Jan', value: 8 },
-                  { label: 'Feb', value: 12 },
-                  { label: 'Mar', value: 15 },
-                  { label: 'Apr', value: 18 },
-                  { label: 'May', value: 22 },
-                  { label: 'Jun', value: 25 },
-                ]}
-                height={200}
-                color="#3b82f6"
-              />
+            <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Monthly Applications Trend</h2>
+              {analyticsLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+              ) : analyticsData?.monthlyApplicationsTrend && analyticsData.monthlyApplicationsTrend.length > 0 ? (
+                <LineChart
+                  data={analyticsData.monthlyApplicationsTrend}
+                  height={200}
+                  color="#3b82f6"
+                />
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">No data available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
