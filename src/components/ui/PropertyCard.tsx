@@ -18,6 +18,13 @@ interface PropertyCardProps {
     tags?: string[];
     features?: string[];
     image?: string;
+    images?: (File | string)[];
+    media?: {
+      images?: { id: string; url: string; type: string; isPrimary?: boolean; order?: number; uploadedAt: string }[];
+      videos?: any[];
+      floorPlans?: any[];
+      virtualTourUrl?: string;
+    };
     status: string;
   };
 }
@@ -30,6 +37,33 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   const tags = property.features || ('tags' in property ? property.tags : undefined) || [];
   const listedDate = ('listedDate' in property ? property.listedDate : undefined) || 
     (property.createdAt ? new Date(property.createdAt).toLocaleDateString() : '');
+  
+  // Extract image URL - support multiple formats
+  const getPropertyImage = () => {
+    // 1. Check if property has media.images array (structured format)
+    if ('media' in property && property.media && Array.isArray(property.media.images) && property.media.images.length > 0) {
+      return property.media.images[0].url;
+    }
+    
+    // 2. Check if property has images array (string URLs)
+    if ('images' in property && Array.isArray(property.images) && property.images.length > 0) {
+      const firstImage = property.images[0];
+      // Handle both string URLs and File objects
+      if (typeof firstImage === 'string') {
+        return firstImage;
+      }
+    }
+    
+    // 3. Check legacy image field
+    if ('image' in property && property.image) {
+      return property.image;
+    }
+    
+    // 4. No image available
+    return null;
+  };
+
+  const propertyImage = getPropertyImage();
   
   return (
     <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden font-sans group relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-105 dark:hover:brightness-110">
@@ -44,8 +78,23 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             {property.status}
           </span>
         </div>
-        {/* Placeholder for property image - you can replace with actual image */}
-        <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+        
+        {/* Property Image or Placeholder */}
+        {propertyImage ? (
+          <img 
+            src={propertyImage}
+            alt={title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={(e) => {
+              // Fallback to placeholder if image fails to load
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+        
+        {/* Placeholder Icon - shown when no image or image fails */}
+        <div className={`absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 ${propertyImage ? 'hidden' : ''}`}>
           <HomeIcon className="w-16 h-16 text-white opacity-30" />
         </div>
       </div>

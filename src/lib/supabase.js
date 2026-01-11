@@ -1,6 +1,20 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+/**
+ * Get the site URL for OAuth redirects
+ * Uses VITE_SITE_URL if set, otherwise falls back to window.location.origin
+ */
+export const getSiteUrl = () => {
+  if (import.meta.env.VITE_SITE_URL) {
+    return import.meta.env.VITE_SITE_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+};
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if Supabase credentials are configured
@@ -16,14 +30,64 @@ if (isSupabaseConfigured) {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: true,
+            // Storage configuration for persistent sessions
+            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+            storageKey: 'supabase.auth.token',
+            // Use PKCE flow for better security (recommended by Supabase)
+            flowType: 'pkce',
         },
+        // Simplified configuration - removed custom headers that might cause issues
     });
-} else {
-    console.warn('⚠️ Supabase credentials not found. Authentication features will not work until you add credentials to .env.local');
-    console.warn('📖 See SUPABASE_SETUP.md for setup instructions');
+    
+    if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log('✅ Supabase client initialized');
+    }
+} else if (import.meta.env.DEV) {
+    // Only show warnings in development mode
+    // eslint-disable-next-line no-console
+    console.warn('⚠️ Supabase credentials not found. See SUPABASE_SETUP.md for setup instructions');
 }
 
 // Helper function to check if Supabase is available
 export const isSupabaseAvailable = () => isSupabaseConfigured && supabase !== null;
+
+// Test Supabase connection
+export const testSupabaseConnection = async () => {
+    if (!supabase) {
+        console.error('❌ Supabase client not initialized');
+        return { connected: false, error: 'Client not initialized' };
+    }
+    
+    try {
+        console.log('🔌 Testing Supabase connection...');
+        const startTime = Date.now();
+        
+        // Simple auth session check (should be fast)
+        const { data, error } = await supabase.auth.getSession();
+        
+        const duration = Date.now() - startTime;
+        console.log(`⏱️ Connection test took ${duration}ms`);
+        
+        if (error) {
+            console.error('❌ Connection test failed:', error);
+            return { connected: false, error: error.message, duration };
+        }
+        
+        console.log('✅ Supabase connection successful');
+        return { connected: true, hasSession: !!data.session, duration };
+    } catch (err) {
+        console.error('❌ Connection test exception:', err);
+        return { connected: false, error: err.message };
+    }
+};
+
+// Log configuration on load (development only)
+if (import.meta.env.DEV && isSupabaseConfigured) {
+    console.log('🔧 Supabase configured:', {
+        url: supabaseUrl?.substring(0, 30) + '...',
+        hasAnonKey: !!supabaseAnonKey
+    });
+}
 
 export { supabase };

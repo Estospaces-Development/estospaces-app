@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable, getSiteUrl } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -32,7 +32,7 @@ const ResetPassword = () => {
 
         try {
             const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/auth/update-password`,
+                redirectTo: `${getSiteUrl()}/auth/update-password`,
             });
 
             if (resetError) {
@@ -40,8 +40,7 @@ const ResetPassword = () => {
             } else {
                 setSuccess(true);
             }
-        } catch (err) {
-            console.error('Password reset error:', err);
+        } catch {
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);

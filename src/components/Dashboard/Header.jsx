@@ -154,13 +154,18 @@ const Header = () => {
                             await signOut();
                           } else if (isSupabaseAvailable()) {
                             await supabase.auth.signOut();
+                            localStorage.removeItem('managerVerified');
+                            localStorage.removeItem('leads');
                           }
                           // Navigate to home page after logout
                           navigate('/');
+                          window.location.href = '/';
                         } catch (error) {
-                          console.error('Error signing out:', error);
-                          // Fallback navigation
+                          // On error, still clear storage and navigate
+                          localStorage.removeItem('managerVerified');
+                          localStorage.removeItem('leads');
                           navigate('/');
+                          window.location.href = '/';
                         }
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"

@@ -38,6 +38,13 @@ app.use(cors({
 
 app.use(express.json());
 
+// Request timeout middleware - prevent hanging requests
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 second timeout
+  res.setTimeout(30000);
+  next();
+});
+
 // Initialize Supabase client
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -48,7 +55,26 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Supabase client with optimized settings for reliability
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false, // Server-side doesn't need session persistence
+  },
+  global: {
+    headers: {
+      'x-application-name': 'estospaces-api',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10, // Rate limiting for stability
+    },
+  },
+});
 
 console.log('✅ Supabase client initialized');
 console.log(`📍 Supabase URL: ${supabaseUrl.substring(0, 30)}...`);
@@ -739,15 +765,75 @@ function transformZooplaProperty(zooplaProperty) {
   };
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check endpoint with detailed status
+app.get('/api/health', async (req, res) => {
+  const healthCheck = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    supabase: 'unknown',
+  };
+
+  // Quick Supabase health check
+  try {
+    const { error } = await supabase.from('properties').select('id').limit(1);
+    healthCheck.supabase = error ? 'error' : 'connected';
+  } catch (err) {
+    healthCheck.supabase = 'error';
+    healthCheck.supabaseError = err.message;
+  }
+
+  const statusCode = healthCheck.supabase === 'connected' ? 200 : 503;
+  res.status(statusCode).json(healthCheck);
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err);
+  res.status(500).json({
+    error: {
+      message: 'Internal server error',
+      code: 'INTERNAL_ERROR',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+    },
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  // Don't exit - keep server running
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit - keep server running
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('📴 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('📴 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Property API Server running on http://localhost:${PORT}`);
   console.log(`📡 API Endpoint: http://localhost:${PORT}/api/properties`);
   console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`⏰ Server started at: ${new Date().toISOString()}`);
 });
 
