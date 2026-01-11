@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable, getSiteUrl } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -63,7 +63,7 @@ const Signup = () => {
                         full_name: name,
                         role: role 
                     },
-                    emailRedirectTo: `${window.location.origin}/auth/callback`
+                    emailRedirectTo: `${getSiteUrl()}/auth/callback`
                 },
             });
 

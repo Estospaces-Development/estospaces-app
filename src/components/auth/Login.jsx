@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { supabase, isSupabaseAvailable, getSiteUrl } from '../../lib/supabase';
 import { 
     getSessionWithTimeout, 
     getUserRole, 
@@ -104,7 +104,7 @@ const Login = () => {
             const { error: authError } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: { 
-                    redirectTo: `${window.location.origin}/auth/callback`
+                    redirectTo: `${getSiteUrl()}/auth/callback`
                 },
             });
             

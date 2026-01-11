@@ -1,6 +1,20 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+/**
+ * Get the site URL for OAuth redirects
+ * Uses VITE_SITE_URL if set, otherwise falls back to window.location.origin
+ */
+export const getSiteUrl = () => {
+  if (import.meta.env.VITE_SITE_URL) {
+    return import.meta.env.VITE_SITE_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+};
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if Supabase credentials are configured
