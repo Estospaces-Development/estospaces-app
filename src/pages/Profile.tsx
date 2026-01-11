@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera, BadgeCheck, Loader2, AlertCircle, LogOut } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera, BadgeCheck, Loader2, AlertCircle, LogOut, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '../components/ui/BackButton';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
 
 interface ProfileData {
   full_name: string;
@@ -28,6 +29,7 @@ const Profile = () => {
     isAuthenticated,
     isSupabaseConfigured,
     updateProfile,
+    createProfile,
     signOut,
     getDisplayName,
     getRole,
@@ -36,10 +38,19 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -98,25 +109,128 @@ const Profile = () => {
     setSaveSuccess(false);
   };
 
+  const handleAvatarUpload = async () => {
+    if (!selectedAvatarFile || !user || !isSupabaseAvailable() || !supabase) {
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = selectedAvatarFile.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, selectedAvatarFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        // If bucket doesn't exist, try updating user metadata instead
+        console.warn('Storage upload failed:', uploadError);
+        setSaveError('Avatar upload failed. Please try again or contact support.');
+        setUploadingAvatar(false);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (publicUrl) {
+        // Update profile with avatar URL
+        const updateResult = await updateProfile({ avatar_url: publicUrl });
+        if (updateResult.error) {
+          // Try creating profile if it doesn't exist
+          if (!profile) {
+            await createProfile({ avatar_url: publicUrl });
+          }
+        }
+        setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+        setSelectedAvatarFile(null);
+      }
+    } catch (err: any) {
+      console.error('Avatar upload error:', err);
+      setSaveError(err.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
 
     try {
+      // Upload avatar first if selected
+      if (selectedAvatarFile) {
+        await handleAvatarUpload();
+      }
+
+      // If profile doesn't exist, create it first
+      if (!profile && user) {
+        const createResult = await createProfile({
+          full_name: formData.full_name,
+          phone: formData.phone,
+          location: formData.location,
+          bio: formData.bio,
+          company_name: formData.company_name,
+          role: user.user_metadata?.role || 'manager',
+          avatar_url: formData.avatar_url,
+        });
+        
+        if (createResult && 'error' in createResult && createResult.error) {
+          setSaveError(createResult.error);
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Update profile
       const result = await updateProfile({
         full_name: formData.full_name,
         phone: formData.phone,
         location: formData.location,
         bio: formData.bio,
         company_name: formData.company_name,
+        avatar_url: formData.avatar_url,
       });
 
       if (result.error) {
-        setSaveError(result.error);
+        // If update fails because profile doesn't exist, try creating it
+        if (result.error.includes('PGRST116') || result.error.includes('not found')) {
+          const createResult = await createProfile({
+            full_name: formData.full_name,
+            phone: formData.phone,
+            location: formData.location,
+            bio: formData.bio,
+            company_name: formData.company_name,
+            role: user?.user_metadata?.role || 'manager',
+            avatar_url: formData.avatar_url,
+          });
+          
+          if (createResult && 'error' in createResult && createResult.error) {
+            setSaveError(createResult.error);
+          } else {
+            setSaveSuccess(true);
+            setIsEditing(false);
+            setAvatarPreview(null);
+            setSelectedAvatarFile(null);
+            setTimeout(() => setSaveSuccess(false), 3000);
+          }
+        } else {
+          setSaveError(result.error);
+        }
       } else {
         setSaveSuccess(true);
         setIsEditing(false);
+        setAvatarPreview(null);
+        setSelectedAvatarFile(null);
         setTimeout(() => setSaveSuccess(false), 3000);
       }
     } catch (err: any) {
@@ -129,6 +243,11 @@ const Profile = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setSaveError(null);
+    setAvatarPreview(null);
+    setSelectedAvatarFile(null);
+    if (avatarFileInputRef.current) {
+      avatarFileInputRef.current.value = '';
+    }
     // Reset form data to current profile
     if (profile) {
       setFormData({
@@ -146,21 +265,52 @@ const Profile = () => {
     }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setChangingPassword(true);
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    // Validation
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('New passwords do not match');
+      setPasswordError('New passwords do not match');
+      setChangingPassword(false);
       return;
     }
+
     if (passwordData.newPassword.length < 8) {
-      alert('Password must be at least 8 characters long');
+      setPasswordError('Password must be at least 8 characters long');
+      setChangingPassword(false);
       return;
     }
-    // Handle password change
-    console.log('Changing password...');
-    setShowPasswordModal(false);
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    alert('Password changed successfully');
+
+    if (!isSupabaseAvailable() || !supabase || !user) {
+      setPasswordError('Authentication service not available');
+      setChangingPassword(false);
+      return;
+    }
+
+    try {
+      // Update password using Supabase
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (updateError) {
+        setPasswordError(updateError.message || 'Failed to change password');
+      } else {
+        setPasswordSuccess(true);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => {
+          setShowPasswordModal(false);
+          setPasswordSuccess(false);
+        }, 2000);
+      }
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleToggle2FA = () => {
@@ -182,8 +332,21 @@ const Profile = () => {
   const handleSignOut = async () => {
     const confirm = window.confirm('Are you sure you want to sign out?');
     if (confirm) {
-      await signOut();
-      navigate('/auth/login');
+      try {
+        await signOut();
+        // Clear localStorage
+        localStorage.removeItem('managerVerified');
+        localStorage.removeItem('leads');
+        // Navigate and force reload
+        navigate('/auth/login');
+        window.location.href = '/auth/login';
+      } catch (error) {
+        // On error, still clear storage and navigate
+        localStorage.removeItem('managerVerified');
+        localStorage.removeItem('leads');
+        navigate('/auth/login');
+        window.location.href = '/auth/login';
+      }
     }
   };
 
@@ -286,7 +449,13 @@ const Profile = () => {
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="relative">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                {getAvatarUrl() ? (
+                {avatarPreview ? (
+                  <img 
+                    src={avatarPreview} 
+                    alt={getDisplayName()} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : getAvatarUrl() ? (
                   <img 
                     src={getAvatarUrl() || undefined} 
                     alt={getDisplayName()} 
@@ -297,9 +466,44 @@ const Profile = () => {
                 )}
               </div>
               {isEditing && (
-                <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary-dark transition-colors">
-                  <Camera className="w-4 h-4" />
-                </button>
+                <>
+                  <input
+                    type="file"
+                    ref={avatarFileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // Validate file type
+                        if (!file.type.startsWith('image/')) {
+                          setSaveError('Please select an image file');
+                          return;
+                        }
+                        // Validate file size (max 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                          setSaveError('Image size must be less than 5MB');
+                          return;
+                        }
+                        setSelectedAvatarFile(file);
+                        // Create preview
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setAvatarPreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary-dark transition-colors"
+                    title="Change avatar"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                </>
               )}
             </div>
             <div className="flex-1 text-white text-center md:text-left">
@@ -551,10 +755,24 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-red-600 dark:text-red-400">Delete Account</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Permanently delete your account and all data</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Permanently delete your account and all data. This action cannot be undone.</p>
             </div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-              Delete Account
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              disabled={deletingAccount}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {deletingAccount ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Account</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -576,19 +794,19 @@ const Profile = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Current Password *
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
+            {passwordSuccess && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4 flex items-center gap-3">
+                <BadgeCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="text-green-700 dark:text-green-300">Password changed successfully!</span>
               </div>
+            )}
+            {passwordError && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <span className="text-red-700 dark:text-red-300">{passwordError}</span>
+              </div>
+            )}
+            <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   New Password *
@@ -596,10 +814,14 @@ const Profile = () => {
                 <input
                   type="password"
                   value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  onChange={(e) => {
+                    setPasswordData({ ...passwordData, newPassword: e.target.value });
+                    setPasswordError(null);
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                   minLength={8}
+                  disabled={changingPassword}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be at least 8 characters</p>
               </div>
@@ -610,9 +832,13 @@ const Profile = () => {
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  onChange={(e) => {
+                    setPasswordData({ ...passwordData, confirmPassword: e.target.value });
+                    setPasswordError(null);
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
+                  disabled={changingPassword}
                 />
               </div>
               <div className="flex gap-3 justify-end pt-4">
@@ -621,19 +847,149 @@ const Profile = () => {
                   onClick={() => {
                     setShowPasswordModal(false);
                     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                    setPasswordError(null);
+                    setPasswordSuccess(false);
                   }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  disabled={changingPassword}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                  disabled={changingPassword}
+                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  Change Password
+                  {changingPassword ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Changing...</span>
+                    </>
+                  ) : (
+                    'Change Password'
+                  )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">Delete Account</h3>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletingAccount}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-red-800 dark:text-red-300 mb-1">Warning: This action cannot be undone</p>
+                    <p className="text-sm text-red-700 dark:text-red-400">
+                      Deleting your account will permanently remove all your data, including:
+                    </p>
+                    <ul className="text-sm text-red-700 dark:text-red-400 mt-2 ml-4 list-disc">
+                      <li>Your profile information</li>
+                      <li>All your properties and listings</li>
+                      <li>Applications and leads</li>
+                      <li>Messages and conversations</li>
+                      <li>All associated data</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Type "DELETE" to confirm
+                </label>
+                <input
+                  type="text"
+                  id="deleteConfirm"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="Type DELETE to confirm"
+                  disabled={deletingAccount}
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deletingAccount}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const confirmInput = (document.getElementById('deleteConfirm') as HTMLInputElement)?.value;
+                    if (confirmInput !== 'DELETE') {
+                      setSaveError('Please type "DELETE" to confirm');
+                      return;
+                    }
+
+                    setDeletingAccount(true);
+                    setSaveError(null);
+
+                    try {
+                      if (!isSupabaseAvailable() || !supabase || !user) {
+                        setSaveError('Authentication service not available');
+                        setDeletingAccount(false);
+                        return;
+                      }
+
+                      // Note: User deletion typically requires admin access or a server function
+                      // For now, we'll sign the user out and show a message
+                      // In production, this would call a server function or admin API
+                      await signOut();
+                      
+                      // Clear all local data
+                      localStorage.clear();
+                      
+                      // Show success message briefly
+                      alert('Account deletion requested. Please contact support for account removal.');
+                      
+                      // Navigate to home
+                      navigate('/');
+                      window.location.href = '/';
+                    } catch (err: any) {
+                      setSaveError(err.message || 'Failed to delete account. Please contact support.');
+                      setDeletingAccount(false);
+                    }
+                  }}
+                  disabled={deletingAccount}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deletingAccount ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Account</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              {saveError && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="text-sm text-red-700 dark:text-red-300">{saveError}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

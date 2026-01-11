@@ -243,7 +243,65 @@ const currencyFormatters: Record<CurrencyCode, Intl.NumberFormat> = {
 
 // Convert DB row to Property
 const dbRowToProperty = (row: any): Property => {
-  const imageUrls = row.image_urls || [];
+  // Parse image URLs - handle different formats
+  let imageUrls: string[] = [];
+  
+  // Check various possible image field names in the database
+  if (row.image_urls) {
+    // If image_urls is already an array
+    if (Array.isArray(row.image_urls)) {
+      imageUrls = row.image_urls;
+    }
+    // If image_urls is a JSON string
+    else if (typeof row.image_urls === 'string') {
+      try {
+        const parsed = JSON.parse(row.image_urls);
+        imageUrls = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        // If it's just a single URL string
+        imageUrls = [row.image_urls];
+      }
+    }
+  }
+  // Check for 'images' field
+  else if (row.images) {
+    if (Array.isArray(row.images)) {
+      imageUrls = row.images;
+    } else if (typeof row.images === 'string') {
+      try {
+        const parsed = JSON.parse(row.images);
+        imageUrls = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        imageUrls = [row.images];
+      }
+    }
+  }
+  // Check for single 'image' field
+  else if (row.image) {
+    if (typeof row.image === 'string') {
+      try {
+        const parsed = JSON.parse(row.image);
+        imageUrls = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        imageUrls = [row.image];
+      }
+    } else if (Array.isArray(row.image)) {
+      imageUrls = row.image;
+    }
+  }
+  // Check for 'image_url' field
+  else if (row.image_url) {
+    imageUrls = [row.image_url];
+  }
+  // Check for 'photo' or 'thumbnail' fields
+  else if (row.photo) {
+    imageUrls = [row.photo];
+  } else if (row.thumbnail_url) {
+    imageUrls = [row.thumbnail_url];
+  }
+  
+  // Note: Properties without images are normal and expected
+  
   return {
     id: row.id,
     title: row.title || '',
@@ -320,11 +378,11 @@ const dbRowToProperty = (row: any): Property => {
       email: row.contact_email || '',
       phone: row.contact_phone || '',
       preferredContactMethod: 'any',
-      company: row.company,
+      company: row.company || '',
     },
-    contactName: row.contact_name,
-    phoneNumber: row.contact_phone,
-    emailAddress: row.contact_email,
+    contactName: row.contact_name || '',
+    phoneNumber: row.contact_phone || '',
+    emailAddress: row.contact_email || '',
     availableFrom: row.available_from || new Date().toISOString(),
     minimumLease: row.minimum_lease,
     inclusions: row.inclusions,
@@ -417,7 +475,7 @@ const propertyToDbRow = (p: Partial<Property>): any => {
   if (p.virtualTourUrl !== undefined) row.virtual_tour_url = p.virtualTourUrl;
   if (p.media?.virtualTourUrl !== undefined) row.virtual_tour_url = p.media.virtualTourUrl;
 
-  // Contact
+  // Contact - database uses contact_name, contact_email, contact_phone, company
   if (p.contact?.name !== undefined) row.contact_name = p.contact.name;
   if (p.contact?.email !== undefined) row.contact_email = p.contact.email;
   if (p.contact?.phone !== undefined) row.contact_phone = p.contact.phone;

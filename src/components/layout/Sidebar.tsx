@@ -52,11 +52,21 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
     try {
       if (signOut) {
         await signOut();
+      } else {
+        // Fallback: clear localStorage and navigate
+        localStorage.removeItem('managerVerified');
+        localStorage.removeItem('leads');
       }
+      // Navigate to home page after signout
       navigate('/');
+      // Force a page reload to clear any cached state
+      window.location.href = '/';
     } catch (error) {
-      console.error('Error signing out:', error);
+      // On error, still navigate away and clear storage
+      localStorage.removeItem('managerVerified');
+      localStorage.removeItem('leads');
       navigate('/');
+      window.location.href = '/';
     } finally {
       setSigningOut(false);
     }

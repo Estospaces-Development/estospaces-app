@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   useProperties, 
@@ -47,10 +47,15 @@ import {
   Settings,
   Star,
   AlertCircle,
+  Loader2,
+  Save,
+  ArrowLeft,
 } from 'lucide-react';
-import BackButton from '../components/ui/BackButton';
 import AddressSection, { AddressFormData } from '../components/ui/AddressSection';
 import Toast from '../components/ui/Toast';
+
+// Mode type for clear distinction
+type FormMode = 'create' | 'edit';
 
 // Countries list
 const countries = [
@@ -338,15 +343,25 @@ const initialFormData: FormData = {
 const AddProperty = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const { addProperty, updateProperty, getProperty, formatPrice, formatArea, uploadImages } = useProperties();
-  const isEditMode = !!id;
+  const { addProperty, updateProperty, getProperty, formatPrice, formatArea, uploadImages, fetchProperties, loading: contextLoading } = useProperties();
+  
+  // Determine mode based on presence of ID
+  const mode: FormMode = id ? 'edit' : 'create';
+  const isEditMode = mode === 'edit';
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [originalFormData, setOriginalFormData] = useState<FormData | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadingProperty, setLoadingProperty] = useState(isEditMode);
+  const [propertyNotFound, setPropertyNotFound] = useState(false);
+  
+  // Track dirty state (has form been modified)
+  const [isDirty, setIsDirty] = useState(false);
+  const hasInitializedRef = useRef(false);
   
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
@@ -362,94 +377,153 @@ const AddProperty = () => {
   const hideToast = useCallback(() => {
     setToast(prev => ({ ...prev, visible: false }));
   }, []);
+  
+  // Unsaved changes warning - uses beforeunload event for browser navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty && !saving) {
+        e.preventDefault();
+        // Modern browsers require returnValue to be set
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty, saving]);
+  
+  // Custom navigation wrapper that warns about unsaved changes
+  const safeNavigate = useCallback((path: string) => {
+    if (isDirty && !saving) {
+      const confirmLeave = window.confirm(
+        'You have unsaved changes. Are you sure you want to leave? Your changes will be lost.'
+      );
+      if (!confirmLeave) {
+        return;
+      }
+    }
+    navigate(path);
+  }, [isDirty, saving, navigate]);
 
   // Load existing property for edit mode
   useEffect(() => {
-    if (isEditMode && id) {
-      const property = getProperty(id);
-      if (property) {
-        setFormData({
-          title: property.title || '',
-          propertyType: property.propertyType || 'apartment',
-          listingType: property.listingType || 'sale',
-          status: property.status || 'online',
-          
-          priceAmount: property.price?.amount || 0,
-          currency: property.price?.currency || 'USD',
-          negotiable: property.price?.negotiable || false,
-          
-          addressLine1: property.location?.addressLine1 || property.address || '',
-          addressLine2: property.location?.addressLine2 || '',
-          city: property.location?.city || property.city || '',
-          cityId: property.location?.cityId || '',
-          state: property.location?.state || property.state || '',
-          stateId: property.location?.stateId || '',
-          stateCode: property.location?.stateCode || '',
-          postalCode: property.location?.postalCode || property.zipCode || '',
-          country: property.location?.country || '',
-          countryCode: property.location?.countryCode || '',
-          countryId: property.location?.countryId || '',
-          neighborhood: property.location?.neighborhood || '',
-          landmark: property.location?.landmark || '',
-          
-          totalArea: property.dimensions?.totalArea || property.area || 0,
-          carpetArea: property.dimensions?.carpetArea || 0,
-          areaUnit: property.dimensions?.areaUnit || 'sqft',
-          bedrooms: property.rooms?.bedrooms || property.bedrooms || 1,
-          bathrooms: property.rooms?.bathrooms || property.bathrooms || 1,
-          balconies: property.rooms?.balconies || 0,
-          parkingSpaces: property.rooms?.parkingSpaces || 0,
-          floors: property.dimensions?.floors || 1,
-          floorNumber: property.dimensions?.floorNumber || 0,
-          totalFloors: property.dimensions?.totalFloors || 1,
-          
-          yearBuilt: property.yearBuilt || new Date().getFullYear(),
-          furnishing: property.furnishing || 'unfurnished',
-          condition: property.condition || 'good',
-          facing: property.facing || 'north',
-          amenities: property.amenities || {
-            interior: [],
-            exterior: [],
-            community: [],
-            security: [],
-            utilities: [],
-          },
-          
-          description: property.description || '',
-          shortDescription: property.shortDescription || '',
-          
-          images: property.images || [],
-          videos: property.videos || [],
-          virtualTourUrl: property.virtualTourUrl || property.media?.virtualTourUrl || '',
-          
-          contactName: property.contact?.name || property.contactName || '',
-          contactEmail: property.contact?.email || property.emailAddress || '',
-          contactPhone: property.contact?.phone || property.phoneNumber || '',
-          alternatePhone: property.contact?.alternatePhone || '',
-          preferredContactMethod: property.contact?.preferredContactMethod || 'any',
-          company: property.contact?.company || '',
-          licenseNumber: property.contact?.licenseNumber || '',
-          
-          availableFrom: property.availableFrom || new Date().toISOString().split('T')[0],
-          minimumLease: property.minimumLease || 12,
-          deposit: property.financial?.deposit || 0,
-          maintenanceCharges: property.financial?.maintenanceCharges || 0,
-          inclusions: property.inclusions || '',
-          exclusions: property.exclusions || '',
-          
-          featured: property.featured || false,
-          published: property.published || false,
-          draft: property.draft ?? true,
-        });
-
-        // Load image previews
-        if (property.images?.length) {
-          const previews = property.images.filter((img): img is string => typeof img === 'string');
-          setImagePreviews(previews);
-        }
+    const loadPropertyForEdit = async () => {
+      if (!isEditMode || !id || hasInitializedRef.current) return;
+      
+      setLoadingProperty(true);
+      setPropertyNotFound(false);
+      
+      // Try to get property from context first
+      let property = getProperty(id);
+      
+      // If not found in context, try fetching fresh data
+      if (!property) {
+        await fetchProperties();
+        property = getProperty(id);
       }
-    }
-  }, [id, isEditMode, getProperty]);
+      
+      if (!property) {
+        setPropertyNotFound(true);
+        setLoadingProperty(false);
+        showToast('Property not found. Please go back and try again.', 'error');
+        return;
+      }
+      
+      // Map property to form data
+      const loadedFormData: FormData = {
+        title: property.title || '',
+        propertyType: property.propertyType || 'apartment',
+        listingType: property.listingType || 'sale',
+        status: property.status || 'online',
+        
+        priceAmount: property.price?.amount || 0,
+        currency: property.price?.currency || 'USD',
+        negotiable: property.price?.negotiable || false,
+        
+        addressLine1: property.location?.addressLine1 || property.address || '',
+        addressLine2: property.location?.addressLine2 || '',
+        city: property.location?.city || property.city || '',
+        cityId: property.location?.cityId || '',
+        state: property.location?.state || property.state || '',
+        stateId: property.location?.stateId || '',
+        stateCode: property.location?.stateCode || '',
+        postalCode: property.location?.postalCode || property.zipCode || '',
+        country: property.location?.country || '',
+        countryCode: property.location?.countryCode || '',
+        countryId: property.location?.countryId || '',
+        neighborhood: property.location?.neighborhood || '',
+        landmark: property.location?.landmark || '',
+        
+        totalArea: property.dimensions?.totalArea || property.area || 0,
+        carpetArea: property.dimensions?.carpetArea || 0,
+        areaUnit: property.dimensions?.areaUnit || 'sqft',
+        bedrooms: property.rooms?.bedrooms || property.bedrooms || 1,
+        bathrooms: property.rooms?.bathrooms || property.bathrooms || 1,
+        balconies: property.rooms?.balconies || 0,
+        parkingSpaces: property.rooms?.parkingSpaces || 0,
+        floors: property.dimensions?.floors || 1,
+        floorNumber: property.dimensions?.floorNumber || 0,
+        totalFloors: property.dimensions?.totalFloors || 1,
+        
+        yearBuilt: property.yearBuilt || new Date().getFullYear(),
+        furnishing: property.furnishing || 'unfurnished',
+        condition: property.condition || 'good',
+        facing: property.facing || 'north',
+        amenities: property.amenities || {
+          interior: [],
+          exterior: [],
+          community: [],
+          security: [],
+          utilities: [],
+        },
+        
+        description: property.description || '',
+        shortDescription: property.shortDescription || '',
+        
+        images: property.images || [],
+        videos: property.videos || [],
+        virtualTourUrl: property.virtualTourUrl || property.media?.virtualTourUrl || '',
+        
+        contactName: property.contact?.name || property.contactName || '',
+        contactEmail: property.contact?.email || property.emailAddress || '',
+        contactPhone: property.contact?.phone || property.phoneNumber || '',
+        alternatePhone: property.contact?.alternatePhone || '',
+        preferredContactMethod: property.contact?.preferredContactMethod || 'any',
+        company: property.contact?.company || '',
+        licenseNumber: property.contact?.licenseNumber || '',
+        
+        availableFrom: property.availableFrom || new Date().toISOString().split('T')[0],
+        minimumLease: property.minimumLease || 12,
+        deposit: property.financial?.deposit || 0,
+        maintenanceCharges: property.financial?.maintenanceCharges || 0,
+        inclusions: property.inclusions || '',
+        exclusions: property.exclusions || '',
+        
+        featured: property.featured || false,
+        published: property.published || false,
+        draft: property.draft ?? true,
+      };
+      
+      setFormData(loadedFormData);
+      setOriginalFormData(loadedFormData); // Store original for dirty comparison
+
+      // Load image previews
+      if (property.images?.length) {
+        const previews = property.images.filter((img): img is string => typeof img === 'string');
+        setImagePreviews(previews);
+      }
+      
+      hasInitializedRef.current = true;
+      setLoadingProperty(false);
+      setIsDirty(false); // Reset dirty state after loading
+    };
+    
+    loadPropertyForEdit();
+  }, [id, isEditMode, getProperty, fetchProperties, showToast]);
 
   const steps = [
     { number: 1, title: 'Basic Info', icon: <Home className="w-5 h-5" /> },
@@ -495,7 +569,15 @@ const AddProperty = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
+    if (mode === 'create') {
+      // In create mode, validate before proceeding
+      if (validateStep(currentStep)) {
+        if (currentStep < 5) {
+          setCurrentStep(currentStep + 1);
+        }
+      }
+    } else {
+      // In edit mode, allow progression without validation (validate on save)
       if (currentStep < 5) {
         setCurrentStep(currentStep + 1);
       }
@@ -507,15 +589,74 @@ const AddProperty = () => {
       setCurrentStep(currentStep - 1);
     }
   };
+  
+  // Validate all fields across all tabs (for edit mode save and create mode publish)
+  const validateAllFields = (): Record<string, string> => {
+    const allErrors: Record<string, string> = {};
+    
+    // Step 1 validation
+    if (!formData.title?.trim()) allErrors.title = 'Property title is required';
+    if (formData.priceAmount <= 0) allErrors.priceAmount = 'Price is required';
+    
+    // Step 2 validation
+    if (!formData.addressLine1?.trim()) allErrors.addressLine1 = 'Street address is required';
+    if (!formData.countryId) allErrors.country = 'Country is required';
+    if (!formData.stateId && !formData.state?.trim()) allErrors.state = 'State/Province is required';
+    if (!formData.cityId && !formData.city?.trim()) allErrors.city = 'City is required';
+    if (!formData.postalCode?.trim()) allErrors.postalCode = 'Postal code is required';
+    
+    // Step 3 validation
+    if (formData.totalArea <= 0) allErrors.totalArea = 'Area is required';
+    
+    // Step 4 validation
+    if (formData.images.length === 0 && imagePreviews.length === 0) {
+      allErrors.images = 'At least one image is required';
+    }
+    
+    // Step 5 validation
+    if (!formData.contactName?.trim()) allErrors.contactName = 'Contact name is required';
+    if (!formData.contactPhone?.trim()) allErrors.contactPhone = 'Phone number is required';
+    if (!formData.contactEmail?.trim()) {
+      allErrors.contactEmail = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
+      allErrors.contactEmail = 'Please enter a valid email';
+    }
+    
+    return allErrors;
+  };
+  
+  // Get which step has the first error
+  const getFirstErrorStep = (errorFields: Record<string, string>): number => {
+    if (errorFields.title || errorFields.priceAmount) return 1;
+    if (errorFields.addressLine1 || errorFields.country || errorFields.state || errorFields.city || errorFields.postalCode) return 2;
+    if (errorFields.totalArea) return 3;
+    if (errorFields.images) return 4;
+    if (errorFields.contactName || errorFields.contactPhone || errorFields.contactEmail) return 5;
+    return 1;
+  };
 
   const handleInputChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true); // Mark form as dirty when any field changes
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
+    }
+  };
+  
+  // Handle tab navigation - different behavior for create vs edit mode
+  const handleTabClick = (stepNumber: number) => {
+    if (mode === 'edit') {
+      // In edit mode, allow free navigation to any tab
+      setCurrentStep(stepNumber);
+    } else {
+      // In create mode, only allow navigation to completed steps
+      if (stepNumber < currentStep) {
+        setCurrentStep(stepNumber);
+      }
     }
   };
 
@@ -528,6 +669,7 @@ const AddProperty = () => {
         countryCode: country.code,
         currency: country.currency,
       }));
+      setIsDirty(true); // Mark form as dirty when country changes
     }
   };
 
@@ -545,6 +687,7 @@ const AddProperty = () => {
         },
       };
     });
+    setIsDirty(true); // Mark form as dirty when amenities change
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -564,6 +707,7 @@ const AddProperty = () => {
             ...prev,
             images: [...prev.images, file],
           }));
+          setIsDirty(true); // Mark form as dirty when images added
         }
       };
       reader.readAsDataURL(file);
@@ -587,6 +731,7 @@ const AddProperty = () => {
             ...prev,
             videos: [...prev.videos, file],
           }));
+          setIsDirty(true); // Mark form as dirty when videos added
         }
       };
       reader.readAsDataURL(file);
@@ -599,6 +744,7 @@ const AddProperty = () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }));
+    setIsDirty(true); // Mark form as dirty when images removed
   };
 
   const removeVideo = (index: number) => {
@@ -607,6 +753,7 @@ const AddProperty = () => {
       ...prev,
       videos: prev.videos.filter((_, i) => i !== index),
     }));
+    setIsDirty(true); // Mark form as dirty when videos removed
   };
 
   const processImages = async (files: (File | string)[]): Promise<string[]> => {
@@ -778,17 +925,20 @@ const AddProperty = () => {
     try {
       const propertyData = await buildPropertyData();
       
-      if (isEditMode && id) {
+      if (mode === 'edit' && id) {
+        // EDIT MODE: Update existing property as draft
         const result = await updateProperty(id, { ...propertyData, draft: true, published: false });
         if (!result) {
           throw new Error('Failed to save property - update returned no result');
         }
       } else {
+        // CREATE MODE: Add new property as draft
         const result = await addProperty({ ...propertyData, draft: true, published: false });
         if (!result) {
           throw new Error('Failed to save property - creation returned no result');
         }
       }
+      setIsDirty(false); // Reset dirty state after successful save
       showToast('Property saved as draft successfully!', 'success');
       setTimeout(() => navigate('/manager/dashboard/properties'), 1500);
     } catch (error: any) {
@@ -800,53 +950,20 @@ const AddProperty = () => {
     }
   };
 
-  const handlePublish = async () => {
-    // Validate all steps before publishing
-    const allErrors: Record<string, string> = {};
-    
-    // Step 1 validation
-    if (!formData.title?.trim()) allErrors.title = 'Property title is required';
-    if (formData.priceAmount <= 0) allErrors.priceAmount = 'Price is required';
-    
-    // Step 2 validation
-    if (!formData.addressLine1?.trim()) allErrors.addressLine1 = 'Street address is required';
-    if (!formData.countryId) allErrors.country = 'Country is required';
-    if (!formData.stateId && !formData.state?.trim()) allErrors.state = 'State/Province is required';
-    if (!formData.cityId && !formData.city?.trim()) allErrors.city = 'City is required';
-    if (!formData.postalCode?.trim()) allErrors.postalCode = 'Postal code is required';
-    
-    // Step 3 validation
-    if (formData.totalArea <= 0) allErrors.totalArea = 'Area is required';
-    
-    // Step 4 validation
-    if (formData.images.length === 0 && imagePreviews.length === 0) {
-      allErrors.images = 'At least one image is required';
-    }
-    
-    // Step 5 validation
-    if (!formData.contactName?.trim()) allErrors.contactName = 'Contact name is required';
-    if (!formData.contactPhone?.trim()) allErrors.contactPhone = 'Phone number is required';
-    if (!formData.contactEmail?.trim()) {
-      allErrors.contactEmail = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
-      allErrors.contactEmail = 'Please enter a valid email';
-    }
+  // Handle save/publish based on mode
+  const handleSaveOrPublish = async () => {
+    // Validate all fields
+    const allErrors = validateAllFields();
     
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors);
-      // Find which step has the first error and navigate to it
-      if (allErrors.title || allErrors.priceAmount) {
-        setCurrentStep(1);
-      } else if (allErrors.addressLine1 || allErrors.country || allErrors.state || allErrors.city || allErrors.postalCode) {
-        setCurrentStep(2);
-      } else if (allErrors.totalArea) {
-        setCurrentStep(3);
-      } else if (allErrors.images) {
-        setCurrentStep(4);
-      } else {
-        setCurrentStep(5);
-      }
-      showToast('Please fill in all required fields before publishing.', 'error');
+      const firstErrorStep = getFirstErrorStep(allErrors);
+      setCurrentStep(firstErrorStep);
+      
+      const errorMessage = mode === 'edit' 
+        ? 'Please fill in all required fields before saving.'
+        : 'Please fill in all required fields before publishing.';
+      showToast(errorMessage, 'error');
       return;
     }
     
@@ -854,27 +971,80 @@ const AddProperty = () => {
     try {
       const propertyData = await buildPropertyData();
       
-      if (isEditMode && id) {
+      if (mode === 'edit' && id) {
+        // EDIT MODE: Update existing property
         const result = await updateProperty(id, { ...propertyData, published: true, draft: false });
         if (!result) {
-          throw new Error('Failed to publish property - update returned no result');
+          throw new Error('Failed to save property - update returned no result');
         }
+        setIsDirty(false); // Reset dirty state after successful save
+        showToast('Property saved successfully!', 'success');
       } else {
+        // CREATE MODE: Add new property
         const result = await addProperty({ ...propertyData, published: true, draft: false });
         if (!result) {
           throw new Error('Failed to publish property - creation returned no result');
         }
+        setIsDirty(false);
+        showToast('Property published successfully!', 'success');
       }
-      showToast('Property published successfully!', 'success');
       setTimeout(() => navigate('/manager/dashboard/properties'), 1500);
     } catch (error: any) {
-      console.error('Error publishing property:', error);
+      console.error('Error saving/publishing property:', error);
       const errorMessage = error?.message || error?.toString() || 'Unknown error occurred';
-      showToast(`Failed to publish property: ${errorMessage}`, 'error');
+      const actionWord = mode === 'edit' ? 'save' : 'publish';
+      showToast(`Failed to ${actionWord} property: ${errorMessage}`, 'error');
     } finally {
       setSaving(false);
     }
   };
+  
+  // Legacy handler for backwards compatibility
+  const handlePublish = handleSaveOrPublish;
+
+  // Show loading state while fetching property data in edit mode
+  if (loadingProperty) {
+    return (
+      <div className="max-w-6xl mx-auto font-sans pb-8">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-12">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <p className="text-lg text-gray-600 dark:text-gray-400">Loading property details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show error state if property not found in edit mode
+  if (propertyNotFound && isEditMode) {
+    return (
+      <div className="max-w-6xl mx-auto font-sans pb-8">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-12">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <AlertCircle className="w-12 h-12 text-red-500" />
+            <p className="text-lg text-gray-800 dark:text-white font-medium">Property Not Found</p>
+            <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
+              The property you're trying to edit could not be found. It may have been deleted or you may not have access to it.
+            </p>
+            <button
+              onClick={() => navigate('/manager/dashboard/properties')}
+              className="mt-4 px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+            >
+              Back to Properties
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Primary action button label based on mode
+  const primaryButtonLabel = mode === 'edit' 
+    ? (saving ? 'Saving...' : 'Save Property')
+    : (saving ? 'Publishing...' : 'Publish Property');
+  
+  const primaryButtonIcon = mode === 'edit' ? <Save className="w-4 h-4" /> : null;
 
   return (
     <div className="max-w-6xl mx-auto font-sans pb-8">
@@ -883,14 +1053,35 @@ const AddProperty = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="mb-4">
-              <BackButton />
+              {/* Custom back button that respects unsaved changes */}
+              <button
+                onClick={() => {
+                  if (isDirty && !saving) {
+                    const confirmLeave = window.confirm(
+                      'You have unsaved changes. Are you sure you want to leave? Your changes will be lost.'
+                    );
+                    if (!confirmLeave) return;
+                  }
+                  navigate(-1);
+                }}
+                className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Back</span>
+              </button>
             </div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
-              {isEditMode ? 'Edit Property' : 'Add New Property'}
+              {mode === 'edit' ? 'Edit Property' : 'Add New Property'}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              {isEditMode ? 'Update your property listing' : 'Create a new property listing with all the details'}
+              {mode === 'edit' ? 'Update your property listing' : 'Create a new property listing with all the details'}
             </p>
+            {isDirty && (
+              <p className="text-amber-600 dark:text-amber-400 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                You have unsaved changes
+              </p>
+            )}
           </div>
           <div className="flex gap-3">
             <button
@@ -901,54 +1092,75 @@ const AddProperty = () => {
               {saving ? 'Saving...' : 'Save Draft'}
             </button>
             <button
-              onClick={handlePublish}
+              onClick={handleSaveOrPublish}
               disabled={saving}
               className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {formData.featured && <Star className="w-4 h-4" />}
-              {saving ? 'Publishing...' : 'Publish Property'}
+              {primaryButtonIcon}
+              {primaryButtonLabel}
             </button>
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar / Tab Navigation */}
         <div className="mt-6">
           <div className="flex items-center justify-between overflow-x-auto pb-2">
-            {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center flex-1 min-w-0">
-                <div className="flex flex-col items-center flex-1 min-w-0">
-                  <button
-                    onClick={() => currentStep > step.number && setCurrentStep(step.number)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                      currentStep >= step.number
-                        ? 'bg-primary text-white shadow-lg'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                    } ${currentStep > step.number ? 'cursor-pointer hover:scale-110' : ''}`}
-                  >
-                    {currentStep > step.number ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      step.icon
-                    )}
-                  </button>
-                  <span
-                    className={`mt-2 text-xs font-medium text-center hidden md:block ${
-                      currentStep >= step.number ? 'text-primary' : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {step.title}
-                  </span>
+            {steps.map((step, index) => {
+              // Determine if this step is accessible
+              const isCurrentStep = currentStep === step.number;
+              const isCompleted = currentStep > step.number;
+              const isAccessible = mode === 'edit' ? true : (isCompleted || isCurrentStep);
+              
+              return (
+                <div key={step.number} className="flex items-center flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 min-w-0">
+                    <button
+                      onClick={() => isAccessible && handleTabClick(step.number)}
+                      disabled={!isAccessible}
+                      title={mode === 'edit' ? step.title : (isAccessible ? step.title : 'Complete previous steps first')}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                        isCurrentStep
+                          ? 'bg-primary text-white shadow-lg ring-4 ring-primary/20'
+                          : isCompleted || mode === 'edit'
+                            ? 'bg-primary/80 text-white shadow-md cursor-pointer hover:scale-110 hover:bg-primary'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {isCompleted && mode === 'create' ? (
+                        <CheckCircle className="w-5 h-5" />
+                      ) : (
+                        step.icon
+                      )}
+                    </button>
+                    <span
+                      className={`mt-2 text-xs font-medium text-center hidden md:block ${
+                        isCurrentStep || isCompleted || mode === 'edit'
+                          ? 'text-primary'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
+                      {step.title}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`flex-1 h-1 mx-2 rounded hidden sm:block ${
+                        isCompleted || (mode === 'edit' && step.number < 5)
+                          ? 'bg-primary'
+                          : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    />
+                  )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-1 mx-2 rounded hidden sm:block ${
-                      currentStep > step.number ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
+          {mode === 'edit' && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+              You can navigate to any tab. Changes will be saved when you click "Save Property".
+            </p>
+          )}
         </div>
       </div>
 
@@ -1170,6 +1382,10 @@ const AddProperty = () => {
                   neighborhood: addressData.neighborhood,
                   landmark: addressData.landmark,
                 }));
+                // Only mark as dirty after initial load is complete
+                if (hasInitializedRef.current || mode === 'create') {
+                  setIsDirty(true);
+                }
               }}
               errors={errors}
               disabled={saving}
@@ -1806,17 +2022,21 @@ const AddProperty = () => {
               </div>
             </div>
 
-            {/* Ready to Publish */}
+            {/* Ready to Save/Publish */}
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center flex-shrink-0">
                   <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-green-800 dark:text-green-200 font-medium text-lg">Ready to Publish!</p>
+                  <p className="text-green-800 dark:text-green-200 font-medium text-lg">
+                    {mode === 'edit' ? 'Ready to Save!' : 'Ready to Publish!'}
+                  </p>
                   <p className="text-green-700 dark:text-green-300 text-sm mt-1">
-                    Your property listing is complete. Review the details and publish when ready. 
-                    You can also save as draft and publish later.
+                    {mode === 'edit' 
+                      ? 'Review your changes and click "Save Property" to update the listing. You can also save as draft if the listing is not ready.'
+                      : 'Your property listing is complete. Review the details and publish when ready. You can also save as draft and publish later.'
+                    }
                   </p>
                 </div>
               </div>
@@ -1861,12 +2081,13 @@ const AddProperty = () => {
               </button>
               <button
                 type="button"
-                onClick={handlePublish}
+                onClick={handleSaveOrPublish}
                 disabled={saving}
                 className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all shadow-lg disabled:opacity-50 flex items-center gap-2"
               >
                 {formData.featured && <Star className="w-4 h-4" />}
-                {saving ? 'Publishing...' : 'Publish Property'}
+                {primaryButtonIcon}
+                {primaryButtonLabel}
               </button>
             </div>
           )}

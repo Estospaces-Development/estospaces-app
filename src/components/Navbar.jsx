@@ -26,9 +26,23 @@ const Navbar = () => {
     }, []);
 
     const handleSignOut = async () => {
-        await signOut();
-        setIsProfileMenuOpen(false);
-        navigate('/');
+        try {
+            await signOut();
+            setIsProfileMenuOpen(false);
+            // Clear localStorage
+            localStorage.removeItem('managerVerified');
+            localStorage.removeItem('leads');
+            // Navigate and force reload
+            navigate('/');
+            window.location.href = '/';
+        } catch (error) {
+            // On error, still clear storage and navigate
+            setIsProfileMenuOpen(false);
+            localStorage.removeItem('managerVerified');
+            localStorage.removeItem('leads');
+            navigate('/');
+            window.location.href = '/';
+        }
     };
 
     const handleNavigateToDashboard = () => {

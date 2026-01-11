@@ -1033,30 +1033,30 @@ const Dashboard = () => {
 
           {/* Properties Summary */}
           {properties.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="section-heading text-gray-800 dark:text-white mb-4">Properties Summary</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800 mb-1">{properties.length}</div>
-                  <div className="text-sm text-gray-600">Total Properties</div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{properties.length}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Properties</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-700 mb-1">
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-400 mb-1">
                     {properties.filter((p) => p.status === 'available').length}
                   </div>
-                  <div className="text-sm text-gray-600">Available</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Available</div>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-700 mb-1">
+                <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">
                     {properties.filter((p) => p.status === 'pending').length}
                   </div>
-                  <div className="text-sm text-gray-600">Pending</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
                 </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-700 mb-1">
+                <div className="text-center p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-400 mb-1">
                     {properties.filter((p) => p.status === 'sold' || p.status === 'rented').length}
                   </div>
-                  <div className="text-sm text-gray-600">Sold/Rented</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Sold/Rented</div>
                 </div>
               </div>
             </div>
@@ -1589,48 +1589,48 @@ const Dashboard = () => {
         <div className="space-y-6">
           {/* Analytics Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-500 rounded-lg">
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">247</h3>
-              <p className="text-sm text-gray-600">Total Leads</p>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">247</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Leads</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-primary rounded-lg">
                   <Building2 className="w-6 h-6 text-white" />
                 </div>
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{properties.length || 120}</h3>
-              <p className="text-sm text-gray-600">Total Properties</p>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{properties.length || 120}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Properties</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-green-500 rounded-lg">
                   <Target className="w-6 h-6 text-white" />
                 </div>
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">14.7%</h3>
-              <p className="text-sm text-gray-600">Conversion Rate</p>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">14.7%</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-purple-500 rounded-lg">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">18.2%</h3>
-              <p className="text-sm text-gray-600">Growth Rate</p>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">18.2%</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Growth Rate</p>
             </div>
           </div>
 
@@ -1646,149 +1646,173 @@ const Dashboard = () => {
               </button>
             </div>
 
-            {/* Summary Cards */}
-            {(() => {
-              const revenueData = [
-                { month: 'Jan', value: 15000 },
-                { month: 'Feb', value: 18000 },
-                { month: 'Mar', value: 22000 },
-                { month: 'Apr', value: 25000 },
-                { month: 'May', value: 28000 },
-                { month: 'Jun', value: 32000 },
-              ];
-              
-              const totalRevenue = revenueData.reduce((sum, item) => sum + item.value, 0);
-              const averageRevenue = Math.round(totalRevenue / revenueData.length);
-              const bestMonth = revenueData.reduce((max, item) => (item.value > max.value ? item : max), revenueData[0]);
-              const growthRate = ((revenueData[revenueData.length - 1].value - revenueData[0].value) / revenueData[0].value) * 100;
-              
-              return (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Revenue</p>
-                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">${(totalRevenue / 1000).toFixed(0)}k</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">6 months</p>
+            {/* Loading State */}
+            {analyticsLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-gray-500 dark:text-gray-400">Loading revenue data...</p>
+              </div>
+            ) : analyticsData?.revenueTrend && analyticsData.revenueTrend.length > 0 ? (
+              /* Real Data from Analytics Service */
+              (() => {
+                // Revenue values are already in thousands from the service
+                const revenueData = analyticsData.revenueTrend.map((item: { label: string; value: number }) => ({
+                  month: item.label,
+                  value: item.value * 1000, // Convert back to actual values for display
+                }));
+                
+                const totalRevenue = revenueData.reduce((sum: number, item: { value: number }) => sum + item.value, 0);
+                const averageRevenue = revenueData.length > 0 ? Math.round(totalRevenue / revenueData.length) : 0;
+                const bestMonth = revenueData.reduce((max: { month: string; value: number }, item: { month: string; value: number }) => (item.value > max.value ? item : max), revenueData[0] || { month: '-', value: 0 });
+                const firstValue = revenueData[0]?.value || 1;
+                const lastValue = revenueData[revenueData.length - 1]?.value || 0;
+                const growthRate = firstValue > 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+                
+                return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Revenue</p>
+                        <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">${totalRevenue >= 1000 ? (totalRevenue / 1000).toFixed(0) + 'k' : totalRevenue.toFixed(0)}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{revenueData.length} months</p>
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Average Monthly</p>
+                        <p className="text-2xl font-bold text-green-700 dark:text-green-400">${averageRevenue >= 1000 ? (averageRevenue / 1000).toFixed(0) + 'k' : averageRevenue.toFixed(0)}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Per month</p>
+                      </div>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Best Month</p>
+                        <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{bestMonth.month}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">${bestMonth.value >= 1000 ? (bestMonth.value / 1000).toFixed(0) + 'k' : bestMonth.value.toFixed(0)}</p>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Growth Rate</p>
+                        <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{growthRate >= 0 ? '+' : ''}{growthRate.toFixed(1)}%</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Since {revenueData[0]?.month || '-'}</p>
+                      </div>
                     </div>
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Average Monthly</p>
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-400">${(averageRevenue / 1000).toFixed(0)}k</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Per month</p>
-                    </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Best Month</p>
-                      <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{bestMonth.month}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">${(bestMonth.value / 1000).toFixed(0)}k</p>
-                    </div>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Growth Rate</p>
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">+{growthRate.toFixed(1)}%</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Since Jan</p>
-                    </div>
-                  </div>
 
-                  {/* Bar Chart */}
-                  <div className="mb-6">
-                    <div className="flex items-end justify-between gap-4 h-48">
-                      {revenueData.map((item, index) => {
-                        const maxValue = Math.max(...revenueData.map(d => d.value));
-                        const height = (item.value / maxValue) * 100;
-                        const prevValue = index > 0 ? revenueData[index - 1].value : item.value;
-                        const change = index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
-                        
-                        return (
-                          <div key={index} className="flex-1 flex flex-col items-center group">
-                            <div className="w-full flex flex-col items-center mb-2 relative">
-                              <div
-                                className="w-full bg-primary rounded-t-lg transition-all hover:opacity-80 cursor-pointer relative"
-                                style={{ height: `${height}%` }}
-                              >
-                                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                                  ${(item.value / 1000).toFixed(0)}k
-                                  {index > 0 && (
-                                    <span className={`ml-1 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                      ({change >= 0 ? '+' : ''}{change.toFixed(1)}%)
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-sm font-medium text-gray-800 dark:text-white mt-2">${(item.value / 1000).toFixed(0)}k</p>
-                            </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{item.month}</p>
-                            {index > 0 && (
-                              <p className={`text-xs mt-1 ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Monthly Breakdown Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-gray-900">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Month</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Change</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trend</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">vs Average</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
-                        {revenueData.map((item, index) => {
+                    {/* Bar Chart */}
+                    <div className="mb-6">
+                      <div className="flex items-end justify-between gap-4 h-48">
+                        {revenueData.map((item: { month: string; value: number }, index: number) => {
+                          const maxValue = Math.max(...revenueData.map((d: { value: number }) => d.value), 1);
+                          const height = (item.value / maxValue) * 100;
                           const prevValue = index > 0 ? revenueData[index - 1].value : item.value;
-                          const change = index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
-                          const vsAverage = ((item.value - averageRevenue) / averageRevenue) * 100;
+                          const change = prevValue > 0 && index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
                           
                           return (
-                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                              <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.month}</td>
-                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">${item.value.toLocaleString()}</td>
-                              <td className="px-4 py-3 text-sm">
-                                {index > 0 ? (
-                                  <span className={`font-medium ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {change >= 0 ? '+' : ''}{change.toFixed(1)}%
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400 dark:text-gray-500">—</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {index > 0 && (
-                                  <span className={`inline-flex items-center ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <span className={`font-medium ${vsAverage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                  {vsAverage >= 0 ? '+' : ''}{vsAverage.toFixed(1)}%
-                                </span>
-                              </td>
-                            </tr>
+                            <div key={index} className="flex-1 flex flex-col items-center group">
+                              <div className="w-full flex flex-col items-center mb-2 relative">
+                                <div
+                                  className="w-full bg-primary rounded-t-lg transition-all hover:opacity-80 cursor-pointer relative"
+                                  style={{ height: `${Math.max(height, 2)}%` }}
+                                >
+                                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                                    ${item.value >= 1000 ? (item.value / 1000).toFixed(0) + 'k' : item.value.toFixed(0)}
+                                    {index > 0 && (
+                                      <span className={`ml-1 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        ({change >= 0 ? '+' : ''}{change.toFixed(1)}%)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm font-medium text-gray-800 dark:text-white mt-2">${item.value >= 1000 ? (item.value / 1000).toFixed(0) + 'k' : item.value.toFixed(0)}</p>
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{item.month}</p>
+                              {index > 0 && (
+                                <p className={`text-xs mt-1 ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
+                                </p>
+                              )}
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
-                  </div>
+                      </div>
+                    </div>
 
-                  {/* Insights */}
-                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-2">Key Insights</h3>
-                    <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                      <li>• Revenue has grown by <span className="font-semibold text-green-600 dark:text-green-400">{growthRate.toFixed(1)}%</span> over the past 6 months</li>
-                      <li>• <span className="font-semibold">{bestMonth.month}</span> was the best performing month with ${(bestMonth.value / 1000).toFixed(0)}k in revenue</li>
-                      <li>• Average monthly revenue is <span className="font-semibold">${(averageRevenue / 1000).toFixed(0)}k</span>, indicating consistent growth</li>
-                      <li>• Current trend shows <span className="font-semibold text-green-600 dark:text-green-400">positive momentum</span> with steady month-over-month increases</li>
-                    </ul>
-                  </div>
-                </>
-              );
-            })()}
+                    {/* Monthly Breakdown Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-900">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Month</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Change</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trend</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">vs Average</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
+                          {revenueData.map((item: { month: string; value: number }, index: number) => {
+                            const prevValue = index > 0 ? revenueData[index - 1].value : item.value;
+                            const change = prevValue > 0 && index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
+                            const vsAverage = averageRevenue > 0 ? ((item.value - averageRevenue) / averageRevenue) * 100 : 0;
+                            
+                            return (
+                              <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.month}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">${item.value.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-sm">
+                                  {index > 0 ? (
+                                    <span className={`font-medium ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                      {change >= 0 ? '+' : ''}{change.toFixed(1)}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400 dark:text-gray-500">—</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {index > 0 && (
+                                    <span className={`inline-flex items-center ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                      {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <span className={`font-medium ${vsAverage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {vsAverage >= 0 ? '+' : ''}{vsAverage.toFixed(1)}%
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Insights */}
+                    <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
+                      <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-2">Key Insights</h3>
+                      <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        {totalRevenue > 0 ? (
+                          <>
+                            <li>• Revenue has grown by <span className={`font-semibold ${growthRate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{growthRate >= 0 ? '+' : ''}{growthRate.toFixed(1)}%</span> over the past {revenueData.length} months</li>
+                            <li>• <span className="font-semibold">{bestMonth.month}</span> was the best performing month with ${bestMonth.value >= 1000 ? (bestMonth.value / 1000).toFixed(0) + 'k' : bestMonth.value.toFixed(0)} in revenue</li>
+                            <li>• Average monthly revenue is <span className="font-semibold">${averageRevenue >= 1000 ? (averageRevenue / 1000).toFixed(0) + 'k' : averageRevenue.toFixed(0)}</span></li>
+                            <li>• Current trend shows <span className={`font-semibold ${growthRate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{growthRate >= 0 ? 'positive momentum' : 'declining trend'}</span></li>
+                          </>
+                        ) : (
+                          <li>• No revenue recorded yet. Revenue is calculated from approved applications.</li>
+                        )}
+                      </ul>
+                    </div>
+                  </>
+                );
+              })()
+            ) : (
+              /* Empty State - No Revenue Data */
+              <div className="h-[300px] flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <DollarSign className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">No Revenue Data Yet</h3>
+                <p className="text-gray-500 dark:text-gray-400 max-w-md">
+                  Revenue data will appear here once you have approved applications. 
+                  Revenue is calculated based on the property prices of approved applications.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Future Property Rate Analysis - Removed: No real prediction API available */}
@@ -2016,7 +2040,7 @@ const Dashboard = () => {
       {/* Delete Application Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete Application</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this application? This action cannot be undone.
@@ -2042,7 +2066,7 @@ const Dashboard = () => {
       {/* Delete Property Confirmation Modal */}
       {showPropertyDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete Property</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this property? This action cannot be undone.

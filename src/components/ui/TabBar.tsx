@@ -15,7 +15,7 @@ const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 mb-6">
+    <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-2 mb-6">
       <div className="flex items-center gap-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -26,7 +26,7 @@ const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 activeTab === tab.id
                   ? 'bg-primary text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
               }`}
             >
               <Icon className="w-4 h-4" />

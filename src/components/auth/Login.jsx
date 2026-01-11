@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { 
+    getSessionWithTimeout, 
+    getUserRole, 
+    getRedirectPath,
+    AUTH_TIMEOUTS 
+} from '../../utils/authHelpers';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
@@ -14,61 +20,80 @@ const Login = () => {
     const [error, setError] = useState('');
     const [checkingSession, setCheckingSession] = useState(true);
 
+    // Ref to prevent multiple OAuth attempts
+    const isSigningIn = useRef(false);
+
     // Get the intended destination from location state
     const from = location.state?.from?.pathname;
     const intendedRole = location.state?.intendedRole;
 
-    // Check if user is already logged in and redirect appropriately
+    // Check if user is already logged in with timeout protection
     useEffect(() => {
+        let isMounted = true;
+
         const checkExistingSession = async () => {
             if (!isSupabaseAvailable()) {
-                setCheckingSession(false);
+                if (isMounted) setCheckingSession(false);
                 return;
             }
 
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session }, error: sessionError } = await getSessionWithTimeout(AUTH_TIMEOUTS.SESSION_CHECK);
+                
+                if (!isMounted) return;
+
+                if (sessionError) {
+                    // Session check failed/timed out - allow user to sign in
+                    setCheckingSession(false);
+                    return;
+                }
                 
                 if (session) {
-                    // User is already logged in, redirect based on role
-                    const userRole = session.user?.user_metadata?.role;
-                    
-                    // Check profile for role if not in metadata
-                    let role = userRole;
-                    if (!role) {
-                        const { data: profile } = await supabase
-                            .from('profiles')
-                            .select('role')
-                            .eq('id', session.user.id)
-                            .single();
-                        role = profile?.role || 'user';
+                    // User is already logged in, get role and redirect
+                    const role = await getUserRole(session.user);
+                    if (isMounted) {
+                        const redirectPath = getRedirectPath(role, from);
+                        
+                        // Debug logging (only in development)
+                        if (import.meta.env.DEV) {
+                            // eslint-disable-next-line no-console
+                            console.log('OAuth - Existing session found:', {
+                                userId: session.user.id,
+                                email: session.user.email,
+                                role,
+                                redirectPath
+                            });
+                        }
+                        
+                        navigate(redirectPath, { replace: true });
                     }
-
-                    // Redirect to the intended destination or dashboard based on role
-                    if (from) {
-                        navigate(from, { replace: true });
-                    } else if (role === 'manager') {
-                        navigate('/manager/dashboard', { replace: true });
-                    } else {
-                        navigate('/user/dashboard', { replace: true });
-                    }
+                } else {
+                    setCheckingSession(false);
                 }
-            } catch (err) {
-                console.error('Error checking session:', err);
-            } finally {
-                setCheckingSession(false);
+            } catch {
+                if (isMounted) setCheckingSession(false);
             }
         };
 
         checkExistingSession();
+
+        return () => {
+            isMounted = false;
+        };
     }, [navigate, from]);
 
     const signInWithGoogle = async () => {
+        // Prevent multiple concurrent OAuth attempts
+        if (isSigningIn.current || loading) {
+            return;
+        }
+
         if (!isSupabaseAvailable()) {
             setError('Authentication service is not configured. Please contact support.');
             return;
         }
 
+        isSigningIn.current = true;
         setActive('google');
         setLoading(true);
         setError('');
@@ -84,12 +109,14 @@ const Login = () => {
             });
             
             if (authError) {
-                setError(authError.message);
+                setError(authError.message || 'Failed to sign in with Google.');
+                isSigningIn.current = false;
+                setLoading(false);
             }
+            // Note: On success, we don't reset loading because the page will redirect
         } catch (err) {
-            console.error('Google sign-in error:', err);
             setError('Failed to sign in with Google. Please try again.');
-        } finally {
+            isSigningIn.current = false;
             setLoading(false);
         }
     };
@@ -98,6 +125,18 @@ const Login = () => {
         setActive('email');
         navigate('/auth/sign-in-email');
     };
+
+    // Show loading while checking for existing session
+    if (checkingSession) {
+        return (
+            <AuthLayout image={building}>
+                <div className="flex flex-col items-center justify-center min-h-[300px]">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Checking session...</p>
+                </div>
+            </AuthLayout>
+        );
+    }
 
     return (
         <AuthLayout image={building}>
@@ -118,7 +157,7 @@ const Login = () => {
                 {/* Google Button */}
                 <button
                     onClick={signInWithGoogle}
-                    disabled={loading}
+                    disabled={loading || checkingSession}
                     className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-3 border ${
                         active === 'google'
                             ? 'bg-primary text-white border-primary'

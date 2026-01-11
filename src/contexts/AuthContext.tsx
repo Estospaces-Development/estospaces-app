@@ -1,6 +1,22 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useRef } from 'react';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
+
+// Auth timeout constants - Generous for production stability
+const AUTH_TIMEOUT_MS = 15000; // 15 seconds max for initial session check
+const PROFILE_TIMEOUT_MS = 10000; // 10 seconds max for profile fetch
+
+// Helper to check if error is an AbortError (should be silently ignored)
+const isAbortError = (error: unknown): boolean => {
+    if (!error) return false;
+    const err = error as { name?: string; message?: string; code?: string };
+    return (
+        err.name === 'AbortError' ||
+        err.message?.includes('aborted') ||
+        err.message?.includes('AbortError') ||
+        err.code === 'ABORT_ERR'
+    );
+};
 
 // Profile type
 export interface Profile {
@@ -68,24 +84,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (fetchError) {
                 // If profile doesn't exist, it might not have been created yet
                 if (fetchError.code === 'PGRST116') {
-                    console.log('Profile not found, may need to be created');
                     return null;
                 }
-                console.error('Error fetching profile:', fetchError);
                 return null;
             }
 
             setProfile(data);
             return data;
-        } catch (err) {
-            console.error('Failed to fetch profile:', err);
+        } catch {
             return null;
         } finally {
             setProfileLoading(false);
         }
     }, []);
 
-    // Update user profile
+    // Update user profile (uses upsert for reliability)
     const updateProfile = async (updates: Partial<Profile>): Promise<{ data?: Profile; error?: string }> => {
         if (!isSupabaseAvailable() || !supabase || !user?.id) {
             setError('Cannot update profile: not authenticated');
@@ -94,18 +107,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         setProfileLoading(true);
         try {
+            // Use upsert to create profile if it doesn't exist, or update if it does
             const { data, error: updateError } = await (supabase as SupabaseClient)
                 .from('profiles')
-                .update({
+                .upsert({
+                    id: user.id,
+                    email: user.email,
                     ...updates,
                     updated_at: new Date().toISOString(),
+                }, {
+                    onConflict: 'id'
                 })
-                .eq('id', user.id)
                 .select()
                 .single();
 
             if (updateError) {
-                console.error('Error updating profile:', updateError);
                 setError(updateError.message);
                 return { error: updateError.message };
             }
@@ -113,7 +129,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setProfile(data);
             return { data };
         } catch (err: any) {
-            console.error('Failed to update profile:', err);
             setError(err.message);
             return { error: err.message };
         } finally {
@@ -146,87 +161,181 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                     // Fetch existing profile instead
                     return await fetchProfile(user.id);
                 }
-                console.error('Error creating profile:', createError);
                 return { error: createError.message };
             }
 
             setProfile(data);
             return { data };
         } catch (err: any) {
-            console.error('Failed to create profile:', err);
             return { error: err.message };
         }
     };
 
     useEffect(() => {
+        let isMounted = true;
+        let authListener: { subscription: { unsubscribe: () => void } } | null = null;
+
         // Check if Supabase is configured
         if (!isSupabaseAvailable() || !supabase) {
-            console.warn('Supabase is not configured. Auth features will not work.');
             setLoading(false);
             return;
         }
 
-        // Get initial session
-        (supabase as SupabaseClient).auth.getSession().then(async ({ data, error: sessionError }) => {
-            if (sessionError) {
-                console.error('Error getting session:', sessionError);
-                setError(sessionError.message);
-            } else {
-                setSession(data.session);
-                setUser(data.session?.user ?? null);
+        // Helper function to get session with timeout
+        const getSessionWithTimeout = async (): Promise<{ data: { session: Session | null }; error: Error | null }> => {
+            return new Promise((resolve) => {
+                const timeoutId = setTimeout(() => {
+                    resolve({ data: { session: null }, error: new Error('Session check timeout') });
+                }, AUTH_TIMEOUT_MS);
+
+                (supabase as SupabaseClient).auth.getSession()
+                    .then((result) => {
+                        clearTimeout(timeoutId);
+                        if (!isMounted) {
+                            resolve({ data: { session: null }, error: null });
+                            return;
+                        }
+                        resolve(result as { data: { session: Session | null }; error: Error | null });
+                    })
+                    .catch((err) => {
+                        clearTimeout(timeoutId);
+                        // Silently handle abort errors
+                        if (isAbortError(err)) {
+                            resolve({ data: { session: null }, error: null });
+                            return;
+                        }
+                        resolve({ data: { session: null }, error: err });
+                    });
+            });
+        };
+
+        // Get initial session with timeout protection
+        const initSession = async () => {
+            try {
+                const { data, error: sessionError } = await getSessionWithTimeout();
                 
-                // Fetch profile if user is logged in
-                if (data.session?.user) {
-                    await fetchProfile(data.session.user.id);
+                if (!isMounted) return;
+
+                if (sessionError) {
+                    // Session check failed or timed out
+                    // This is OK on initial load - user may not be logged in
+                    setError(null); // Don't show error to user for initial check
+                    setSession(null);
+                    setUser(null);
+                    setLoading(false);
+                    return;
+                }
+
+                if (!data.session) {
+                    // No session found - user is not logged in
+                    setSession(null);
+                    setUser(null);
+                    setLoading(false);
+                    return;
+                }
+
+                // Session exists - update state
+                setSession(data.session);
+                setUser(data.session.user);
+                
+                // Fetch profile if user is logged in (with timeout, but don't block)
+                if (data.session.user && isMounted) {
+                    // Use a separate try-catch to not block loading state
+                    try {
+                        const profileTimeoutPromise = new Promise<null>((resolve) => {
+                            setTimeout(() => resolve(null), PROFILE_TIMEOUT_MS);
+                        });
+                        const profilePromise = fetchProfile(data.session.user.id);
+                        await Promise.race([profilePromise, profileTimeoutPromise]);
+                    } catch {
+                        // Profile fetch failed - continue without profile
+                        // This is OK - we still have the session
+                    }
+                }
+                
+                if (isMounted) {
+                    setLoading(false);
+                }
+            } catch {
+                // Unexpected error during session check
+                if (isMounted) {
+                    setError(null);
+                    setSession(null);
+                    setUser(null);
+                    setLoading(false);
                 }
             }
-            setLoading(false);
-        }).catch((err: any) => {
-            console.error('Failed to get session:', err);
-            setError('Failed to initialize authentication');
-            setLoading(false);
-        });
+        };
+
+        initSession();
 
         // Listen for auth changes
-        const { data: listener } = (supabase as SupabaseClient).auth.onAuthStateChange(
-            async (event: any, currentSession: Session | null) => {
-                console.log('Auth state changed:', event);
-                setSession(currentSession);
-                setUser(currentSession?.user ?? null);
-                setLoading(false);
-                setError(null);
+        try {
+            const { data: listener } = (supabase as SupabaseClient).auth.onAuthStateChange(
+                async (event: string, currentSession: Session | null) => {
+                    if (!isMounted) return;
 
-                // Fetch profile when user signs in
-                if (event === 'SIGNED_IN' && currentSession?.user) {
-                    await fetchProfile(currentSession.user.id);
-                }
+                    setSession(currentSession);
+                    setUser(currentSession?.user ?? null);
+                    setLoading(false);
+                    setError(null);
 
-                // Clear profile when user signs out
-                if (event === 'SIGNED_OUT') {
-                    setProfile(null);
+                    // Fetch profile when user signs in
+                    if (event === 'SIGNED_IN' && currentSession?.user) {
+                        try {
+                            await fetchProfile(currentSession.user.id);
+                        } catch {
+                            // Profile fetch failed - continue
+                        }
+                    }
+
+                    // Clear profile when user signs out
+                    if (event === 'SIGNED_OUT') {
+                        setProfile(null);
+                    }
                 }
-            }
-        );
+            );
+            authListener = listener;
+        } catch {
+            // Auth listener setup failed
+        }
 
         return () => {
-            listener?.subscription?.unsubscribe();
+            isMounted = false;
+            authListener?.subscription?.unsubscribe();
         };
     }, [fetchProfile]);
 
     const signOut = async () => {
         if (!isSupabaseAvailable() || !supabase) {
-            console.warn('Supabase is not configured');
+            // Clear local state even if Supabase is not configured
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            // Clear localStorage
+            localStorage.removeItem('managerVerified');
             return;
         }
         
         try {
             const { error: signOutError } = await (supabase as SupabaseClient).auth.signOut();
             if (signOutError) throw signOutError;
+            
+            // Clear state
             setSession(null);
             setUser(null);
             setProfile(null);
+            
+            // Clear localStorage
+            localStorage.removeItem('managerVerified');
+            localStorage.removeItem('leads');
         } catch (err: any) {
-            console.error('Sign out error:', err);
+            // Even on error, clear local state
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            localStorage.removeItem('managerVerified');
+            localStorage.removeItem('leads');
             setError(err.message);
         }
     };
