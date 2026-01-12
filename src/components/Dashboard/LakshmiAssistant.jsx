@@ -3,7 +3,7 @@ import { MessageCircle, X, Send, Bot, ArrowRight, Mic, MicOff, Loader2, MapPin, 
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useProperties } from '../../contexts/PropertiesContext';
-import { useLocation } from '../../contexts/LocationContext';
+import { useUserLocation } from '../../contexts/LocationContext';
 import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
 import * as propertyDataService from '../../services/propertyDataService';
 import * as propertiesService from '../../services/propertiesService';
@@ -11,7 +11,7 @@ import * as propertiesService from '../../services/propertiesService';
 const LakshmiAssistant = () => {
   const navigate = useNavigate();
   const { currentUser, viewedProperties, savedProperties: contextSavedProps, appliedProperties } = useProperties();
-  const { activeLocation } = useLocation();
+  const { activeLocation } = useUserLocation();
   const { savedProperties: savedProps } = useSavedProperties();
   
   const [isOpen, setIsOpen] = useState(false);
@@ -22,7 +22,7 @@ const LakshmiAssistant = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState([]);
-  const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
+  const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false); // Disabled welcome popup
   
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -52,33 +52,15 @@ const LakshmiAssistant = () => {
           if (data?.lakshmi_onboarding_completed) {
             setOnboardingCompleted(true);
             setShowOnboarding(false);
-            setShowWelcomeAnimation(false);
           } else {
             setShowOnboarding(true);
-            // Show welcome animation for first-time users
-            setShowWelcomeAnimation(true);
-            // Auto-hide after 6 seconds
-            setTimeout(() => {
-              setShowWelcomeAnimation(false);
-            }, 6000);
           }
         } catch (error) {
           // Table might not exist, show onboarding anyway
           setShowOnboarding(true);
-          // Show welcome animation for first-time users
-          setShowWelcomeAnimation(true);
-          // Auto-hide after 6 seconds
-          setTimeout(() => {
-            setShowWelcomeAnimation(false);
-          }, 6000);
         }
       } else {
         setShowOnboarding(true);
-        // Show welcome animation for guests
-        setShowWelcomeAnimation(true);
-        setTimeout(() => {
-          setShowWelcomeAnimation(false);
-        }, 6000);
       }
       
       // Start with empty messages - no mock data
@@ -618,57 +600,6 @@ const LakshmiAssistant = () => {
 
   return (
     <>
-      {/* Welcome Animation for First-Time Users */}
-      {showWelcomeAnimation && !isOpen && (
-        <div className="fixed bottom-28 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-orange-300 dark:border-orange-600 p-4 max-w-xs animate-bounce-subtle">
-            {/* Speech Bubble Tail */}
-            <div className="absolute bottom-[-12px] right-8 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[12px] border-t-white dark:border-t-gray-800"></div>
-            <div className="absolute bottom-[-14px] right-8 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[12px] border-t-orange-300 dark:border-t-orange-600"></div>
-            
-            {/* Close Button */}
-            <button
-              onClick={() => setShowWelcomeAnimation(false)}
-              className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Dismiss welcome"
-            >
-              <X size={16} className="text-gray-400 dark:text-gray-500" />
-            </button>
-
-            {/* Avatar - Lady Icon */}
-            <div className="flex items-start gap-3 mb-3">
-              <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center animate-pulse-slow">
-                  <User size={24} className="text-white" />
-                </div>
-                {/* Wave animation indicator */}
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-800 animate-ping"></div>
-              </div>
-              <div className="flex-1 pt-1">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  hi, welcome to the estospaces
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  I'm Lakshmi, your property assistant. Click below to get started!
-                </p>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <button
-              onClick={() => {
-                setShowWelcomeAnimation(false);
-                setIsOpen(true);
-              }}
-              className="w-full mt-3 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-            >
-              <Bot size={16} />
-              <span>Start Chatting</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Chat Bubble Button */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-40">
@@ -682,9 +613,6 @@ const LakshmiAssistant = () => {
           >
             <Bot size={20} className="flex-shrink-0" />
             <span className="font-medium text-sm whitespace-nowrap">Ask Lakshmi</span>
-            {showWelcomeAnimation && (
-              <span className="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
-            )}
           </button>
         </div>
       )}

@@ -22,10 +22,16 @@ import {
   User,
   Loader2,
   AlertCircle,
+  X,
+  FileText,
+  Send,
 } from 'lucide-react';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import { useProperties } from '../contexts/PropertiesContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as propertyDataService from '../services/propertyDataService';
+import * as propertiesService from '../services/propertiesService';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import ShareModal from '../components/Dashboard/ShareModal';
 
 const PropertyDetail = () => {
@@ -40,6 +46,17 @@ const PropertyDetail = () => {
   const [error, setError] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showViewingModal, setShowViewingModal] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applicationSuccess, setApplicationSuccess] = useState(false);
+  const [applicationError, setApplicationError] = useState(null);
+  const [viewingDate, setViewingDate] = useState('');
+  const [viewingTime, setViewingTime] = useState('');
+  const [viewingNotes, setViewingNotes] = useState('');
+  const [isSchedulingViewing, setIsSchedulingViewing] = useState(false);
+  const [viewingSuccess, setViewingSuccess] = useState(false);
+  const [viewingError, setViewingError] = useState(null);
+  const { user } = useAuth();
 
   // Fetch real property data
   useEffect(() => {
@@ -187,6 +204,84 @@ const PropertyDetail = () => {
     setShowPurchaseModal(true);
   };
 
+  const handleApplySubmit = async () => {
+    if (!currentUser || !property) return;
+
+    setIsApplying(true);
+    setApplicationError(null);
+
+    try {
+      const result = await propertiesService.applyToProperty(property.id, currentUser.id, {
+        property_title: property.title,
+        property_price: property.price,
+        listing_type: property.listing_type || property.property_type,
+        applied_at: new Date().toISOString(),
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      setApplicationSuccess(true);
+      // Close modal after 2 seconds and redirect to applications
+      setTimeout(() => {
+        setShowPurchaseModal(false);
+        setApplicationSuccess(false);
+        navigate('/user/dashboard/applications');
+      }, 2000);
+    } catch (err) {
+      console.error('Application error:', err);
+      setApplicationError(err.message || 'Failed to submit application. Please try again.');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const handleScheduleViewing = async () => {
+    if (!user || !property || !viewingDate || !viewingTime) {
+      setViewingError('Please select a date and time');
+      return;
+    }
+
+    if (!isSupabaseAvailable()) {
+      setViewingError('Database not available');
+      return;
+    }
+
+    setIsSchedulingViewing(true);
+    setViewingError(null);
+
+    try {
+      const { error } = await supabase
+        .from('viewings')
+        .insert({
+          user_id: user.id,
+          property_id: property.id,
+          viewing_date: viewingDate,
+          viewing_time: viewingTime,
+          notes: viewingNotes,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+
+      setViewingSuccess(true);
+      setTimeout(() => {
+        setShowViewingModal(false);
+        setViewingSuccess(false);
+        setViewingDate('');
+        setViewingTime('');
+        setViewingNotes('');
+        navigate('/user/dashboard/viewings');
+      }, 2000);
+    } catch (err) {
+      console.error('Viewing scheduling error:', err);
+      setViewingError(err.message || 'Failed to schedule viewing. Please try again.');
+    } finally {
+      setIsSchedulingViewing(false);
+    }
+  };
+
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto dark:bg-[#0a0a0a]">
       {/* Back Button */}
@@ -252,15 +347,33 @@ const PropertyDetail = () => {
               )}
             </div>
           </div>
-          {(property.property_type === 'sale' || property.type?.toLowerCase() === 'sale') && (
+          <div className="flex gap-3">
+            {(property.listing_type === 'sale' || property.property_type === 'sale' || property.type?.toLowerCase() === 'sale') && (
+              <button 
+                onClick={handlePurchase}
+                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              >
+                <FileText size={20} />
+                Apply to Buy
+              </button>
+            )}
+            {(property.listing_type === 'rent' || property.property_type === 'rent' || property.type?.toLowerCase() === 'rent') && (
+              <button 
+                onClick={handlePurchase}
+                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              >
+                <FileText size={20} />
+                Apply to Rent
+              </button>
+            )}
             <button 
-              onClick={handlePurchase}
-              className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              onClick={() => setShowViewingModal(true)}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
             >
-              PURCHASE THIS PROPERTY
-              <span>→</span>
+              <Calendar size={20} />
+              Schedule Viewing
             </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -499,6 +612,252 @@ const PropertyDetail = () => {
 
         </div>
       </div>
+
+      {/* Application Modal */}
+      {showPurchaseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl animate-scaleIn">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {property.listing_type === 'rent' ? 'Apply to Rent' : 'Apply to Purchase'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowPurchaseModal(false);
+                    setApplicationSuccess(false);
+                    setApplicationError(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {applicationSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Application Submitted!
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Your application has been sent to the agent. They will contact you soon.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Property Summary */}
+                  <div className="flex gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <img
+                      src={images[0] || 'https://via.placeholder.com/100x100'}
+                      alt={property.title}
+                      className="w-20 h-20 rounded-lg object-cover"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                        {property.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        {property.address_line_1 || property.city}
+                      </p>
+                      <p className="text-orange-600 dark:text-orange-400 font-semibold">
+                        {property.listing_type === 'rent' 
+                          ? `${formatPrice(property.price)}/month` 
+                          : formatPrice(property.price)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Application Info */}
+                  <div className="space-y-4 mb-6">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      By submitting this application, you're expressing interest in this property. 
+                      The agent will review your profile and contact you to discuss next steps.
+                    </p>
+                    
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                      <h4 className="font-medium text-orange-800 dark:text-orange-300 text-sm mb-2">
+                        What happens next?
+                      </h4>
+                      <ul className="text-xs text-orange-700 dark:text-orange-400 space-y-1">
+                        <li>• Agent reviews your application</li>
+                        <li>• You'll receive a response within 24-48 hours</li>
+                        <li>• Schedule a viewing if approved</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Error Message */}
+                  {applicationError && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="text-sm text-red-700 dark:text-red-400">{applicationError}</p>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    onClick={handleApplySubmit}
+                    disabled={isApplying}
+                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isApplying ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={20} />
+                        Submit Application
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Viewing Modal */}
+      {showViewingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl animate-scaleIn">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Schedule a Viewing
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowViewingModal(false);
+                    setViewingSuccess(false);
+                    setViewingError(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {viewingSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Viewing Scheduled!
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Your viewing request has been submitted. The agent will confirm shortly.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Property Summary */}
+                  <div className="flex gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <img
+                      src={images[0] || 'https://via.placeholder.com/100x100'}
+                      alt={property.title}
+                      className="w-20 h-20 rounded-lg object-cover"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                        {property.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        {property.address_line_1 || property.city}
+                      </p>
+                      <p className="text-orange-600 dark:text-orange-400 font-semibold">
+                        {property.listing_type === 'rent' 
+                          ? `${formatPrice(property.price)}/month` 
+                          : formatPrice(property.price)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Date & Time Selection */}
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Preferred Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={viewingDate}
+                        onChange={(e) => setViewingDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Preferred Time *
+                      </label>
+                      <input
+                        type="time"
+                        value={viewingTime}
+                        onChange={(e) => setViewingTime(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Notes (optional)
+                      </label>
+                      <textarea
+                        value={viewingNotes}
+                        onChange={(e) => setViewingNotes(e.target.value)}
+                        rows={2}
+                        placeholder="Any specific requirements or questions..."
+                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Error Message */}
+                  {viewingError && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="text-sm text-red-700 dark:text-red-400">{viewingError}</p>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    onClick={handleScheduleViewing}
+                    disabled={isSchedulingViewing || !viewingDate || !viewingTime}
+                    className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isSchedulingViewing ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        Scheduling...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar size={20} />
+                        Schedule Viewing
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

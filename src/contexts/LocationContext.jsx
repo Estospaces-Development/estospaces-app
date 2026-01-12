@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getUserLocation } from '../services/locationService';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
 
 const LocationContext = createContext();
 
-export const useLocation = () => {
+export const useUserLocation = () => {
   const context = useContext(LocationContext);
   if (!context) {
-    throw new Error('useLocation must be used within a LocationProvider');
+    throw new Error('useUserLocation must be used within a LocationProvider');
   }
   return context;
 };
@@ -21,9 +21,19 @@ export const LocationProvider = ({ children }) => {
 
   // Get current user
   useEffect(() => {
+    if (!isSupabaseAvailable()) {
+      setLoading(false);
+      return;
+    }
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setCurrentUser(session?.user || null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setCurrentUser(session?.user || null);
+      } catch (err) {
+        console.warn('Error getting session:', err);
+        setCurrentUser(null);
+      }
     };
 
     getSession();
@@ -37,23 +47,23 @@ export const LocationProvider = ({ children }) => {
 
   // Get user profile location
   const getUserProfileLocation = useCallback(async () => {
-    if (!currentUser) return null;
+    if (!currentUser || !isSupabaseAvailable()) return null;
 
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('location, postcode, city, latitude, longitude')
+        .select('location')
         .eq('id', currentUser.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile location:', error);
+        // Silently ignore profile location errors - not critical
         return null;
       }
 
       return data;
     } catch (err) {
-      console.error('Error getting profile location:', err);
+      // Silently ignore - profile location is optional
       return null;
     }
   }, [currentUser]);

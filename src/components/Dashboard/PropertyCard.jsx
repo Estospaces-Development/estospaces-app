@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   Heart, 
@@ -12,26 +13,37 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import VirtualTourModal from './VirtualTourModal';
 import ShareModal from './ShareModal';
 import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
 import { useProperties } from '../../contexts/PropertiesContext';
+import { useApplications } from '../../contexts/ApplicationsContext';
 
 const PropertyCard = ({ property, onViewDetails }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showVirtualTour, setShowVirtualTour] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [showApplySuccess, setShowApplySuccess] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
+  const [saveToastMessage, setSaveToastMessage] = useState('');
   const { toggleProperty, isPropertySaved } = useSavedProperties();
   const { saveProperty, unsaveProperty, applyToProperty, trackPropertyView, currentUser } = useProperties();
+  const applicationsContext = useApplications();
+  const createApplication = applicationsContext?.createApplication;
+  const allApplications = applicationsContext?.allApplications || [];
   const navigate = useNavigate();
   
-  // Check saved status from both contexts
-  const isSaved = property.is_saved !== undefined ? property.is_saved : isPropertySaved(property.id);
-  const isApplied = property.is_applied || false;
-  const applicationStatus = property.application_status || null;
+  // Check saved status from SavedPropertiesContext (source of truth)
+  const isSaved = isPropertySaved(property.id);
+  // Check if already applied to this property
+  const existingApplication = allApplications.find(app => app.propertyId === property.id);
+  const isApplied = existingApplication || property.is_applied || false;
+  const applicationStatus = existingApplication?.status || property.application_status || null;
   const viewCount = property.view_count || 0;
 
   const handleViewDetails = (e) => {
@@ -49,31 +61,86 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
   const handleSave = async (e) => {
     e.stopPropagation();
-    if (!currentUser) {
-      // Show login prompt or navigate to login
-      return;
-    }
-
+    e.preventDefault();
+    
+    console.log('[PropertyCard] Save button clicked for property:', property.id, property.title);
+    console.log('[PropertyCard] Current isSaved status:', isSaved);
+    
+    const wasAlreadySaved = isSaved;
     setIsSaving(true);
-    if (isSaved) {
-      await unsaveProperty(property.id);
-      toggleProperty(property); // Also update SavedPropertiesContext
-    } else {
-      await saveProperty(property.id);
-      toggleProperty(property); // Also update SavedPropertiesContext
+    
+    try {
+      // Toggle property in SavedPropertiesContext (handles both local and Supabase)
+      console.log('[PropertyCard] Calling toggleProperty...');
+      await toggleProperty(property);
+      console.log('[PropertyCard] toggleProperty completed');
+      
+      // Show toast notification
+      const message = wasAlreadySaved ? 'Property removed from saved' : 'Property saved successfully!';
+      console.log('[PropertyCard] Showing toast:', message);
+      setSaveToastMessage(message);
+      setShowSaveToast(true);
+      
+      // Auto-hide toast after 3 seconds
+      setTimeout(() => {
+        setShowSaveToast(false);
+      }, 3000);
+    } catch (err) {
+      console.error('[PropertyCard] Error saving property:', err);
+      setSaveToastMessage('Failed to save property');
+      setShowSaveToast(true);
+      setTimeout(() => {
+        setShowSaveToast(false);
+      }, 3000);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
-  const handleBuy = async (e) => {
+  const handleApply = async (e) => {
     e.stopPropagation();
     if (!currentUser) {
-      // Show login prompt
+      navigate('/login');
       return;
     }
 
-    // Navigate to property detail page with buy action
-    navigate(`/user/dashboard/property/${property.id}?action=buy`);
+    // If already applied, go to applications
+    if (isApplied) {
+      navigate('/user/dashboard/applications');
+      return;
+    }
+
+    setIsApplying(true);
+    try {
+      const applicationData = {
+        property_id: property.id,
+        property_title: property.title,
+        property_address: property.location || property.address || 'UK',
+        property_price: property.price,
+        property_type: property.property_type || 'apartment',
+        listing_type: property.listing_type || (property.type?.toLowerCase() === 'rent' ? 'rent' : 'sale'),
+        agent_name: property.agent_name || property.contact_name || 'Agent',
+        agent_email: property.agent_email || property.contact_email || '',
+        agent_phone: property.agent_phone || property.contact_phone || '',
+        agent_company: property.agent_company || property.company || '',
+      };
+
+      const result = await createApplication(applicationData);
+      
+      if (result.success) {
+        setShowApplySuccess(true);
+        // Navigate to applications after brief delay
+        setTimeout(() => {
+          navigate('/user/dashboard/applications');
+        }, 1500);
+      } else {
+        console.error('Failed to create application:', result.error);
+      }
+    } catch (err) {
+      console.error('Error applying to property:', err);
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   // Handle images - support multiple field name variations from database
@@ -145,9 +212,55 @@ const PropertyCard = ({ property, onViewDetails }) => {
     return `Listed ${Math.floor(days / 7)} weeks ago`;
   };
 
+  // Toast component to be rendered via portal
+  const ToastNotification = () => {
+    if (!showSaveToast) return null;
+    
+    return ReactDOM.createPortal(
+      <div 
+        className="fixed bottom-8 left-1/2 z-[99999] pointer-events-auto"
+        style={{ transform: 'translateX(-50%)' }}
+      >
+        <div 
+          className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl ${
+            saveToastMessage.includes('removed') || saveToastMessage.includes('Failed')
+              ? 'bg-gray-900 text-white'
+              : 'bg-green-500 text-white'
+          }`}
+          style={{
+            animation: 'slideUp 0.3s ease-out',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.4)'
+          }}
+        >
+          {saveToastMessage.includes('removed') ? (
+            <Heart size={24} className="text-white flex-shrink-0" />
+          ) : saveToastMessage.includes('Failed') ? (
+            <span className="text-xl">⚠️</span>
+          ) : (
+            <CheckCircle size={24} className="text-white flex-shrink-0" />
+          )}
+          <span className="font-bold text-base whitespace-nowrap">{saveToastMessage}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowSaveToast(false);
+            }}
+            className="ml-3 text-white/80 hover:text-white transition-colors text-xl font-bold"
+          >
+            ×
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+  };
+
   return (
     <>
-      <div className="bg-white dark:bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-300 hover:shadow-lg transition-all duration-300 group">
+      {/* Save Toast Notification - Rendered via Portal */}
+      <ToastNotification />
+
+      <div className="bg-white dark:bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
         {/* Image Carousel */}
         <div className="relative h-56 bg-gray-200 overflow-hidden">
           {images.length > 0 ? (
@@ -208,8 +321,14 @@ const PropertyCard = ({ property, onViewDetails }) => {
           {/* Property Type Badge */}
           {property.type && (
             <div className="absolute top-3 left-3">
-              <span className="bg-white/90 backdrop-blur-sm text-gray-800 px-2.5 py-1 rounded-md text-sm font-medium">
-                {property.type}
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${
+                property.type?.toLowerCase() === 'rent' 
+                  ? 'bg-blue-500 text-white' 
+                  : property.type?.toLowerCase() === 'sale' 
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white/95 backdrop-blur-sm text-gray-800'
+              }`}>
+                {property.type === 'Sale' ? 'For Sale' : property.type === 'Rent' ? 'For Rent' : property.type}
               </span>
             </div>
           )}
@@ -324,21 +443,40 @@ const PropertyCard = ({ property, onViewDetails }) => {
               View Details
             </button>
             
-            {/* Buy Now button for all properties */}
-            {!isApplied && (
+            {/* Apply/Buy/Rent button */}
+            {!isApplied ? (
               <button
-                onClick={handleBuy}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
+                onClick={handleApply}
+                disabled={isApplying}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                  isApplying 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : showApplySuccess
+                    ? 'bg-green-500'
+                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-sm hover:shadow-md'
+                } text-white`}
               >
-                Buy Now
+                {isApplying ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Applying...</span>
+                  </>
+                ) : showApplySuccess ? (
+                  <>
+                    <CheckCircle size={16} />
+                    <span>Applied!</span>
+                  </>
+                ) : (
+                  <span>{property.listing_type === 'rent' || property.type?.toLowerCase() === 'rent' ? 'Apply to Rent' : 'Apply to Buy'}</span>
+                )}
               </button>
-            )}
-            {isApplied && (
+            ) : (
               <button
                 onClick={() => navigate('/user/dashboard/applications')}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
-                View Application
+                <CheckCircle size={16} />
+                <span>Track Application</span>
               </button>
             )}
             

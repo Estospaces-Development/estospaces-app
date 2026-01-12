@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, Home, Heart, FileText, Map as MapIcon, 
   ArrowRight, MapPin, AlertCircle, TrendingUp, Star,
-  Loader2, X, Compass, Clock, Zap, Eye, Bath, Filter, ChevronDown, DollarSign, Sparkles
+  Loader2, X, Compass, Clock, Zap, Eye, Bath, Filter, ChevronDown, DollarSign, Sparkles,
+  Building2, Key, Bookmark, ClipboardList
 } from 'lucide-react';
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
@@ -12,7 +13,7 @@ import NearbyPropertiesMap from '../components/Dashboard/NearbyPropertiesMap';
 import PropertyDiscoverySection from '../components/Dashboard/PropertyDiscoverySection';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
-import { useLocation } from '../contexts/LocationContext';
+import { useUserLocation } from '../contexts/LocationContext';
 import { useProperties } from '../contexts/PropertiesContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
@@ -21,7 +22,7 @@ const DashboardLocationBased = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { savedProperties } = useSavedProperties();
-  const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useLocation();
+  const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useUserLocation();
   const { currentUser, fetchProperties: fetchSupabaseProperties } = useProperties();
   const { activeTab, setActiveTab } = usePropertyFilter();
   
@@ -49,6 +50,16 @@ const DashboardLocationBased = () => {
     return 'sold';
   });
   
+  // State for selected filter options (array for multiple selections)
+  const [selectedFilters, setSelectedFilters] = useState(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam) {
+      // Split comma-separated filters
+      return filterParam.split(',').filter(f => f);
+    }
+    return []; // Empty array means "All Properties"
+  });
+  
   // Sync selectedPropertyType with URL params when they change
   useEffect(() => {
     const urlType = searchParams.get('type');
@@ -67,7 +78,7 @@ const DashboardLocationBased = () => {
   const [highDemandProperties, setHighDemandProperties] = useState([]);
   
   // Loading states for each section
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingDiscovery, setLoadingDiscovery] = useState(false);
   const [loadingMostViewed, setLoadingMostViewed] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(false);
@@ -185,9 +196,6 @@ const DashboardLocationBased = () => {
 
   // State for filter dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState(() => {
-    return searchParams.get('filter') || null;
-  });
   
   // Sync selectedPropertyType with URL params when they change
   useEffect(() => {
@@ -199,10 +207,14 @@ const DashboardLocationBased = () => {
     }
   }, [searchParams]);
   
-  // Sync selectedFilter with URL params when they change
+  // Sync selectedFilters with URL params when they change
   useEffect(() => {
     const urlFilter = searchParams.get('filter');
-    setSelectedFilter(urlFilter || null);
+    if (urlFilter) {
+      setSelectedFilters(urlFilter.split(',').filter(f => f));
+    } else {
+      setSelectedFilters([]);
+    }
   }, [searchParams]);
   
   // Close dropdown when clicking outside
@@ -247,45 +259,39 @@ const DashboardLocationBased = () => {
   }, [savedProperties]);
 
   // Handle location search
-  const handleLocationSearch = useCallback(async (e, searchQuery = null) => {
+  const handleLocationSearch = useCallback((e, searchQuery = null) => {
     e?.preventDefault();
     const query = (searchQuery || searchInput || '').trim();
     
-    // Validate input
-    if (!query) {
-      setError('Please enter a postcode, street name, or address to search.');
-      return;
-    }
-
-    setLoading(true);
     setError(null);
     setLocationMessage(null);
     
-    try {
-      // Update location from search input
-      const location = await updateLocationFromSearch(query);
-      
-      if (location) {
-        // Update URL with search query for persistence
-        setSearchParams({ location: query });
-        
-        // Preserve search input (don't clear it)
-        if (searchQuery) {
-          setSearchInput(searchQuery);
-        }
-        
-        // Fetch all discovery sections for the new location
-        await fetchAllDiscoverySections(location, false);
-      } else {
-        setError('Could not find location. Please check the postcode, street name, or address and try again.');
-      }
-    } catch (err) {
-      console.error('Error searching location:', err);
-      setError(err.message || 'Failed to search location. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
+    // Build navigation URL with all parameters
+    const params = new URLSearchParams();
+    
+    // Add tab/type parameter
+    if (selectedPropertyType === 'buy') {
+      params.set('tab', 'buy');
+    } else if (selectedPropertyType === 'rent') {
+      params.set('tab', 'rent');
+    } else if (selectedPropertyType === 'sold') {
+      params.set('tab', 'buy'); // Sold properties - show as buy with sold status
+      params.set('status', 'sold');
     }
-  }, [searchInput, updateLocationFromSearch, setSearchParams, fetchAllDiscoverySections]);
+    
+    // Add location if provided
+    if (query) {
+      params.set('location', query);
+    }
+    
+    // Add filters if any selected
+    if (selectedFilters.length > 0) {
+      params.set('filter', selectedFilters.join(','));
+    }
+    
+    // Navigate to discover page with all filters
+    navigate(`/user/dashboard/discover?${params.toString()}`);
+  }, [searchInput, selectedPropertyType, selectedFilters, navigate]);
 
   // Listen for header search location events
   useEffect(() => {
@@ -411,47 +417,72 @@ const DashboardLocationBased = () => {
     source: 'default',
   };
 
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Get first name from user metadata
+  const firstName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 
+                    currentUser?.user_metadata?.name?.split(' ')[0] ||
+                    currentUser?.email?.split('@')[0] ||
+                    'there';
+
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen">
-      {/* Hero Search Section - Rightmove Style */}
-      <div className="relative rounded-xl shadow-2xl overflow-hidden min-h-[500px] lg:min-h-[600px] flex flex-col items-center justify-center mb-8">
-        {/* Background Image - Winter Scene */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1549517045-bc93de075e53?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')`
-          }}
-        />
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70" />
-        
-        {/* Hero Text Overlay - Centered at top */}
-        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 text-center z-10 w-full px-4">
-          <p className="text-4xl lg:text-5xl font-bold mb-3 text-orange-500">
-            Your complete property journey, simplified.
-          </p>
-          <p className="text-xl lg:text-2xl text-white font-medium">
-            Search, rent, buy, manage properties, and pay bills — all from one intelligent platform.
+    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen transition-all duration-300">
+      
+      {/* Simple Welcome Greeting */}
+      <div className="flex items-center justify-between animate-fadeIn">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white">
+            {getGreeting()}, <span className="text-orange-500 capitalize">{firstName}</span> 👋
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            What would you like to do today?
           </p>
         </div>
+      </div>
 
-        {/* Glass Search Widget - Centered below hero text */}
-        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 mt-32">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 lg:p-8 shadow-2xl border border-white/20">
+      {/* Hero Search Section - Modern Polished Design */}
+      <div className="relative rounded-2xl shadow-2xl overflow-hidden min-h-[480px] lg:min-h-[520px] flex flex-col items-center justify-center animate-fadeIn">
+        {/* Background Image with smooth loading */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105"
+          style={{
+            backgroundImage: `url('https://images.pexels.com/photos/8293778/pexels-photo-8293778.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2')`,
+          }}
+        />
+        {/* Elegant gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/70 via-gray-900/50 to-orange-900/30" />
+        
+        {/* Hero Content - Clean & Readable */}
+        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight tracking-tight animate-slideUp">
+            Find your perfect{' '}
+            <span className="text-orange-400">home</span>
+          </h1>
+          <p className="text-white/90 text-base md:text-lg mb-8 max-w-2xl mx-auto animate-slideUp" style={{ animationDelay: '0.1s' }}>
+            Search thousands of properties for sale and rent across the UK
+          </p>
+
+          {/* Search Card - Clean Glass Effect */}
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 lg:p-6 shadow-2xl max-w-3xl mx-auto animate-slideUp" style={{ animationDelay: '0.2s' }}>
             {/* Tabs */}
-            <div className="flex items-center gap-2 mb-4 border-b border-white/20 pb-4">
+            <div className="flex items-center gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit mx-auto">
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   setSelectedPropertyType('buy');
                   setSearchParams({ type: 'buy' }, { replace: true });
                 }}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedPropertyType === 'buy'
-                    ? 'text-white bg-orange-500 border-2 border-orange-600'
-                    : 'text-white hover:bg-white/20'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                 }`}
               >
                 Buy
@@ -460,14 +491,13 @@ const DashboardLocationBased = () => {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   setSelectedPropertyType('rent');
                   setSearchParams({ type: 'rent' }, { replace: true });
                 }}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedPropertyType === 'rent'
-                    ? 'text-white bg-orange-500 border-2 border-orange-600'
-                    : 'text-white hover:bg-white/20'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                 }`}
               >
                 Rent
@@ -476,184 +506,95 @@ const DashboardLocationBased = () => {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   setSelectedPropertyType('sold');
                   setSearchParams({ type: 'sold' }, { replace: true });
                 }}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedPropertyType === 'sold'
-                    ? 'text-white bg-orange-500 border-2 border-orange-600'
-                    : 'text-white hover:bg-white/20'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                 }`}
               >
                 Sold
               </button>
-              
-              {/* Filter Button with Dropdown */}
-              <div className="relative ml-auto filter-dropdown-container">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsFilterDropdownOpen(!isFilterDropdownOpen);
-                  }}
-                  className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 ${
-                    selectedFilter
-                      ? 'text-white bg-orange-500 border-2 border-orange-600'
-                      : 'text-white hover:bg-white/20 border border-white/30'
-                  }`}
-                >
-                  <Filter size={16} />
-                  <span>Filter</span>
-                  <ChevronDown size={16} className={`transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {/* Dropdown Menu */}
-                {isFilterDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden">
-                    <div className="py-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedFilter(null);
-                          const params = new URLSearchParams(searchParams);
-                          params.delete('filter');
-                          setSearchParams(params, { replace: true });
-                          setIsFilterDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          !selectedFilter
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        All Properties
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedFilter('most-viewed');
-                          const params = new URLSearchParams(searchParams);
-                          params.set('filter', 'most-viewed');
-                          setSearchParams(params, { replace: true });
-                          setIsFilterDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                          selectedFilter === 'most-viewed'
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <Eye size={14} className={selectedFilter === 'most-viewed' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
-                        Most Viewed
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedFilter('trending');
-                          const params = new URLSearchParams(searchParams);
-                          params.set('filter', 'trending');
-                          setSearchParams(params, { replace: true });
-                          setIsFilterDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                          selectedFilter === 'trending'
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <TrendingUp size={14} className={selectedFilter === 'trending' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
-                        Trending
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedFilter('high-demand');
-                          const params = new URLSearchParams(searchParams);
-                          params.set('filter', 'high-demand');
-                          setSearchParams(params, { replace: true });
-                          setIsFilterDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                          selectedFilter === 'high-demand'
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <Zap size={14} className={selectedFilter === 'high-demand' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
-                        High Demand
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedFilter('budget-friendly');
-                          const params = new URLSearchParams(searchParams);
-                          params.set('filter', 'budget-friendly');
-                          setSearchParams(params, { replace: true });
-                          setIsFilterDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                          selectedFilter === 'budget-friendly'
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <DollarSign size={14} className={selectedFilter === 'budget-friendly' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'} />
-                        Budget Friendly
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Search Prompt */}
-            <p className="text-white text-sm mb-4">
-              {selectedPropertyType === 'buy' && 'Search properties for sale'}
-              {selectedPropertyType === 'rent' && 'Search properties for rent'}
-              {selectedPropertyType === 'sold' && 'Search sold house prices'}
-            </p>
+            {/* Filter Options Row - Multiple Selection */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+              {[
+                { id: 'all', label: 'All Properties', icon: Sparkles },
+                { id: 'recently_added', label: 'Recently Added', icon: Clock },
+                { id: 'most_viewed', label: 'Most Visited', icon: Eye },
+                { id: 'high_demand', label: 'High Demand', icon: TrendingUp },
+                { id: 'budget_friendly', label: 'Budget Friendly', icon: DollarSign },
+              ].map((filter) => {
+                const Icon = filter.icon;
+                const isAllSelected = filter.id === 'all' && selectedFilters.length === 0;
+                const isSelected = filter.id === 'all' ? isAllSelected : selectedFilters.includes(filter.id);
+                
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      let newFilters;
+                      
+                      if (filter.id === 'all') {
+                        // Clicking "All Properties" clears all other selections
+                        newFilters = [];
+                      } else {
+                        // Toggle the specific filter
+                        if (selectedFilters.includes(filter.id)) {
+                          // Remove the filter
+                          newFilters = selectedFilters.filter(f => f !== filter.id);
+                        } else {
+                          // Add the filter
+                          newFilters = [...selectedFilters, filter.id];
+                        }
+                      }
+                      
+                      setSelectedFilters(newFilters);
+                      
+                      // Update URL params
+                      const newParams = new URLSearchParams(searchParams);
+                      if (newFilters.length === 0) {
+                        newParams.delete('filter');
+                      } else {
+                        newParams.set('filter', newFilters.join(','));
+                      }
+                      setSearchParams(newParams, { replace: true });
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    <span>{filter.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Search Form */}
-            <form 
-              onSubmit={handleLocationSearch} 
-              className="flex flex-col sm:flex-row gap-3"
-            >
+            {/* Search Form - Inline */}
+            <form onSubmit={handleLocationSearch} className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                  <Search className="text-gray-400" size={20} />
-                </div>
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="School Road, SW4 7DD or York"
-                  className="w-full pl-12 pr-4 py-4 text-base bg-white/95 backdrop-blur-sm text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 border border-white/30 placeholder-gray-400"
+                  placeholder="Enter postcode, city, or area..."
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   disabled={loading}
-                  aria-label="Search for properties by location"
                 />
-                {searchInput.trim() && (
+                {searchInput && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setSearchInput('');
-                      setSearchParams({});
-                      setError(null);
-                      setLocationMessage(null);
-                    }}
-                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors"
-                    aria-label="Clear search"
+                    onClick={() => setSearchInput('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <X size={18} />
                   </button>
@@ -662,27 +603,12 @@ const DashboardLocationBased = () => {
               <button
                 type="submit"
                 disabled={loading}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const query = searchInput.trim();
-                  if (query && !loading) {
-                    handleLocationSearch(e);
-                  } else if (!query) {
-                    setError('Please enter a postcode, street name, or address to search.');
-                    const input = e.target.closest('form')?.querySelector('input[type="text"]');
-                    if (input) {
-                      input.focus();
-                    }
-                  }
-                }}
-                className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[140px] shadow-lg hover:shadow-xl"
-                aria-label="Search for properties"
+                className="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[140px] shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" size={20} />
-                    <span className="hidden sm:inline">Searching...</span>
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>Searching</span>
                   </>
                 ) : (
                   <span>Search</span>
@@ -693,109 +619,100 @@ const DashboardLocationBased = () => {
         </div>
       </div>
 
-      {/* Welcome Card */}
-      <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-white dark:to-white rounded-xl shadow-lg border-2 border-orange-200 dark:border-orange-300 p-6 lg:p-8 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-orange-500 rounded-lg">
-                <Sparkles className="text-white" size={24} />
-              </div>
-              <div>
-                <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                  Welcome back{currentUser?.email ? `, ${currentUser.email.split('@')[0]}` : ''}!
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
-            </div>
-            <p className="text-gray-700 text-sm lg:text-base mb-4">
-              Discover your perfect property or manage your existing ones. Use the search above to find properties by location, or explore nearby listings on the map.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => navigate('/user/dashboard/discover?type=buy')}
-                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 border border-orange-300 text-orange-600 rounded-lg font-medium transition-all duration-200 hover:shadow-md"
-              >
-                <Home size={16} />
-                <span>Browse Properties</span>
-                <ArrowRight size={14} />
-              </button>
-              <button
-                onClick={() => navigate('/user/dashboard/saved')}
-                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 border border-orange-300 text-orange-600 rounded-lg font-medium transition-all duration-200 hover:shadow-md"
-              >
-                <Heart size={16} />
-                <span>Saved ({savedProperties.length || 0})</span>
-              </button>
-              <button
-                onClick={() => navigate('/user/dashboard/applications')}
-                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 border border-orange-300 text-orange-600 rounded-lg font-medium transition-all duration-200 hover:shadow-md"
-              >
-                <FileText size={16} />
-                <span>My Applications</span>
-              </button>
-            </div>
+      {/* Quick Action CTAs - Property Tech Style */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <button
+          onClick={() => {
+            setActiveTab('buy');
+            navigate('/user/dashboard/discover?tab=buy');
+          }}
+          className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+        >
+          <div className="p-3.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-500/25">
+            <Building2 size={24} className="text-white" strokeWidth={1.5} />
           </div>
-          <div className="flex flex-col gap-3 md:w-auto">
-            <div className="bg-white/80 rounded-lg p-4 border border-orange-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Home size={20} className="text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{allProperties.length || 0}</p>
-                  <p className="text-xs text-gray-600">Properties Available</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white/80 rounded-lg p-4 border border-orange-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <MapPin size={20} className="text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {activeLocation?.city || 'London'}
-                  </p>
-                  <p className="text-xs text-gray-600">Current Location</p>
-                </div>
-              </div>
-            </div>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Buy Property</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Find your dream home</p>
+          <span className="text-violet-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+            Browse <ArrowRight size={14} />
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('rent');
+            navigate('/user/dashboard/discover?tab=rent');
+          }}
+          className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+        >
+          <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-cyan-500/25">
+            <Key size={24} className="text-white" strokeWidth={1.5} />
           </div>
-        </div>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Rent Property</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Explore rentals</p>
+          <span className="text-cyan-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+            Explore <ArrowRight size={14} />
+          </span>
+        </button>
+
+        <button
+          onClick={() => navigate('/user/dashboard/saved')}
+          className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+        >
+          <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
+            <Bookmark size={24} className="text-white" strokeWidth={1.5} />
+          </div>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
+          <span className="text-rose-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+            View All <ArrowRight size={14} />
+          </span>
+        </button>
+
+        <button
+          onClick={() => navigate('/user/dashboard/applications')}
+          className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+        >
+          <div className="p-3.5 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/25">
+            <ClipboardList size={24} className="text-white" strokeWidth={1.5} />
+          </div>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Applications</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Track progress</p>
+          <span className="text-teal-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+            Manage <ArrowRight size={14} />
+          </span>
+        </button>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5" size={20} />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-red-800 dark:text-red-200">{error}</p>
-            <button
-              onClick={() => setError(null)}
-              className="mt-2 text-xs text-red-600 dark:text-red-400 hover:underline"
-            >
-              Dismiss
-            </button>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3 animate-slideDown">
+          <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
+            <AlertCircle className="text-red-600 dark:text-red-400" size={18} />
           </div>
+          <p className="flex-1 text-sm font-medium text-red-800 dark:text-red-200">{error}</p>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 p-1.5 rounded-lg transition-colors"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
       {/* Location Message (Info/Warning) */}
       {locationMessage && !error && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="text-yellow-600 dark:text-yellow-400 mt-0.5" size={20} />
-          <div className="flex-1">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">{locationMessage}</p>
-            <button
-              onClick={() => setLocationMessage(null)}
-              className="mt-2 text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
-            >
-              Dismiss
-            </button>
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center gap-3 animate-slideDown">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
+            <AlertCircle className="text-amber-600 dark:text-amber-400" size={18} />
           </div>
+          <p className="flex-1 text-sm text-amber-800 dark:text-amber-200">{locationMessage}</p>
+          <button
+            onClick={() => setLocationMessage(null)}
+            className="text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 p-1.5 rounded-lg transition-colors"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
