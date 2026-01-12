@@ -375,6 +375,14 @@ const AddressSection = ({
     });
   }, [value, onChange]);
 
+  // Handler for postal code - only allows integers
+  const handlePostalCodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Only allow digits (0-9)
+    const numericValue = inputValue.replace(/\D/g, '');
+    handleTextChange('postalCode', numericValue);
+  }, [handleTextChange]);
+
   // Retry handlers
   const retryCountries = useCallback(async () => {
     setLoadingCountries(true);
@@ -640,8 +648,10 @@ const AddressSection = ({
           <input
             id="postalCode"
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={value.postalCode}
-            onChange={(e) => handleTextChange('postalCode', e.target.value)}
+            onChange={handlePostalCodeChange}
             disabled={disabled}
             placeholder="Enter postal code"
             className={`

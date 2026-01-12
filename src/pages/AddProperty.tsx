@@ -646,6 +646,29 @@ const AddProperty = () => {
       });
     }
   };
+
+  // Helper function to handle numeric input changes - allows empty values
+  const handleNumericChange = (field: keyof FormData, value: string, defaultValue: number = 0) => {
+    // If empty, set to 0 (or default value) but allow user to clear
+    if (value === '' || value === null || value === undefined) {
+      handleInputChange(field, defaultValue as any);
+    } else {
+      // Parse the value and ensure it's a valid number
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue) && numValue >= 0) {
+        handleInputChange(field, numValue as any);
+      }
+    }
+  };
+
+  // Helper to get display value for number inputs - show empty string when 0
+  // This prevents the "01" issue when user types in a field that has value 0
+  const getNumericDisplayValue = (value: number | undefined): string => {
+    if (value === undefined || value === null || value === 0) {
+      return '';
+    }
+    return value.toString();
+  };
   
   // Handle tab navigation - different behavior for create vs edit mode
   const handleTabClick = (stepNumber: number) => {
@@ -1605,8 +1628,8 @@ const AddProperty = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.bedrooms}
-                    onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
+                    value={getNumericDisplayValue(formData.bedrooms)}
+                    onChange={(e) => handleNumericChange('bedrooms', e.target.value, 0)}
                     className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
@@ -1618,8 +1641,8 @@ const AddProperty = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.bathrooms}
-                    onChange={(e) => handleInputChange('bathrooms', parseInt(e.target.value) || 0)}
+                    value={getNumericDisplayValue(formData.bathrooms)}
+                    onChange={(e) => handleNumericChange('bathrooms', e.target.value, 0)}
                     className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
@@ -1631,8 +1654,8 @@ const AddProperty = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.balconies}
-                    onChange={(e) => handleInputChange('balconies', parseInt(e.target.value) || 0)}
+                    value={getNumericDisplayValue(formData.balconies)}
+                    onChange={(e) => handleNumericChange('balconies', e.target.value, 0)}
                     className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
@@ -1644,8 +1667,8 @@ const AddProperty = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.parkingSpaces}
-                    onChange={(e) => handleInputChange('parkingSpaces', parseInt(e.target.value) || 0)}
+                    value={getNumericDisplayValue(formData.parkingSpaces)}
+                    onChange={(e) => handleNumericChange('parkingSpaces', e.target.value, 0)}
                     className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
@@ -1660,8 +1683,8 @@ const AddProperty = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.floorNumber}
-                    onChange={(e) => handleInputChange('floorNumber', parseInt(e.target.value) || 0)}
+                    value={getNumericDisplayValue(formData.floorNumber)}
+                    onChange={(e) => handleNumericChange('floorNumber', e.target.value, 0)}
                     className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
@@ -1673,8 +1696,8 @@ const AddProperty = () => {
                   <input
                     type="number"
                     min="1"
-                    value={formData.totalFloors}
-                    onChange={(e) => handleInputChange('totalFloors', parseInt(e.target.value) || 1)}
+                    value={getNumericDisplayValue(formData.totalFloors)}
+                    onChange={(e) => handleNumericChange('totalFloors', e.target.value, 1)}
                     className="w-full px-4 py-3 pr-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all hover:border-gray-300 dark:hover:border-gray-600"
                   />
                 </div>
