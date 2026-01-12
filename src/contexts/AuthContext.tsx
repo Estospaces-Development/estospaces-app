@@ -166,26 +166,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             return;
         }
 
-        // Get initial session
-        (supabase as SupabaseClient).auth.getSession().then(async ({ data, error: sessionError }) => {
-            if (sessionError) {
-                console.error('Error getting session:', sessionError);
-                setError(sessionError.message);
-            } else {
-                setSession(data.session);
-                setUser(data.session?.user ?? null);
+        // Get initial session with timeout to prevent hanging
+        const getSessionWithTimeout = async () => {
+            try {
+                // Create a timeout promise
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Session check timeout')), 5000)
+                );
                 
-                // Fetch profile if user is logged in
-                if (data.session?.user) {
-                    await fetchProfile(data.session.user.id);
+                // Race between session fetch and timeout
+                const sessionPromise = (supabase as SupabaseClient).auth.getSession();
+                const { data, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+                
+                if (sessionError) {
+                    console.error('Error getting session:', sessionError);
+                    setError(sessionError.message);
+                } else {
+                    console.log('Session loaded:', data.session ? 'Authenticated' : 'No session');
+                    setSession(data.session);
+                    setUser(data.session?.user ?? null);
+                    
+                    // Fetch profile if user is logged in (with timeout)
+                    if (data.session?.user) {
+                        try {
+                            await Promise.race([
+                                fetchProfile(data.session.user.id),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('Profile timeout')), 3000))
+                            ]);
+                        } catch (profileErr) {
+                            console.log('Profile fetch timed out or failed, continuing...');
+                        }
+                    }
                 }
+            } catch (err: any) {
+                console.error('Failed to get session:', err);
+                // Don't set error on timeout - just continue without auth
+                if (err.message !== 'Session check timeout') {
+                    setError('Failed to initialize authentication');
+                }
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-        }).catch((err: any) => {
-            console.error('Failed to get session:', err);
-            setError('Failed to initialize authentication');
-            setLoading(false);
-        });
+        };
+        
+        getSessionWithTimeout();
 
         // Listen for auth changes
         const { data: listener } = (supabase as SupabaseClient).auth.onAuthStateChange(

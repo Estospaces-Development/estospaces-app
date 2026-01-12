@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../lib/supabase';
+// Using direct REST API calls for reliability
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
@@ -28,6 +28,7 @@ const DashboardDiscover = () => {
   const [beds, setBeds] = useState(null);
   const [baths, setBaths] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
+  const [selectedFilter, setSelectedFilter] = useState('all'); // recently_added, most_viewed, high_demand, budget_friendly
 
   // Page title based on filters
   const [pageTitle, setPageTitle] = useState('Discover Properties');
@@ -40,121 +41,154 @@ const DashboardDiscover = () => {
   // Debounce timer ref
   const debounceTimerRef = React.useRef(null);
 
-  // Fetch properties from Supabase
-  const fetchPropertiesFromSupabase = async (options = {}) => {
+  // Fetch properties using direct REST API call for reliability
+  const fetchPropertiesFromSupabase = useCallback(async (options = {}) => {
     const {
-      tab = activeTab,
-      category = propertyCategory,
-      location = locationQuery,
-      newOnly = showNewOnly
+      tab = 'buy',
+      category = 'all',
+      location = '',
+      newOnly = false,
+      currentPage = 1,
+      filter = 'all',
+      search = '',
+      minPrice = null,
+      maxPrice = null,
+      bedsFilter = null,
+      bathsFilter = null
     } = options;
 
+    console.log('[DashboardDiscover] Fetching properties...', { tab, category, currentPage, filter, search, minPrice, maxPrice, bedsFilter, bathsFilter });
     setLoading(true);
     setError(null);
 
     try {
-      // Build query
-      let query = supabase
-        .from('properties')
-        .select('*', { count: 'exact' });
-
-      // Determine the listing type to filter based on tab
-      let listingTypeFilter = null;
-      if (tab === 'buy') {
-        listingTypeFilter = 'sale';
-      } else if (tab === 'rent') {
-        listingTypeFilter = 'rent';
-      } else if (propertyType && propertyType !== 'all') {
-        listingTypeFilter = propertyType;
+      const listingType = tab === 'rent' ? 'rent' : 'sale';
+      const from = (currentPage - 1) * limit;
+      
+      // Use direct REST API call for reliability
+      const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      
+      // Build query based on filter(s)
+      let orderBy = 'created_at.desc';
+      let filterParams = [];
+      
+      // Base filters
+      filterParams.push(`listing_type=eq.${listingType}`);
+      filterParams.push('status=eq.online');
+      
+      // Parse multiple filters (comma-separated)
+      const filters = filter ? filter.split(',').filter(f => f && f !== 'all') : [];
+      
+      // Apply special filter options (support multiple)
+      if (filters.includes('recently_added')) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        filterParams.push(`created_at=gte.${sevenDaysAgo.toISOString()}`);
       }
-
-      // Apply listing type filter
-      if (listingTypeFilter) {
-        query = query.eq('listing_type', listingTypeFilter);
+      
+      if (filters.includes('most_viewed')) {
+        orderBy = 'view_count.desc.nullslast,created_at.desc';
       }
-
-      // Property category filter (residential vs commercial)
-      if (category && category !== 'all') {
-        if (category === 'commercial') {
-          // Commercial properties - filter by property_type containing 'commercial' or specific commercial types
-          query = query.or('property_type.ilike.%commercial%,property_type.ilike.%office%,property_type.ilike.%retail%,property_type.ilike.%industrial%,property_type.ilike.%warehouse%');
-        } else if (category === 'residential') {
-          // Residential properties
-          query = query.or('property_type.ilike.%apartment%,property_type.ilike.%house%,property_type.ilike.%flat%,property_type.ilike.%townhouse%,property_type.ilike.%villa%,property_type.ilike.%cottage%');
+      
+      if (filters.includes('high_demand')) {
+        filterParams.push('view_count=gte.5');
+        if (!filters.includes('most_viewed')) {
+          orderBy = 'view_count.desc.nullslast';
         }
       }
-
-      // New homes filter - properties listed in the last 30 days
-      if (newOnly) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        query = query.gte('created_at', thirtyDaysAgo.toISOString());
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const searchTerm = searchQuery.trim();
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,address_line_1.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,postcode.ilike.%${searchTerm}%`);
-      }
-
-      // Location filter from input or URL
-      const locationTerm = location?.trim() || locationQuery.trim();
-      if (locationTerm) {
-        // Check for specific location keywords
-        const locationLower = locationTerm.toLowerCase();
-        if (locationLower === 'uk') {
-          // No additional filter needed - show all UK properties
+      
+      if (filters.includes('budget_friendly')) {
+        if (tab === 'rent') {
+          filterParams.push('price=lte.1500');
         } else {
-          query = query.or(`city.ilike.%${locationTerm}%,postcode.ilike.%${locationTerm}%,address_line_1.ilike.%${locationTerm}%,state.ilike.%${locationTerm}%,neighborhood.ilike.%${locationTerm}%`);
+          filterParams.push('price=lte.300000');
+        }
+        if (!filters.includes('most_viewed') && !filters.includes('high_demand')) {
+          orderBy = 'price.asc';
         }
       }
-
+      
+      // Search filter - search in title, description, address, city, postcode
+      const searchTerm = (search || '').trim();
+      if (searchTerm) {
+        filterParams.push(`or=(title.ilike.*${searchTerm}*,description.ilike.*${searchTerm}*,address_line_1.ilike.*${searchTerm}*,city.ilike.*${searchTerm}*,postcode.ilike.*${searchTerm}*,neighborhood.ilike.*${searchTerm}*)`);
+      }
+      
+      // Location filter
+      const locationTerm = (location || '').trim();
+      if (locationTerm && !searchTerm) {
+        filterParams.push(`or=(city.ilike.*${locationTerm}*,postcode.ilike.*${locationTerm}*,address_line_1.ilike.*${locationTerm}*,state.ilike.*${locationTerm}*)`);
+      }
+      
       // Price range filter
-      if (priceRange.min) {
-        query = query.gte('price', priceRange.min);
+      if (minPrice && !isNaN(minPrice)) {
+        filterParams.push(`price=gte.${minPrice}`);
       }
-      if (priceRange.max) {
-        query = query.lte('price', priceRange.max);
+      if (maxPrice && !isNaN(maxPrice)) {
+        filterParams.push(`price=lte.${maxPrice}`);
       }
-
+      
       // Beds filter
-      if (beds) {
-        query = query.gte('bedrooms', parseInt(beds));
+      if (bedsFilter && !isNaN(bedsFilter)) {
+        filterParams.push(`bedrooms=gte.${bedsFilter}`);
       }
-
+      
       // Baths filter
-      if (baths) {
-        query = query.gte('bathrooms', parseInt(baths));
+      if (bathsFilter && !isNaN(bathsFilter)) {
+        filterParams.push(`bathrooms=gte.${bathsFilter}`);
       }
-
-      // Only show online properties
-      query = query.eq('status', 'online');
-
-      // Pagination
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      query = query.range(from, to);
-
-      // Order by created_at descending (newest first)
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error: fetchError, count } = await query;
-
-      if (fetchError) {
-        throw fetchError;
+      
+      // Property category filter (residential vs commercial)
+      if (category === 'commercial') {
+        filterParams.push(`or=(property_type.ilike.*commercial*,property_type.ilike.*office*,property_type.ilike.*retail*,property_type.ilike.*industrial*)`);
+      } else if (category === 'residential') {
+        filterParams.push(`or=(property_type.ilike.*apartment*,property_type.ilike.*house*,property_type.ilike.*flat*,property_type.ilike.*villa*)`);
       }
-
+      
+      const url = `${supabaseUrl}/rest/v1/properties?select=*&${filterParams.join('&')}&order=${orderBy}&offset=${from}&limit=${limit}`;
+      
+      console.log('[DashboardDiscover] Fetching URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'count=exact'
+        }
+      });
+      
+      console.log('[DashboardDiscover] Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const countHeader = response.headers.get('content-range');
+      const totalCount = countHeader ? parseInt(countHeader.split('/')[1]) : data.length;
+      
+      console.log('[DashboardDiscover] Data received:', { 
+        dataLength: data?.length, 
+        totalCount,
+        firstProperty: data?.[0]?.title 
+      });
+      
       setProperties(data || []);
-      setTotalCount(count || 0);
+      setTotalCount(totalCount || 0);
+      setError(null);
     } catch (err) {
-      console.error('Error fetching properties:', err);
+      console.error('[DashboardDiscover] Fetch error:', err);
       setError(err.message || 'Failed to fetch properties');
       setProperties([]);
       setTotalCount(0);
     } finally {
+      console.log('[DashboardDiscover] Setting loading to false');
       setLoading(false);
     }
-  };
+  }, [limit]);
 
   // Helper to update page title based on filters
   const updatePageTitle = (tab, category, location, newOnly) => {
@@ -193,99 +227,212 @@ const DashboardDiscover = () => {
     setPageSubtitle(subtitle);
   };
 
-  // Track last fetched params to prevent duplicate fetches
-  const lastFetchParams = React.useRef('');
 
-  // Get effective filter values from URL or state
-  const getEffectiveFilters = () => {
-    const tabFromUrl = searchParams.get('tab');
-    const typeFromUrl = searchParams.get('type');
-    const locationFromUrl = searchParams.get('location');
-    const newFromUrl = searchParams.get('new');
-    
-    return {
-      tab: tabFromUrl || activeTab || 'buy',
-      category: typeFromUrl || propertyCategory || 'all',
-      location: locationFromUrl || locationQuery || '',
-      newOnly: newFromUrl === 'true' || showNewOnly
-    };
-  };
-
-  // Fetch on mount and when URL params change
+  // Fetch on mount and when URL params/page changes
   useEffect(() => {
+    console.log('[DashboardDiscover] useEffect triggered');
+    
+    
+    // Parse URL parameters directly
     const tabFromUrl = searchParams.get('tab');
     const typeFromUrl = searchParams.get('type');
     const locationFromUrl = searchParams.get('location');
     const newFromUrl = searchParams.get('new');
-    
-    // Handle both URL formats: ?tab=rent OR ?type=rent (legacy)
-    let effectiveTab = 'buy';
-    let effectiveCategory = 'all';
+    const filterFromUrl = searchParams.get('filter');
     
     // Determine effective tab
+    let effectiveTab = 'buy';
     if (tabFromUrl === 'buy' || tabFromUrl === 'rent') {
       effectiveTab = tabFromUrl;
     } else if (typeFromUrl === 'buy' || typeFromUrl === 'rent') {
-      // Legacy URL format: ?type=buy or ?type=rent
       effectiveTab = typeFromUrl;
-    } else if (activeTab === 'buy' || activeTab === 'rent') {
-      effectiveTab = activeTab;
     }
     
     // Determine effective category
+    let effectiveCategory = 'all';
     if (typeFromUrl === 'residential' || typeFromUrl === 'commercial') {
       effectiveCategory = typeFromUrl;
     }
     
     const effectiveLocation = locationFromUrl || '';
     const effectiveNewOnly = newFromUrl === 'true';
+    const effectiveFilter = filterFromUrl || 'all';
     
-    // Update context
-    if (effectiveTab !== activeTab) {
-      setActiveTabFromContext(effectiveTab);
-    }
+    console.log('[DashboardDiscover] Parsed filters:', { effectiveTab, effectiveCategory, effectiveLocation, effectiveFilter });
     
-    // Set states
+    // Update local states (without triggering re-renders that would cause loops)
     setPropertyType(effectiveTab === 'buy' ? 'sale' : 'rent');
     setPropertyCategory(effectiveCategory);
     setShowNewOnly(effectiveNewOnly);
+    setSelectedFilter(effectiveFilter);
     if (effectiveLocation) {
       setLocationQuery(effectiveLocation);
     }
     
-    updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
+    // Update context
+    setActiveTabFromContext(effectiveTab);
     
-    // Fetch properties
+    // Update page title based on filter
+    if (effectiveFilter && effectiveFilter !== 'all') {
+      const filterTitles = {
+        recently_added: { title: 'Recently Added', subtitle: 'Properties listed in the last 7 days' },
+        most_viewed: { title: 'Most Visited', subtitle: 'Popular properties with high interest' },
+        high_demand: { title: 'High Demand', subtitle: 'Properties with the most views' },
+        budget_friendly: { title: 'Budget Friendly', subtitle: effectiveTab === 'rent' ? 'Properties under £1,500/month' : 'Properties under £300,000' }
+      };
+      const filterInfo = filterTitles[effectiveFilter];
+      if (filterInfo) {
+        setPageTitle(filterInfo.title);
+        setPageSubtitle(filterInfo.subtitle);
+      } else {
+        updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
+      }
+    } else {
+      updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
+    }
+    
+    // Fetch properties with all current filters
     fetchPropertiesFromSupabase({
       tab: effectiveTab,
       category: effectiveCategory,
       location: effectiveLocation,
-      newOnly: effectiveNewOnly
+      newOnly: effectiveNewOnly,
+      currentPage: page,
+      filter: effectiveFilter,
+      search: searchQuery,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      bedsFilter: beds,
+      bathsFilter: baths
     });
-  }, [searchParams, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString(), page]);
 
-  // Debounced search - only for user typing in search/filter fields
-  useEffect(() => {
+  // Debounced search handler - triggers when user types in search box
+  const handleSearchChange = useCallback((value) => {
+    setSearchQuery(value);
+    
+    // Clear existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-
-    // Don't debounce if there's no search query yet (initial state)
-    if (!searchQuery && !priceRange.min && !priceRange.max && !beds && !baths) {
-      return;
-    }
-
+    
+    // Set new timer to fetch after 500ms
     debounceTimerRef.current = setTimeout(() => {
-      const { tab, category, location, newOnly } = getEffectiveFilters();
-      lastFetchParams.current = ''; // Reset to force fetch
+      const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+      fetchPropertiesFromSupabase({
+        tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+        category: propertyCategory,
+        location: locationQuery,
+        currentPage: 1,
+        filter: selectedFilter,
+        search: value,
+        minPrice: priceRange.min,
+        maxPrice: priceRange.max,
+        bedsFilter: beds,
+        bathsFilter: baths
+      });
       setPage(1);
-      fetchPropertiesFromSupabase({ tab, category, location, newOnly });
-    }, 300);
+    }, 500);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, priceRange, beds, baths, fetchPropertiesFromSupabase]);
 
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    };
-  }, [searchQuery, priceRange.min, priceRange.max, beds, baths]);
+  // Handler for location filter change
+  const handleLocationChange = useCallback((value) => {
+    setLocationQuery(value);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+      fetchPropertiesFromSupabase({
+        tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+        category: propertyCategory,
+        location: value,
+        currentPage: 1,
+        filter: selectedFilter,
+        search: searchQuery,
+        minPrice: priceRange.min,
+        maxPrice: priceRange.max,
+        bedsFilter: beds,
+        bathsFilter: baths
+      });
+      setPage(1);
+    }, 500);
+  }, [searchParams, propertyCategory, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+
+  // Handler for price range change
+  const handlePriceChange = useCallback((field, value) => {
+    const newPriceRange = { ...priceRange, [field]: value ? parseInt(value) : null };
+    setPriceRange(newPriceRange);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+      fetchPropertiesFromSupabase({
+        tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+        category: propertyCategory,
+        location: locationQuery,
+        currentPage: 1,
+        filter: selectedFilter,
+        search: searchQuery,
+        minPrice: newPriceRange.min,
+        maxPrice: newPriceRange.max,
+        bedsFilter: beds,
+        bathsFilter: baths
+      });
+      setPage(1);
+    }, 500);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+
+  // Handler for beds filter change
+  const handleBedsChange = useCallback((value) => {
+    const bedsValue = value ? parseInt(value) : null;
+    setBeds(bedsValue);
+    
+    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+    fetchPropertiesFromSupabase({
+      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+      category: propertyCategory,
+      location: locationQuery,
+      currentPage: 1,
+      filter: selectedFilter,
+      search: searchQuery,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      bedsFilter: bedsValue,
+      bathsFilter: baths
+    });
+    setPage(1);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, baths, fetchPropertiesFromSupabase]);
+
+  // Handler for baths filter change
+  const handleBathsChange = useCallback((value) => {
+    const bathsValue = value ? parseInt(value) : null;
+    setBaths(bathsValue);
+    
+    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+    fetchPropertiesFromSupabase({
+      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+      category: propertyCategory,
+      location: locationQuery,
+      currentPage: 1,
+      filter: selectedFilter,
+      search: searchQuery,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      bedsFilter: beds,
+      bathsFilter: bathsValue
+    });
+    setPage(1);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, fetchPropertiesFromSupabase]);
+
+  // Note: Debounced search is now handled by the main useEffect
+  // since all filter states are included in its dependencies
 
   // Transform property for card display
   const transformPropertyForCard = (property) => {
@@ -334,6 +481,9 @@ const DashboardDiscover = () => {
       address: p.address_line_1 || p.city || 'UK',
     }));
 
+  // Debug render
+  console.log('[DashboardDiscover] Render:', { loading, propertiesCount: properties.length, error });
+
   const handleClearFilters = () => {
     setSearchQuery('');
     setLocationQuery('');
@@ -343,12 +493,27 @@ const DashboardDiscover = () => {
     setPropertyCategory('all');
     setShowNewOnly(false);
     setPage(1);
+    
+    // Refetch with cleared filters
+    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+    fetchPropertiesFromSupabase({
+      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+      category: 'all',
+      location: '',
+      currentPage: 1,
+      filter: 'all',
+      search: '',
+      minPrice: null,
+      maxPrice: null,
+      bedsFilter: null,
+      bathsFilter: null
+    });
     // Clear URL params except tab
-    const tabFromUrl = searchParams.get('tab');
+    const currentTab = searchParams.get('tab');
     const newParams = new URLSearchParams();
-    if (tabFromUrl) newParams.set('tab', tabFromUrl);
+    if (currentTab) newParams.set('tab', currentTab);
     setSearchParams(newParams);
-    updatePageTitle(tabFromUrl || 'buy', 'all', '', false);
+    updatePageTitle(currentTab || 'buy', 'all', '', false);
   };
 
   const handlePageChange = (newPage) => {
@@ -449,13 +614,13 @@ const DashboardDiscover = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by postcode, street, address, keyword, or property title..."
             className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => handleSearchChange('')}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X size={18} />
@@ -472,7 +637,7 @@ const DashboardDiscover = () => {
               <input
                 type="text"
                 value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
+                onChange={(e) => handleLocationChange(e.target.value)}
                 placeholder="Postcode, street, or address"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-white text-gray-900 dark:text-gray-900"
               />
@@ -508,7 +673,7 @@ const DashboardDiscover = () => {
                 <input
                   type="number"
                   value={priceRange.min || ''}
-                  onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value ? parseInt(e.target.value) : null })}
+                  onChange={(e) => handlePriceChange('min', e.target.value)}
                   placeholder="Min"
                   className="w-full pl-6 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 />
@@ -519,7 +684,7 @@ const DashboardDiscover = () => {
                 <input
                   type="number"
                   value={priceRange.max || ''}
-                  onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value ? parseInt(e.target.value) : null })}
+                  onChange={(e) => handlePriceChange('max', e.target.value)}
                   placeholder="Max"
                   className="w-full pl-6 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 />
@@ -534,7 +699,7 @@ const DashboardDiscover = () => {
                 <Bed className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <select 
                   value={beds || ''}
-                  onChange={(e) => setBeds(e.target.value ? e.target.value : null)}
+                  onChange={(e) => handleBedsChange(e.target.value)}
                   className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 >
                   <option value="">Any</option>
@@ -554,7 +719,7 @@ const DashboardDiscover = () => {
                 <Bath className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <select 
                   value={baths || ''}
-                  onChange={(e) => setBaths(e.target.value ? e.target.value : null)}
+                  onChange={(e) => handleBathsChange(e.target.value)}
                   className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 >
                   <option value="">Any</option>
@@ -580,31 +745,31 @@ const DashboardDiscover = () => {
               {locationQuery && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
                   Location: {locationQuery}
-                  <button onClick={() => setLocationQuery('')} className="hover:text-orange-900"><X size={14} /></button>
+                  <button onClick={() => handleLocationChange('')} className="hover:text-orange-900"><X size={14} /></button>
                 </span>
               )}
               {priceRange.min && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
                   Min: £{priceRange.min.toLocaleString()}
-                  <button onClick={() => setPriceRange({ ...priceRange, min: null })} className="hover:text-orange-900"><X size={14} /></button>
+                  <button onClick={() => handlePriceChange('min', null)} className="hover:text-orange-900"><X size={14} /></button>
                 </span>
               )}
               {priceRange.max && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
                   Max: £{priceRange.max.toLocaleString()}
-                  <button onClick={() => setPriceRange({ ...priceRange, max: null })} className="hover:text-orange-900"><X size={14} /></button>
+                  <button onClick={() => handlePriceChange('max', null)} className="hover:text-orange-900"><X size={14} /></button>
                 </span>
               )}
               {beds && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
                   {beds}+ Beds
-                  <button onClick={() => setBeds(null)} className="hover:text-orange-900"><X size={14} /></button>
+                  <button onClick={() => handleBedsChange(null)} className="hover:text-orange-900"><X size={14} /></button>
                 </span>
               )}
               {baths && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
                   {baths}+ Baths
-                  <button onClick={() => setBaths(null)} className="hover:text-orange-900"><X size={14} /></button>
+                  <button onClick={() => handleBathsChange(null)} className="hover:text-orange-900"><X size={14} /></button>
                 </span>
               )}
             </div>

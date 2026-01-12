@@ -13,15 +13,14 @@ import {
   MessageSquare,
   Calendar,
   Home,
-  Building2
+  Building2,
+  TrendingUp
 } from 'lucide-react';
 import { APPLICATION_STATUS } from '../../../contexts/ApplicationsContext';
 import { useNavigate } from 'react-router-dom';
-import { useMessages } from '../../../contexts/MessagesContext';
 
 const ApplicationCard = ({ application, onClick }) => {
   const navigate = useNavigate();
-  const { createConversation } = useMessages();
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -132,25 +131,21 @@ const ApplicationCard = ({ application, onClick }) => {
 
   const handleMessageAgent = (e) => {
     e.stopPropagation();
-    if (application.conversationId) {
-      navigate(`/user/dashboard/messages`);
-    } else {
-      createConversation(
-        {
-          id: application.agentId,
-          name: application.agentName,
-          agency: application.agentAgency,
-          email: application.agentEmail,
-        },
-        {
-          id: application.propertyId,
-          title: application.propertyTitle,
-          address: application.propertyAddress,
-          image: application.propertyImage,
-          price: application.propertyPrice,
-        }
-      );
-      navigate(`/user/dashboard/messages`);
+    navigate('/user/dashboard/messages');
+  };
+
+  // Get progress percentage based on status
+  const getProgressPercentage = () => {
+    switch (application.status) {
+      case APPLICATION_STATUS.DRAFT: return 10;
+      case APPLICATION_STATUS.PENDING: 
+      case APPLICATION_STATUS.SUBMITTED: return 25;
+      case APPLICATION_STATUS.UNDER_REVIEW: return 50;
+      case APPLICATION_STATUS.DOCUMENTS_REQUESTED: return 65;
+      case APPLICATION_STATUS.APPROVED: return 100;
+      case APPLICATION_STATUS.REJECTED: 
+      case APPLICATION_STATUS.WITHDRAWN: return 0;
+      default: return 0;
     }
   };
 
@@ -233,6 +228,29 @@ const ApplicationCard = ({ application, onClick }) => {
                 <span className="truncate font-mono text-xs">{application.referenceId}</span>
               </div>
             </div>
+
+            {/* Progress Bar */}
+            {application.status !== APPLICATION_STATUS.REJECTED && 
+             application.status !== APPLICATION_STATUS.WITHDRAWN && (
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Progress</span>
+                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                    {getProgressPercentage()}%
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      application.status === APPLICATION_STATUS.APPROVED 
+                        ? 'bg-green-500' 
+                        : 'bg-gradient-to-r from-orange-400 to-orange-500'
+                    }`}
+                    style={{ width: `${getProgressPercentage()}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Deadline Warning */}
             {isDeadlineWarning() && (

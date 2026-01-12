@@ -12,8 +12,9 @@ const DashboardViewings = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [filter, setFilter] = useState('all'); // all, upcoming, past, cancelled
 
-  // Fetch viewings from Supabase
+  // Fetch viewings from Supabase with timeout
   const fetchViewings = useCallback(async () => {
+    // Quick exit if no user or Supabase not available
     if (!user?.id || !isSupabaseAvailable()) {
       setViewings([]);
       setLoading(false);
@@ -21,7 +22,12 @@ const DashboardViewings = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // Set a timeout for the fetch
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      );
+
+      const fetchPromise = supabase
         .from('viewings')
         .select(`
           id,
@@ -47,7 +53,15 @@ const DashboardViewings = () => {
         .eq('user_id', user.id)
         .order('viewing_date', { ascending: true });
 
-      if (error) throw error;
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (error) {
+        // Table might not exist - show empty state
+        console.log('Viewings table may not exist:', error.message);
+        setViewings([]);
+        setLoading(false);
+        return;
+      }
 
       // Transform data
       const transformedViewings = (data || []).map(item => {
@@ -81,6 +95,7 @@ const DashboardViewings = () => {
       setViewings(transformedViewings);
     } catch (err) {
       console.error('Error fetching viewings:', err);
+      // On any error (including timeout), show empty state
       setViewings([]);
     } finally {
       setLoading(false);

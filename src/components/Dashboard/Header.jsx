@@ -18,15 +18,6 @@ const Header = () => {
   // Get user display name and email
   const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'User');
   const userEmail = user?.email || '';
-  const firstName = profile?.first_name || displayName?.split(' ')[0] || 'there';
-
-  // Get time-based greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
 
   const notifications = [
     { id: 1, title: 'New property available', message: 'A new property matches your criteria', time: '2m ago' },
@@ -96,15 +87,6 @@ const Header = () => {
             </span>
           </Link>
 
-          {/* Welcome Message */}
-          <div className="hidden md:flex flex-col">
-            <span className="text-white/90 text-sm font-medium">
-              {getGreeting()}, <span className="text-white font-semibold capitalize">{firstName}</span>! 👋
-            </span>
-            <span className="text-white/60 text-xs">
-              Find your perfect home today
-            </span>
-          </div>
         </div>
 
         {/* Right side - Notifications, User */}

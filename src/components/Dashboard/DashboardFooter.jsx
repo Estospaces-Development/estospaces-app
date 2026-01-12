@@ -23,11 +23,6 @@ const DashboardFooter = () => {
                                     FAQ
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/user/dashboard/discover" className="text-gray-700 hover:text-orange-600 transition-colors">
-                                    Promote Your Property
-                                </Link>
-                            </li>
                         </ul>
                     </div>
 

@@ -1,174 +1,267 @@
 import React from 'react';
-import { CheckCircle, Circle, Clock, XCircle } from 'lucide-react';
+import { 
+  FileText, 
+  Search, 
+  FileCheck, 
+  UserCheck, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  AlertCircle,
+  Home,
+  Key
+} from 'lucide-react';
 import { APPLICATION_STATUS } from '../../../contexts/ApplicationsContext';
 
-const StatusTracker = ({ status }) => {
-  const statuses = [
-    {
-      key: APPLICATION_STATUS.DRAFT,
-      label: 'Draft',
-      description: 'Application is being prepared',
-    },
-    {
-      key: APPLICATION_STATUS.SUBMITTED,
-      label: 'Submitted',
-      description: 'Application has been submitted',
-    },
-    {
-      key: APPLICATION_STATUS.UNDER_REVIEW,
-      label: 'Under Review',
-      description: 'Application is being reviewed',
-    },
-    {
-      key: APPLICATION_STATUS.DOCUMENTS_REQUESTED,
-      label: 'Documents Requested',
-      description: 'Additional documents needed',
-    },
-    {
-      key: APPLICATION_STATUS.APPROVED,
-      label: 'Approved',
-      description: 'Application has been approved',
-    },
-  ];
+const StatusTracker = ({ status, listingType = 'sale' }) => {
+  // Define stages based on listing type
+  const getStages = () => {
+    const baseStages = [
+      {
+        id: 'submitted',
+        label: 'Application Submitted',
+        description: 'Your application has been received',
+        icon: FileText,
+        statuses: [APPLICATION_STATUS.PENDING, APPLICATION_STATUS.SUBMITTED]
+      },
+      {
+        id: 'under_review',
+        label: 'Under Review',
+        description: 'Agent is reviewing your application',
+        icon: Search,
+        statuses: [APPLICATION_STATUS.UNDER_REVIEW]
+      },
+      {
+        id: 'verification',
+        label: listingType === 'rent' ? 'Tenant Verification' : 'Buyer Verification',
+        description: listingType === 'rent' 
+          ? 'Background & credit check in progress' 
+          : 'Financial verification in progress',
+        icon: UserCheck,
+        statuses: [APPLICATION_STATUS.DOCUMENTS_REQUESTED]
+      },
+      {
+        id: 'documents',
+        label: 'Document Review',
+        description: 'Final document verification',
+        icon: FileCheck,
+        statuses: []
+      },
+      {
+        id: 'decision',
+        label: 'Final Decision',
+        description: status === APPLICATION_STATUS.APPROVED 
+          ? 'Congratulations! Your application is approved' 
+          : status === APPLICATION_STATUS.REJECTED
+          ? 'Application was not approved'
+          : 'Awaiting final decision',
+        icon: status === APPLICATION_STATUS.APPROVED ? CheckCircle : 
+              status === APPLICATION_STATUS.REJECTED ? XCircle : Clock,
+        statuses: [APPLICATION_STATUS.APPROVED, APPLICATION_STATUS.REJECTED]
+      }
+    ];
 
-  const getStatusIndex = (currentStatus) => {
-    const index = statuses.findIndex((s) => s.key === currentStatus);
-    if (index === -1) {
-      // Handle rejected or withdrawn
-      if (currentStatus === APPLICATION_STATUS.REJECTED) {
-        return statuses.length; // After all statuses
-      }
-      if (currentStatus === APPLICATION_STATUS.WITHDRAWN) {
-        return statuses.length; // After all statuses
-      }
-      return 0;
+    // Add completion stage for approved applications
+    if (status === APPLICATION_STATUS.APPROVED) {
+      baseStages.push({
+        id: 'completion',
+        label: listingType === 'rent' ? 'Move In Ready' : 'Ready to Complete',
+        description: listingType === 'rent' 
+          ? 'Prepare for your move-in date' 
+          : 'Proceed to contract signing',
+        icon: listingType === 'rent' ? Key : Home,
+        statuses: []
+      });
     }
-    return index;
+
+    return baseStages;
   };
 
-  const currentIndex = getStatusIndex(status);
-  const isRejected = status === APPLICATION_STATUS.REJECTED;
-  const isWithdrawn = status === APPLICATION_STATUS.WITHDRAWN;
+  const stages = getStages();
 
-  const getStatusState = (index) => {
-    if (isRejected || isWithdrawn) {
-      return 'error';
-    }
-    if (index < currentIndex) {
-      return 'completed';
-    }
-    if (index === currentIndex) {
-      return 'current';
-    }
-    return 'pending';
+  // Determine current stage index
+  const getCurrentStageIndex = () => {
+    if (status === APPLICATION_STATUS.WITHDRAWN) return -1;
+    if (status === APPLICATION_STATUS.REJECTED) return stages.length - 2;
+    if (status === APPLICATION_STATUS.APPROVED) return stages.length - 1;
+    if (status === APPLICATION_STATUS.DOCUMENTS_REQUESTED) return 2;
+    if (status === APPLICATION_STATUS.UNDER_REVIEW) return 1;
+    return 0;
   };
 
-  const getIcon = (state) => {
-    switch (state) {
-      case 'completed':
-        return <CheckCircle size={20} className="text-green-500" />;
-      case 'current':
-        return <Clock size={20} className="text-orange-500" />;
-      case 'error':
-        return <XCircle size={20} className="text-red-500" />;
+  const currentStageIndex = getCurrentStageIndex();
+
+  // Get status color
+  const getStatusColor = () => {
+    switch (status) {
+      case APPLICATION_STATUS.APPROVED:
+        return 'text-green-600 bg-green-100 border-green-200';
+      case APPLICATION_STATUS.REJECTED:
+        return 'text-red-600 bg-red-100 border-red-200';
+      case APPLICATION_STATUS.WITHDRAWN:
+        return 'text-gray-600 bg-gray-100 border-gray-200';
+      case APPLICATION_STATUS.DOCUMENTS_REQUESTED:
+        return 'text-orange-600 bg-orange-100 border-orange-200';
       default:
-        return <Circle size={20} className="text-gray-300 dark:text-gray-600" />;
+        return 'text-blue-600 bg-blue-100 border-blue-200';
     }
   };
+
+  // Get status label
+  const getStatusLabel = () => {
+    switch (status) {
+      case APPLICATION_STATUS.PENDING:
+      case APPLICATION_STATUS.SUBMITTED:
+        return 'Submitted';
+      case APPLICATION_STATUS.UNDER_REVIEW:
+        return 'Under Review';
+      case APPLICATION_STATUS.DOCUMENTS_REQUESTED:
+        return 'Documents Needed';
+      case APPLICATION_STATUS.APPROVED:
+        return 'Approved';
+      case APPLICATION_STATUS.REJECTED:
+        return 'Not Approved';
+      case APPLICATION_STATUS.WITHDRAWN:
+        return 'Withdrawn';
+      default:
+        return 'Processing';
+    }
+  };
+
+  if (status === APPLICATION_STATUS.WITHDRAWN) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <XCircle className="w-7 h-7 text-gray-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Application Withdrawn
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              You have withdrawn this application
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
-        Application Status
-      </h3>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Header with current status */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-white text-lg font-semibold">Application Progress</h3>
+            <p className="text-orange-100 text-sm mt-1">
+              {listingType === 'rent' ? 'Rental Application' : 'Purchase Application'}
+            </p>
+          </div>
+          <div className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor()}`}>
+            {getStatusLabel()}
+          </div>
+        </div>
+      </div>
 
-      <div className="relative">
-        {/* Status Items */}
-        <div className="space-y-6">
-          {statuses.map((statusItem, index) => {
-            const state = getStatusState(index);
-            const isLast = index === statuses.length - 1;
-
+      {/* Progress Timeline */}
+      <div className="p-6">
+        <div className="relative">
+          {stages.map((stage, index) => {
+            const Icon = stage.icon;
+            const isCompleted = index < currentStageIndex;
+            const isCurrent = index === currentStageIndex;
+            const isPending = index > currentStageIndex;
+            const isRejected = status === APPLICATION_STATUS.REJECTED && index === currentStageIndex;
+            
             return (
-              <div key={statusItem.key} className="relative">
-                <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div className="flex-shrink-0 mt-0.5">
-                    <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                        state === 'completed'
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                          : state === 'current'
-                          ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500'
-                          : 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      {getIcon(state)}
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 pt-1">
-                    <div
-                      className={`font-medium mb-1 ${
-                        state === 'completed'
-                          ? 'text-green-700 dark:text-green-400'
-                          : state === 'current'
-                          ? 'text-orange-700 dark:text-orange-400'
-                          : 'text-gray-500 dark:text-gray-400'
-                      }`}
-                    >
-                      {statusItem.label}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {statusItem.description}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Connector Line */}
-                {!isLast && (
-                  <div
-                    className={`absolute left-5 top-10 w-0.5 h-6 ${
-                      state === 'completed'
-                        ? 'bg-green-500'
-                        : state === 'current'
-                        ? 'bg-orange-500'
-                        : 'bg-gray-300 dark:bg-gray-600'
+              <div key={stage.id} className="relative flex items-start pb-8 last:pb-0">
+                {/* Connecting Line */}
+                {index < stages.length - 1 && (
+                  <div 
+                    className={`absolute left-6 top-12 w-0.5 h-full -ml-px ${
+                      isCompleted ? 'bg-green-500' : 
+                      isCurrent && !isRejected ? 'bg-orange-300' : 
+                      'bg-gray-200 dark:bg-gray-700'
                     }`}
                   />
                 )}
+                
+                {/* Stage Icon */}
+                <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                  isCompleted 
+                    ? 'bg-green-500 border-green-500 text-white' 
+                    : isCurrent && !isRejected
+                    ? 'bg-orange-500 border-orange-500 text-white animate-pulse'
+                    : isRejected
+                    ? 'bg-red-500 border-red-500 text-white'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400'
+                }`}>
+                  {isCompleted ? (
+                    <CheckCircle className="w-6 h-6" />
+                  ) : isRejected ? (
+                    <XCircle className="w-6 h-6" />
+                  ) : (
+                    <Icon className="w-5 h-5" />
+                  )}
+                </div>
+                
+                {/* Stage Content */}
+                <div className="ml-4 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className={`font-semibold ${
+                      isCompleted || isCurrent 
+                        ? 'text-gray-900 dark:text-white' 
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                      {stage.label}
+                    </h4>
+                    {isCurrent && !isRejected && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-medium rounded-full">
+                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                        Current
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm mt-1 ${
+                    isCompleted || isCurrent 
+                      ? 'text-gray-600 dark:text-gray-400' 
+                      : 'text-gray-400 dark:text-gray-600'
+                  }`}>
+                    {stage.description}
+                  </p>
+                  
+                  {/* Action prompt for current stage */}
+                  {isCurrent && status === APPLICATION_STATUS.DOCUMENTS_REQUESTED && (
+                    <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                        <AlertCircle size={16} />
+                        <span className="text-sm font-medium">Action Required</span>
+                      </div>
+                      <p className="text-sm text-orange-600 dark:text-orange-300 mt-1">
+                        Please upload the requested documents to proceed
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
-
-        {/* Rejected/Withdrawn Status */}
-        {(isRejected || isWithdrawn) && (
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 bg-red-50 dark:bg-red-900/20 border-red-500">
-                  <XCircle size={20} className="text-red-500" />
-                </div>
-              </div>
-              <div className="flex-1 pt-1">
-                <div className="font-medium text-red-700 dark:text-red-400 mb-1">
-                  {isRejected ? 'Rejected' : 'Withdrawn'}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {isRejected
-                    ? 'Application has been rejected'
-                    : 'Application has been withdrawn'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Estimated Timeline */}
+      {status !== APPLICATION_STATUS.APPROVED && status !== APPLICATION_STATUS.REJECTED && (
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <Clock size={16} />
+            <span>Estimated processing time: <strong>3-5 business days</strong></span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default StatusTracker;
-

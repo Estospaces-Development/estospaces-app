@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, Home, Heart, FileText, Map as MapIcon, 
   ArrowRight, MapPin, AlertCircle, TrendingUp, Star,
-  Loader2, X, Compass, Clock, Zap, Eye, Bath, Filter, ChevronDown, DollarSign, Sparkles
+  Loader2, X, Compass, Clock, Zap, Eye, Bath, Filter, ChevronDown, DollarSign, Sparkles,
+  Building2, Key, Bookmark, ClipboardList
 } from 'lucide-react';
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
@@ -49,6 +50,16 @@ const DashboardLocationBased = () => {
     return 'sold';
   });
   
+  // State for selected filter options (array for multiple selections)
+  const [selectedFilters, setSelectedFilters] = useState(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam) {
+      // Split comma-separated filters
+      return filterParam.split(',').filter(f => f);
+    }
+    return []; // Empty array means "All Properties"
+  });
+  
   // Sync selectedPropertyType with URL params when they change
   useEffect(() => {
     const urlType = searchParams.get('type');
@@ -67,7 +78,7 @@ const DashboardLocationBased = () => {
   const [highDemandProperties, setHighDemandProperties] = useState([]);
   
   // Loading states for each section
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingDiscovery, setLoadingDiscovery] = useState(false);
   const [loadingMostViewed, setLoadingMostViewed] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(false);
@@ -185,9 +196,6 @@ const DashboardLocationBased = () => {
 
   // State for filter dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState(() => {
-    return searchParams.get('filter') || null;
-  });
   
   // Sync selectedPropertyType with URL params when they change
   useEffect(() => {
@@ -199,10 +207,14 @@ const DashboardLocationBased = () => {
     }
   }, [searchParams]);
   
-  // Sync selectedFilter with URL params when they change
+  // Sync selectedFilters with URL params when they change
   useEffect(() => {
     const urlFilter = searchParams.get('filter');
-    setSelectedFilter(urlFilter || null);
+    if (urlFilter) {
+      setSelectedFilters(urlFilter.split(',').filter(f => f));
+    } else {
+      setSelectedFilters([]);
+    }
   }, [searchParams]);
   
   // Close dropdown when clicking outside
@@ -247,45 +259,39 @@ const DashboardLocationBased = () => {
   }, [savedProperties]);
 
   // Handle location search
-  const handleLocationSearch = useCallback(async (e, searchQuery = null) => {
+  const handleLocationSearch = useCallback((e, searchQuery = null) => {
     e?.preventDefault();
     const query = (searchQuery || searchInput || '').trim();
     
-    // Validate input
-    if (!query) {
-      setError('Please enter a postcode, street name, or address to search.');
-      return;
-    }
-
-    setLoading(true);
     setError(null);
     setLocationMessage(null);
     
-    try {
-      // Update location from search input
-      const location = await updateLocationFromSearch(query);
-      
-      if (location) {
-        // Update URL with search query for persistence
-        setSearchParams({ location: query });
-        
-        // Preserve search input (don't clear it)
-        if (searchQuery) {
-          setSearchInput(searchQuery);
-        }
-        
-        // Fetch all discovery sections for the new location
-        await fetchAllDiscoverySections(location, false);
-      } else {
-        setError('Could not find location. Please check the postcode, street name, or address and try again.');
-      }
-    } catch (err) {
-      console.error('Error searching location:', err);
-      setError(err.message || 'Failed to search location. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
+    // Build navigation URL with all parameters
+    const params = new URLSearchParams();
+    
+    // Add tab/type parameter
+    if (selectedPropertyType === 'buy') {
+      params.set('tab', 'buy');
+    } else if (selectedPropertyType === 'rent') {
+      params.set('tab', 'rent');
+    } else if (selectedPropertyType === 'sold') {
+      params.set('tab', 'buy'); // Sold properties - show as buy with sold status
+      params.set('status', 'sold');
     }
-  }, [searchInput, updateLocationFromSearch, setSearchParams, fetchAllDiscoverySections]);
+    
+    // Add location if provided
+    if (query) {
+      params.set('location', query);
+    }
+    
+    // Add filters if any selected
+    if (selectedFilters.length > 0) {
+      params.set('filter', selectedFilters.join(','));
+    }
+    
+    // Navigate to discover page with all filters
+    navigate(`/user/dashboard/discover?${params.toString()}`);
+  }, [searchInput, selectedPropertyType, selectedFilters, navigate]);
 
   // Listen for header search location events
   useEffect(() => {
@@ -411,8 +417,35 @@ const DashboardLocationBased = () => {
     source: 'default',
   };
 
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Get first name from user metadata
+  const firstName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 
+                    currentUser?.user_metadata?.name?.split(' ')[0] ||
+                    currentUser?.email?.split('@')[0] ||
+                    'there';
+
   return (
-    <div className="p-4 lg:p-6 space-y-8 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen transition-all duration-300">
+    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen transition-all duration-300">
+      
+      {/* Simple Welcome Greeting */}
+      <div className="flex items-center justify-between animate-fadeIn">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white">
+            {getGreeting()}, <span className="text-orange-500 capitalize">{firstName}</span> 👋
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            What would you like to do today?
+          </p>
+        </div>
+      </div>
+
       {/* Hero Search Section - Modern Polished Design */}
       <div className="relative rounded-2xl shadow-2xl overflow-hidden min-h-[480px] lg:min-h-[520px] flex flex-col items-center justify-center animate-fadeIn">
         {/* Background Image with smooth loading */}
@@ -485,6 +518,66 @@ const DashboardLocationBased = () => {
                 Sold
               </button>
             </div>
+
+            {/* Filter Options Row - Multiple Selection */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+              {[
+                { id: 'all', label: 'All Properties', icon: Sparkles },
+                { id: 'recently_added', label: 'Recently Added', icon: Clock },
+                { id: 'most_viewed', label: 'Most Visited', icon: Eye },
+                { id: 'high_demand', label: 'High Demand', icon: TrendingUp },
+                { id: 'budget_friendly', label: 'Budget Friendly', icon: DollarSign },
+              ].map((filter) => {
+                const Icon = filter.icon;
+                const isAllSelected = filter.id === 'all' && selectedFilters.length === 0;
+                const isSelected = filter.id === 'all' ? isAllSelected : selectedFilters.includes(filter.id);
+                
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      let newFilters;
+                      
+                      if (filter.id === 'all') {
+                        // Clicking "All Properties" clears all other selections
+                        newFilters = [];
+                      } else {
+                        // Toggle the specific filter
+                        if (selectedFilters.includes(filter.id)) {
+                          // Remove the filter
+                          newFilters = selectedFilters.filter(f => f !== filter.id);
+                        } else {
+                          // Add the filter
+                          newFilters = [...selectedFilters, filter.id];
+                        }
+                      }
+                      
+                      setSelectedFilters(newFilters);
+                      
+                      // Update URL params
+                      const newParams = new URLSearchParams(searchParams);
+                      if (newFilters.length === 0) {
+                        newParams.delete('filter');
+                      } else {
+                        newParams.set('filter', newFilters.join(','));
+                      }
+                      setSearchParams(newParams, { replace: true });
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    <span>{filter.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Search Form - Inline */}
             <form onSubmit={handleLocationSearch} className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
@@ -526,7 +619,7 @@ const DashboardLocationBased = () => {
         </div>
       </div>
 
-      {/* Quick Action CTAs - Enhanced */}
+      {/* Quick Action CTAs - Property Tech Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           onClick={() => {
@@ -535,12 +628,12 @@ const DashboardLocationBased = () => {
           }}
           className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
         >
-          <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform duration-300">
-            <Home size={22} className="text-white" />
+          <div className="p-3.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-500/25">
+            <Building2 size={24} className="text-white" strokeWidth={1.5} />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Buy Property</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Find your dream home</p>
-          <span className="text-orange-500 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+          <span className="text-violet-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
             Browse <ArrowRight size={14} />
           </span>
         </button>
@@ -552,12 +645,12 @@ const DashboardLocationBased = () => {
           }}
           className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
         >
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform duration-300">
-            <MapPin size={22} className="text-white" />
+          <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-cyan-500/25">
+            <Key size={24} className="text-white" strokeWidth={1.5} />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Rent Property</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Explore rentals</p>
-          <span className="text-blue-500 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+          <span className="text-cyan-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
             Explore <ArrowRight size={14} />
           </span>
         </button>
@@ -566,12 +659,12 @@ const DashboardLocationBased = () => {
           onClick={() => navigate('/user/dashboard/saved')}
           className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
         >
-          <div className="p-3 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform duration-300">
-            <Heart size={22} className="text-white" />
+          <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
+            <Bookmark size={24} className="text-white" strokeWidth={1.5} />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
-          <span className="text-pink-500 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+          <span className="text-rose-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
             View All <ArrowRight size={14} />
           </span>
         </button>
@@ -580,12 +673,12 @@ const DashboardLocationBased = () => {
           onClick={() => navigate('/user/dashboard/applications')}
           className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
         >
-          <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform duration-300">
-            <FileText size={22} className="text-white" />
+          <div className="p-3.5 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/25">
+            <ClipboardList size={24} className="text-white" strokeWidth={1.5} />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Applications</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Track progress</p>
-          <span className="text-emerald-500 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+          <span className="text-teal-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
             Manage <ArrowRight size={14} />
           </span>
         </button>
