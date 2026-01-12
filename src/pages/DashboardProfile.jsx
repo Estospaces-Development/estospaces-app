@@ -5,6 +5,7 @@ import * as postcodeService from '../services/postcodeService';
 import { supabase } from '../lib/supabase';
 import { useProperties } from '../contexts/PropertiesContext';
 import VerificationSection from '../components/Dashboard/VerificationSection';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardProfile = () => {
   const navigate = useNavigate();
@@ -325,11 +326,11 @@ const DashboardProfile = () => {
     <div className="p-4 lg:p-6">
       {/* Back Button */}
       <button
-        onClick={() => navigate(-1)}
-        className="mb-4 flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors"
+        onClick={() => navigate('/user/dashboard')}
+        className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
       >
         <ArrowLeft size={20} />
-        <span>Back</span>
+        <span>Back to Dashboard</span>
       </button>
 
       <div className="mb-6">
@@ -685,6 +686,9 @@ const DashboardProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { HelpCircle, MessageSquare, Book, Mail, Send, X } from 'lucide-react';
+import { HelpCircle, MessageSquare, Book, Mail, Send, X, CheckCircle, Clock, Loader2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardHelp = () => {
   const navigate = useNavigate();
   const [showDocsModal, setShowDocsModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketForm, setTicketForm] = useState({
     subject: '',
     category: 'General Inquiry',
@@ -38,14 +41,40 @@ const DashboardHelp = () => {
     { question: 'How do I view my contracts?', answer: 'All your contracts are available in the Contracts section...' },
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate ticket submission delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Open email client
     const mailtoLink = `mailto:contact@estospaces.com?subject=[${ticketForm.category}] ${encodeURIComponent(ticketForm.subject)}&body=${encodeURIComponent(ticketForm.message)}`;
     window.location.href = mailtoLink;
+    
+    // Show success modal
+    setShowSuccessModal(true);
+    setIsSubmitting(false);
+    
+    // Reset form
+    setTicketForm({
+      subject: '',
+      category: 'General Inquiry',
+      message: ''
+    });
   };
 
   return (
     <div className="p-4 lg:p-6 relative">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/user/dashboard')}
+        className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back to Dashboard</span>
+      </button>
+
       <div className="mb-6">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">Help & Support</h1>
         <p className="text-gray-600 dark:text-orange-400">Get help with your account and properties</p>
@@ -138,6 +167,67 @@ const DashboardHelp = () => {
         </div>
       )}
 
+      {/* Ticket Submitted Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Success Header */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-center">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                <CheckCircle size={40} className="text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Ticket Submitted! 🎉</h3>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-600 text-center mb-6">
+                Thank you for reaching out! Your support ticket has been submitted successfully.
+              </p>
+              
+              {/* What to Expect */}
+              <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <Clock size={18} />
+                  What happens next?
+                </h4>
+                <ul className="space-y-2 text-sm text-blue-700">
+                  <li className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                    Our team will review your ticket
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                    You'll receive a response within 24-48 hours
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                    Check your email for updates
+                  </li>
+                </ul>
+              </div>
+              
+              {/* Notification Badge */}
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200 mb-6">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle size={16} className="text-green-600" />
+                </div>
+                <p className="text-sm text-green-700">
+                  You'll be notified when we respond to your ticket
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-500/30"
+              >
+                Got it, thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Raise Ticket Form */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <div className="flex items-center gap-3 mb-6">
@@ -193,10 +283,20 @@ const DashboardHelp = () => {
 
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors duration-200"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-medium rounded-lg transition-colors duration-200"
           >
-            <Send size={18} />
-            Submit Ticket
+            {isSubmitting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Submit Ticket
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -212,6 +312,9 @@ const DashboardHelp = () => {
           ))}
         </div>
       </div>
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

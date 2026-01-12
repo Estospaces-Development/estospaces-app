@@ -166,50 +166,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             return;
         }
 
-        // Get initial session with timeout to prevent hanging
-        const getSessionWithTimeout = async () => {
+        // Get initial session - no timeout, just let it complete
+        const getInitialSession = async () => {
             try {
-                // Create a timeout promise
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Session check timeout')), 5000)
-                );
-                
-                // Race between session fetch and timeout
-                const sessionPromise = (supabase as SupabaseClient).auth.getSession();
-                const { data, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+                const { data, error: sessionError } = await (supabase as SupabaseClient).auth.getSession();
                 
                 if (sessionError) {
                     console.error('Error getting session:', sessionError);
-                    setError(sessionError.message);
+                    // Don't set error - just continue, auth listener will handle it
                 } else {
                     console.log('Session loaded:', data.session ? 'Authenticated' : 'No session');
                     setSession(data.session);
                     setUser(data.session?.user ?? null);
                     
-                    // Fetch profile if user is logged in (with timeout)
+                    // Fetch profile if user is logged in
                     if (data.session?.user) {
-                        try {
-                            await Promise.race([
-                                fetchProfile(data.session.user.id),
-                                new Promise((_, reject) => setTimeout(() => reject(new Error('Profile timeout')), 3000))
-                            ]);
-                        } catch (profileErr) {
-                            console.log('Profile fetch timed out or failed, continuing...');
-                        }
+                        // Don't await - let it happen in background
+                        fetchProfile(data.session.user.id).catch(err => {
+                            console.log('Profile fetch failed, continuing...', err);
+                        });
                     }
                 }
             } catch (err: any) {
                 console.error('Failed to get session:', err);
-                // Don't set error on timeout - just continue without auth
-                if (err.message !== 'Session check timeout') {
-                    setError('Failed to initialize authentication');
-                }
+                // Don't block - just continue
             } finally {
                 setLoading(false);
             }
         };
         
-        getSessionWithTimeout();
+        getInitialSession();
 
         // Listen for auth changes
         const { data: listener } = (supabase as SupabaseClient).auth.onAuthStateChange(
@@ -238,20 +224,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }, [fetchProfile]);
 
     const signOut = async () => {
-        if (!isSupabaseAvailable() || !supabase) {
-            console.warn('Supabase is not configured');
-            return;
+        // Clear state first
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        
+        // Clear ALL auth-related storage
+        try {
+            localStorage.removeItem('supabase.auth.token');
+            localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
+            localStorage.removeItem('estospaces-auth-token');
+            
+            // Clear any keys that contain 'supabase' or 'auth'
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('supabase') || key.includes('auth') || key.includes('sb-'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            
+            sessionStorage.clear();
+        } catch (e) {
+            // Ignore storage errors
         }
         
-        try {
-            const { error: signOutError } = await (supabase as SupabaseClient).auth.signOut();
-            if (signOutError) throw signOutError;
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-        } catch (err: any) {
-            console.error('Sign out error:', err);
-            setError(err.message);
+        // Sign out from Supabase if available
+        if (isSupabaseAvailable() && supabase) {
+            try {
+                await (supabase as SupabaseClient).auth.signOut();
+            } catch (err: any) {
+                console.error('Sign out error:', err);
+                // Don't throw - we've already cleared local state
+            }
         }
     };
 

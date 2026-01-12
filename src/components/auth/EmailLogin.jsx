@@ -116,34 +116,18 @@ const EmailLogin = () => {
         if (emailErr || passErr) return;
 
         setLoading(true);
+        setGeneralError('');
 
-        try {
-            // Add timeout to prevent hanging
-            const loginPromise = supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-            
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 10000)
-            );
-            
-            const { data, error } = await Promise.race([loginPromise, timeoutPromise]);
-
-            if (error) {
-                const msg = error.message.toLowerCase();
-                if (msg.includes('email') && !msg.includes('credentials')) {
-                    setEmailError(error.message);
-                } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
-                    setPasswordError('Invalid email or password');
-                } else {
-                    setGeneralError(error.message);
-                }
-                setLoading(false);
-            } else if (data?.session) {
-                // Successful login - redirect immediately using window.location for reliability
-                const userRole = data.session.user?.user_metadata?.role;
+        // Set up auth state listener BEFORE calling signIn
+        // This ensures we catch the SIGNED_IN event even if the Promise hangs
+        let redirected = false;
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('[Login] Auth state change:', event);
+            if (event === 'SIGNED_IN' && session && !redirected) {
+                redirected = true;
+                console.log('[Login] SIGNED_IN detected, redirecting...');
                 
+                const userRole = session.user?.user_metadata?.role;
                 let redirectPath = '/user/dashboard';
                 if (from) {
                     redirectPath = from;
@@ -151,15 +135,56 @@ const EmailLogin = () => {
                     redirectPath = '/manager/dashboard';
                 }
                 
-                // Use window.location for reliable navigation after login
+                // Clean up listener before redirect
+                authListener?.subscription?.unsubscribe();
                 window.location.href = redirectPath;
-            } else {
-                setGeneralError('Login failed. Please try again.');
-                setLoading(false);
             }
+        });
+
+        // Set a timeout to clean up if login fails
+        const timeoutId = setTimeout(() => {
+            if (!redirected) {
+                console.log('[Login] Timeout - cleaning up');
+                authListener?.subscription?.unsubscribe();
+                setLoading(false);
+                setGeneralError('Login timed out. Please try again.');
+            }
+        }, 10000);
+
+        try {
+            console.log('[Login] Attempting sign in for:', email);
+            
+            // Call signIn - we don't wait for the Promise, we rely on the auth state change
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+            // If we get an error response (not hanging), handle it
+            if (error) {
+                clearTimeout(timeoutId);
+                authListener?.subscription?.unsubscribe();
+                
+                console.error('[Login] Auth error:', error);
+                const msg = error.message.toLowerCase();
+                if (msg.includes('credentials') || msg.includes('invalid')) {
+                    setPasswordError('Invalid email or password');
+                } else if (msg.includes('email') && !msg.includes('credentials')) {
+                    setEmailError(error.message);
+                } else {
+                    setGeneralError(error.message || 'Login failed');
+                }
+                setLoading(false);
+                return;
+            }
+            
+            // If Promise resolved without error, we should have been redirected by the listener
+            // But just in case, clear timeout (redirect should have happened)
+            clearTimeout(timeoutId);
+            
         } catch (error) {
-            console.error('Login error:', error);
-            setGeneralError(error.message || 'An unexpected error occurred. Please try again.');
+            clearTimeout(timeoutId);
+            authListener?.subscription?.unsubscribe();
+            
+            console.error('[Login] Exception:', error);
+            setGeneralError('Unable to sign in. Please check your credentials and try again.');
             setLoading(false);
         }
     };

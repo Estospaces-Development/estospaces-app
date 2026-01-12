@@ -9,6 +9,9 @@ import { PropertiesProvider } from '../../contexts/PropertiesContext';
 
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
+  
+  // Only show Lakshmi Assistant on the main dashboard page
+  const isMainDashboard = location.pathname === '/user/dashboard' || location.pathname === '/user/dashboard/';
 
   return (
     <LocationProvider>
@@ -30,8 +33,8 @@ const DashboardLayout = ({ children }) => {
               </motion.div>
             </AnimatePresence>
           </main>
-          {/* Lakshmi AI Assistant - Available on all dashboard pages */}
-          <LakshmiAssistant />
+          {/* Lakshmi AI Assistant - Only on main dashboard page */}
+          {isMainDashboard && <LakshmiAssistant />}
         </div>
       </PropertiesProvider>
     </LocationProvider>

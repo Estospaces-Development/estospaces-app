@@ -118,11 +118,31 @@ A modern, responsive property search and management dashboard for property seeke
   - UK postcode auto-detection with address suggestions
   - Address auto-fill from postcode lookup
   - Document uploads (ID, Proof of Address, Employment Proof)
-  - User verification steps (Email, Phone, Identity, Address)
+  - **User Verification Steps**
+    - Email, Phone, Identity, Address verification
+    - Document upload modal with tips
+    - Automatic notifications when documents are verified
+    - "Profile Fully Verified" notification when all steps complete
+    - Progress bar showing completion percentage
 
 - **Communication**
   - Real-time messaging with brokers/agencies
-  - Notifications for property updates
+  - **Notifications System**
+    - Bell icon in header with unread count badge
+    - Real-time notifications via Supabase subscriptions
+    - Mark as read / Mark all as read
+    - Notification types: Appointment Approved, Document Verified, Application Updates
+    - Color-coded notifications by type
+    - Time-ago formatting (Just now, 2m ago, 1h ago)
+
+- **Appointment Booking**
+  - Enhanced "Book an Appointment" modal
+  - Quick time slot selection (09:00, 11:00, 14:00, 16:00, 18:00, 20:00)
+  - Property summary with image
+  - "What to Expect" steps
+  - Selected date/time confirmation card
+  - Free cancellation notice
+  - Success animation with redirect to My Applications
 
 - **Financial Management**
   - Digital contracts with e-signature functionality
@@ -139,6 +159,14 @@ A modern, responsive property search and management dashboard for property seeke
   - Responsive horizontal navigation
   - Smart "Back" navigation for policy pages
 
+- **Help & Support**
+  - Documentation guides modal
+  - Live Chat and Email Support options
+  - **Raise a Ticket** form with categories
+  - **Success popup** when ticket is submitted
+  - "What happens next?" steps in confirmation
+  - Frequently Asked Questions section
+
 ### 📄 Legal & Support Pages
 
 - **Privacy Policy** - Comprehensive data protection information
@@ -148,6 +176,19 @@ A modern, responsive property search and management dashboard for property seeke
 - **FAQ** - Searchable FAQ with category filters and accordion answers
 
 All pages feature smart navigation that returns users to their previous location (dashboard or landing page).
+
+### 🔙 Navigation
+
+- **Back Buttons** on all dashboard pages for easy navigation
+  - Buy/Rent (Discover)
+  - Saved Properties
+  - My Applications
+  - Viewings
+  - Messages
+  - Payments
+  - Contracts
+  - Profile
+  - Help & Support
 
 ### 🎨 UI/UX Features
 
@@ -220,6 +261,7 @@ All pages feature smart navigation that returns users to their previous location
   - ApplicationsContext for user applications
   - LocationContext for geolocation features
   - AuthContext for authentication state
+  - **NotificationsContext** for real-time notifications
   - localStorage for data persistence
 
 - **Components**
@@ -552,6 +594,29 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 - **Auth Improvements**: Added timeout protection for session checks and profile fetches
 - **Improved Session Persistence**: Enhanced Supabase client with explicit localStorage storage configuration
 
+### Notifications System (January 2026)
+
+- **Notifications Table**: Created `notifications` table in Supabase with RLS policies
+- **NotificationsContext**: New context for managing notifications state
+- **Real-time Updates**: Supabase subscription for instant notification delivery
+- **Notification Types**:
+  - `appointment_approved` - When manager approves appointment
+  - `appointment_rejected` - When application is rejected
+  - `application_update` - Status changes (Viewing Scheduled, Documents Required, etc.)
+  - `document_verified` - When user documents are verified
+  - `profile_verified` - When all verification steps are complete
+  - `ticket_response` - When support responds to ticket
+- **Manager Integration**: When manager updates application status, user receives notification
+- **Bell Icon in Header**: Shows unread count with pulse animation
+
+### Back Buttons & UX (January 2026)
+
+- **Back Buttons**: Added "Back to Dashboard" button on all dashboard pages
+- **Help & Support Popup**: Success modal when ticket is submitted with "What happens next?" steps
+- **Enhanced Appointment Booking**: Redesigned modal with quick time slots, property card, and confirmation
+- **Document Verification Modal**: Upload modal with tips for identity and address verification
+- **Consistent Navigation**: All back buttons navigate to `/user/dashboard`
+
 ## 📊 Database Schema
 
 The application uses Supabase PostgreSQL with the following key tables:
@@ -562,6 +627,7 @@ The application uses Supabase PostgreSQL with the following key tables:
 - **viewed_properties**: Property view tracking
 - **viewings**: Scheduled property viewings with date, time, and status
 - **profiles**: User profiles with verification status and role information
+- **notifications**: User notifications with type, title, message, read status, and data (JSONB)
 
 See `supabase/` directory for migration files.
 

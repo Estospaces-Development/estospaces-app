@@ -47,16 +47,30 @@ const Navbar = () => {
         // Wait for either sign out to complete or timeout (whichever comes first)
         await Promise.race([signOutPromise, timeoutPromise]);
         
-        // Clear any local storage auth data
+        // Clear ALL auth-related local storage data
         try {
+            // Clear all possible Supabase auth keys
             localStorage.removeItem('supabase.auth.token');
             localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
+            localStorage.removeItem('estospaces-auth-token');
+            
+            // Clear any keys that contain 'supabase' or 'auth'
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('supabase') || key.includes('auth') || key.includes('sb-'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            
+            // Clear session storage completely
             sessionStorage.clear();
         } catch (e) {
             // Ignore storage errors
         }
         
-        // Force redirect to home page
+        // Force redirect to home page with full page reload
         window.location.href = '/';
     };
 

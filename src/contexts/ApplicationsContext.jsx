@@ -17,11 +17,33 @@ export const APPLICATION_STATUS = {
   DRAFT: 'draft',
   PENDING: 'pending',
   SUBMITTED: 'submitted',
+  APPOINTMENT_BOOKED: 'appointment_booked',
+  VIEWING_SCHEDULED: 'viewing_scheduled',
+  VIEWING_COMPLETED: 'viewing_completed',
   UNDER_REVIEW: 'under_review',
   DOCUMENTS_REQUESTED: 'documents_requested',
+  VERIFICATION_IN_PROGRESS: 'verification_in_progress',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'withdrawn',
+  COMPLETED: 'completed',
+};
+
+// Status display configuration
+export const STATUS_CONFIG = {
+  draft: { label: 'Draft', color: 'gray', bgColor: 'bg-gray-100', textColor: 'text-gray-700' },
+  pending: { label: 'Pending Review', color: 'yellow', bgColor: 'bg-yellow-100', textColor: 'text-yellow-700' },
+  submitted: { label: 'Submitted', color: 'blue', bgColor: 'bg-blue-100', textColor: 'text-blue-700' },
+  appointment_booked: { label: 'Appointment Booked', color: 'purple', bgColor: 'bg-purple-100', textColor: 'text-purple-700' },
+  viewing_scheduled: { label: 'Viewing Scheduled', color: 'indigo', bgColor: 'bg-indigo-100', textColor: 'text-indigo-700' },
+  viewing_completed: { label: 'Viewing Completed', color: 'cyan', bgColor: 'bg-cyan-100', textColor: 'text-cyan-700' },
+  under_review: { label: 'Under Review', color: 'orange', bgColor: 'bg-orange-100', textColor: 'text-orange-700' },
+  documents_requested: { label: 'Documents Required', color: 'amber', bgColor: 'bg-amber-100', textColor: 'text-amber-700' },
+  verification_in_progress: { label: 'Verification in Progress', color: 'blue', bgColor: 'bg-blue-100', textColor: 'text-blue-700' },
+  approved: { label: 'Approved', color: 'green', bgColor: 'bg-green-100', textColor: 'text-green-700' },
+  rejected: { label: 'Rejected', color: 'red', bgColor: 'bg-red-100', textColor: 'text-red-700' },
+  withdrawn: { label: 'Withdrawn', color: 'gray', bgColor: 'bg-gray-100', textColor: 'text-gray-500' },
+  completed: { label: 'Completed', color: 'green', bgColor: 'bg-green-100', textColor: 'text-green-700' },
 };
 
 export const ApplicationsProvider = ({ children }) => {
@@ -99,9 +121,9 @@ export const ApplicationsProvider = ({ children }) => {
           referenceId: `APP-${new Date(item.created_at).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
           propertyId: item.property_id,
           propertyTitle: property.title || appData.property_title || 'Property',
-          propertyAddress: property.address_line_1 || `${property.city || ''} ${property.postcode || ''}`.trim() || 'UK',
-          propertyImage: images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
-          propertyType: property.property_type || 'apartment',
+          propertyAddress: property.address_line_1 || appData.property_address || `${property.city || ''} ${property.postcode || ''}`.trim() || 'UK',
+          propertyImage: images[0] || appData.property_image || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
+          propertyType: property.property_type || appData.property_type || 'apartment',
           propertyPrice: property.price || appData.property_price || 0,
           listingType: property.listing_type || appData.listing_type || 'sale',
           agentId: null,
@@ -119,6 +141,9 @@ export const ApplicationsProvider = ({ children }) => {
           financialInfo: appData.financial_info || {},
           documents: appData.documents || [],
           notes: appData.notes || '',
+          // Appointment details
+          appointment: appData.appointment || null,
+          hasAppointment: !!appData.appointment,
         };
       });
 
@@ -136,6 +161,44 @@ export const ApplicationsProvider = ({ children }) => {
   useEffect(() => {
     fetchApplications();
   }, [fetchApplications]);
+
+  // Subscribe to real-time updates for application status changes
+  useEffect(() => {
+    if (!user?.id || !isSupabaseAvailable()) return;
+
+    const subscription = supabase
+      .channel('application-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'applied_properties',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('[Applications] Real-time update received:', payload);
+          // Update local state with new status
+          setApplications(prev =>
+            prev.map(app =>
+              app.id === payload.new.id
+                ? {
+                    ...app,
+                    status: payload.new.status,
+                    lastUpdated: payload.new.updated_at || new Date().toISOString(),
+                    requiresAction: payload.new.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED,
+                  }
+                : app
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.id]);
 
   // Create a new application
   const createApplication = useCallback(async (applicationData) => {

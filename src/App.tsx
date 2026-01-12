@@ -8,6 +8,7 @@ import { PropertyFilterProvider } from './contexts/PropertyFilterContext';
 import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
 import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import { LocationProvider } from './contexts/LocationContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
 import UserProtectedRoute from './components/Admin/UserProtectedRoute';
@@ -62,9 +63,10 @@ function App() {
             <MessagesProvider>
               <SavedPropertiesProvider>
                 <ApplicationsProvider>
-                  <Router>
-                    <LocationProvider>
-                      <PropertyFilterProvider>
+                  <NotificationsProvider>
+                    <Router>
+                      <LocationProvider>
+                        <PropertyFilterProvider>
                         <Routes>
                       {/* Landing Page */}
                       <Route path="/" element={<Home />} />
@@ -370,10 +372,11 @@ function App() {
                           </UserProtectedRoute>
                         }
                       />
-                        </Routes>
-                      </PropertyFilterProvider>
-                    </LocationProvider>
-                  </Router>
+                          </Routes>
+                        </PropertyFilterProvider>
+                      </LocationProvider>
+                    </Router>
+                  </NotificationsProvider>
                 </ApplicationsProvider>
               </SavedPropertiesProvider>
             </MessagesProvider>

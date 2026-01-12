@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-react';
+import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle, X, Clock, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 // Using direct REST API calls for reliability
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import MapView from '../components/Dashboard/MapView';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardDiscover = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const DashboardDiscover = () => {
   const [baths, setBaths] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [selectedFilter, setSelectedFilter] = useState('all'); // recently_added, most_viewed, high_demand, budget_friendly
+  const [addedToSite, setAddedToSite] = useState('anytime'); // anytime, 24hours, 3days, 7days, 14days
 
   // Page title based on filters
   const [pageTitle, setPageTitle] = useState('Discover Properties');
@@ -54,7 +56,8 @@ const DashboardDiscover = () => {
       minPrice = null,
       maxPrice = null,
       bedsFilter = null,
-      bathsFilter = null
+      bathsFilter = null,
+      addedFilter = 'anytime' // anytime, 24hours, 3days, 7days, 14days
     } = options;
 
     console.log('[DashboardDiscover] Fetching properties...', { tab, category, currentPage, filter, search, minPrice, maxPrice, bedsFilter, bathsFilter });
@@ -75,16 +78,22 @@ const DashboardDiscover = () => {
       
       // Base filters
       filterParams.push(`listing_type=eq.${listingType}`);
-      filterParams.push('status=eq.online');
+      filterParams.push('or=(status.eq.online,status.eq.published,status.eq.active)');
       
       // Parse multiple filters (comma-separated)
       const filters = filter ? filter.split(',').filter(f => f && f !== 'all') : [];
       
+      console.log('[DashboardDiscover] Applying filters:', filters);
+      
       // Apply special filter options (support multiple)
       if (filters.includes('recently_added')) {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        filterParams.push(`created_at=gte.${sevenDaysAgo.toISOString()}`);
+        // Show properties added in the last 24 hours, sorted by newest first
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+        filterParams.push(`created_at=gte.${twentyFourHoursAgo.toISOString()}`);
+        // Ensure recently added properties are sorted by creation date
+        orderBy = 'created_at.desc';
+        console.log('[DashboardDiscover] Recently Added filter - showing properties from:', twentyFourHoursAgo.toISOString());
       }
       
       if (filters.includes('most_viewed')) {
@@ -92,20 +101,49 @@ const DashboardDiscover = () => {
       }
       
       if (filters.includes('high_demand')) {
-        filterParams.push('view_count=gte.5');
+        // Show properties with views (any views count as high demand)
+        filterParams.push('view_count=gte.1');
         if (!filters.includes('most_viewed')) {
-          orderBy = 'view_count.desc.nullslast';
+          orderBy = 'view_count.desc.nullslast,created_at.desc';
         }
       }
       
       if (filters.includes('budget_friendly')) {
         if (tab === 'rent') {
-          filterParams.push('price=lte.1500');
+          filterParams.push('price=lte.2000'); // Increased budget threshold for rent
         } else {
-          filterParams.push('price=lte.300000');
+          filterParams.push('price=lte.500000'); // Increased budget threshold for sale
         }
-        if (!filters.includes('most_viewed') && !filters.includes('high_demand')) {
-          orderBy = 'price.asc';
+        if (!filters.includes('most_viewed') && !filters.includes('high_demand') && !filters.includes('recently_added')) {
+          orderBy = 'price.asc,created_at.desc';
+        }
+      }
+      
+      // "Added to site" time filter
+      if (addedFilter && addedFilter !== 'anytime') {
+        const now = new Date();
+        let filterDate;
+        
+        switch (addedFilter) {
+          case '24hours':
+            filterDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case '3days':
+            filterDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+            break;
+          case '7days':
+            filterDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '14days':
+            filterDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            filterDate = null;
+        }
+        
+        if (filterDate) {
+          filterParams.push(`created_at=gte.${filterDate.toISOString()}`);
+          console.log('[DashboardDiscover] Added to site filter:', addedFilter, 'from:', filterDate.toISOString());
         }
       }
       
@@ -239,6 +277,7 @@ const DashboardDiscover = () => {
     const locationFromUrl = searchParams.get('location');
     const newFromUrl = searchParams.get('new');
     const filterFromUrl = searchParams.get('filter');
+    const addedFromUrl = searchParams.get('added') || 'anytime';
     
     // Determine effective tab
     let effectiveTab = 'buy';
@@ -265,6 +304,7 @@ const DashboardDiscover = () => {
     setPropertyCategory(effectiveCategory);
     setShowNewOnly(effectiveNewOnly);
     setSelectedFilter(effectiveFilter);
+    setAddedToSite(addedFromUrl);
     if (effectiveLocation) {
       setLocationQuery(effectiveLocation);
     }
@@ -272,20 +312,33 @@ const DashboardDiscover = () => {
     // Update context
     setActiveTabFromContext(effectiveTab);
     
-    // Update page title based on filter
-    if (effectiveFilter && effectiveFilter !== 'all') {
+    // Update page title based on filter(s)
+    const activeFilters = effectiveFilter ? effectiveFilter.split(',').filter(f => f && f !== 'all') : [];
+    
+    if (activeFilters.length > 0) {
       const filterTitles = {
-        recently_added: { title: 'Recently Added', subtitle: 'Properties listed in the last 7 days' },
+        recently_added: { title: 'Recently Added', subtitle: 'Properties listed in the last 24 hours' },
         most_viewed: { title: 'Most Visited', subtitle: 'Popular properties with high interest' },
         high_demand: { title: 'High Demand', subtitle: 'Properties with the most views' },
-        budget_friendly: { title: 'Budget Friendly', subtitle: effectiveTab === 'rent' ? 'Properties under £1,500/month' : 'Properties under £300,000' }
+        budget_friendly: { title: 'Budget Friendly', subtitle: effectiveTab === 'rent' ? 'Properties under £2,000/month' : 'Properties under £500,000' }
       };
-      const filterInfo = filterTitles[effectiveFilter];
-      if (filterInfo) {
-        setPageTitle(filterInfo.title);
-        setPageSubtitle(filterInfo.subtitle);
+      
+      if (activeFilters.length === 1) {
+        const filterInfo = filterTitles[activeFilters[0]];
+        if (filterInfo) {
+          setPageTitle(filterInfo.title);
+          setPageSubtitle(filterInfo.subtitle);
+        } else {
+          updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
+        }
       } else {
-        updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
+        // Multiple filters - show combined title
+        const filterNames = activeFilters.map(f => {
+          const info = filterTitles[f];
+          return info ? info.title : f.replace('_', ' ');
+        }).join(', ');
+        setPageTitle('Filtered Properties');
+        setPageSubtitle(`Showing: ${filterNames}`);
       }
     } else {
       updatePageTitle(effectiveTab, effectiveCategory, effectiveLocation, effectiveNewOnly);
@@ -303,7 +356,8 @@ const DashboardDiscover = () => {
       minPrice: priceRange.min,
       maxPrice: priceRange.max,
       bedsFilter: beds,
-      bathsFilter: baths
+      bathsFilter: baths,
+      addedFilter: addedFromUrl
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), page]);
@@ -330,7 +384,8 @@ const DashboardDiscover = () => {
         minPrice: priceRange.min,
         maxPrice: priceRange.max,
         bedsFilter: beds,
-        bathsFilter: baths
+        bathsFilter: baths,
+        addedFilter: addedToSite
       });
       setPage(1);
     }, 500);
@@ -356,11 +411,12 @@ const DashboardDiscover = () => {
         minPrice: priceRange.min,
         maxPrice: priceRange.max,
         bedsFilter: beds,
-        bathsFilter: baths
+        bathsFilter: baths,
+        addedFilter: addedToSite
       });
       setPage(1);
     }, 500);
-  }, [searchParams, propertyCategory, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+  }, [searchParams, propertyCategory, selectedFilter, searchQuery, priceRange, beds, baths, addedToSite, fetchPropertiesFromSupabase]);
 
   // Handler for price range change
   const handlePriceChange = useCallback((field, value) => {
@@ -383,11 +439,12 @@ const DashboardDiscover = () => {
         minPrice: newPriceRange.min,
         maxPrice: newPriceRange.max,
         bedsFilter: beds,
-        bathsFilter: baths
+        bathsFilter: baths,
+        addedFilter: addedToSite
       });
       setPage(1);
     }, 500);
-  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, addedToSite, fetchPropertiesFromSupabase]);
 
   // Handler for beds filter change
   const handleBedsChange = useCallback((value) => {
@@ -405,10 +462,11 @@ const DashboardDiscover = () => {
       minPrice: priceRange.min,
       maxPrice: priceRange.max,
       bedsFilter: bedsValue,
-      bathsFilter: baths
+      bathsFilter: baths,
+      addedFilter: addedToSite
     });
     setPage(1);
-  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, baths, fetchPropertiesFromSupabase]);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, baths, addedToSite, fetchPropertiesFromSupabase]);
 
   // Handler for baths filter change
   const handleBathsChange = useCallback((value) => {
@@ -426,10 +484,11 @@ const DashboardDiscover = () => {
       minPrice: priceRange.min,
       maxPrice: priceRange.max,
       bedsFilter: beds,
-      bathsFilter: bathsValue
+      bathsFilter: bathsValue,
+      addedFilter: addedToSite
     });
     setPage(1);
-  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, fetchPropertiesFromSupabase]);
+  }, [searchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, addedToSite, fetchPropertiesFromSupabase]);
 
   // Note: Debounced search is now handled by the main useEffect
   // since all filter states are included in its dependencies
@@ -492,6 +551,7 @@ const DashboardDiscover = () => {
     setBaths(null);
     setPropertyCategory('all');
     setShowNewOnly(false);
+    setAddedToSite('anytime');
     setPage(1);
     
     // Refetch with cleared filters
@@ -506,7 +566,8 @@ const DashboardDiscover = () => {
       minPrice: null,
       maxPrice: null,
       bedsFilter: null,
-      bathsFilter: null
+      bathsFilter: null,
+      addedFilter: 'anytime'
     });
     // Clear URL params except tab
     const currentTab = searchParams.get('tab');
@@ -515,6 +576,37 @@ const DashboardDiscover = () => {
     setSearchParams(newParams);
     updatePageTitle(currentTab || 'buy', 'all', '', false);
   };
+
+  // Handler for "Added to site" filter change
+  const handleAddedToSiteChange = useCallback((value) => {
+    setAddedToSite(value);
+    
+    // Update URL params
+    const newParams = new URLSearchParams(searchParams);
+    if (value === 'anytime') {
+      newParams.delete('added');
+    } else {
+      newParams.set('added', value);
+    }
+    setSearchParams(newParams);
+    
+    // Fetch with new filter
+    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+    fetchPropertiesFromSupabase({
+      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+      category: propertyCategory,
+      location: locationQuery,
+      currentPage: 1,
+      filter: selectedFilter,
+      search: searchQuery,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      bedsFilter: beds,
+      bathsFilter: baths,
+      addedFilter: value
+    });
+    setPage(1);
+  }, [searchParams, setSearchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -527,10 +619,31 @@ const DashboardDiscover = () => {
   };
 
   const totalPages = Math.ceil(totalCount / limit);
-  const hasActiveFilters = searchQuery || locationQuery || priceRange.min || priceRange.max || beds || baths || showNewOnly || propertyCategory !== 'all';
+  const hasActiveFilters = searchQuery || locationQuery || priceRange.min || priceRange.max || beds || baths || showNewOnly || propertyCategory !== 'all' || addedToSite !== 'anytime';
+  
+  // Helper to get readable label for addedToSite
+  const getAddedToSiteLabel = (value) => {
+    const labels = {
+      'anytime': 'Anytime',
+      '24hours': 'Last 24 hours',
+      '3days': 'Last 3 days',
+      '7days': 'Last 7 days',
+      '14days': 'Last 14 days'
+    };
+    return labels[value] || value;
+  };
 
   return (
     <div className="p-4 lg:p-6">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/user/dashboard')}
+        className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back to Dashboard</span>
+      </button>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-orange-500 mb-2">{pageTitle}</h1>
@@ -609,26 +722,51 @@ const DashboardDiscover = () => {
       {/* Smart Search and Filters */}
       <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-4 lg:p-6 mb-6">
         {/* Main Search Bar */}
-        <div className="relative mb-6">
+        <div className="flex gap-3 mb-6">
+          <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearchChange(searchQuery);
+                }
+              }}
             placeholder="Search by postcode, street, address, keyword, or property title..."
-            className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => handleSearchChange('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X size={18} />
-            </button>
-          )}
+              className="w-full pl-10 pr-10 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => handleSearchChange('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => handleSearchChange(searchQuery)}
+            disabled={loading}
+            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30"
+          >
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="hidden sm:inline">Searching</span>
+              </>
+            ) : (
+              <>
+                <Search size={18} />
+                <span className="hidden sm:inline">Search</span>
+              </>
+            )}
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           {/* Location Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-2">Location</label>
@@ -730,6 +868,25 @@ const DashboardDiscover = () => {
                 </select>
               </div>
             </div>
+
+          {/* Added to Site Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-2">Added to site</label>
+              <div className="relative">
+                <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <select 
+                  value={addedToSite}
+                  onChange={(e) => handleAddedToSiteChange(e.target.value)}
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+                >
+                  <option value="anytime">Anytime</option>
+                  <option value="24hours">Last 24 hours</option>
+                  <option value="3days">Last 3 days</option>
+                  <option value="7days">Last 7 days</option>
+                  <option value="14days">Last 14 days</option>
+                </select>
+          </div>
+        </div>
           </div>
 
         {/* Active Filters & Clear Button */}
@@ -770,6 +927,13 @@ const DashboardDiscover = () => {
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
                   {baths}+ Baths
                   <button onClick={() => handleBathsChange(null)} className="hover:text-orange-900"><X size={14} /></button>
+                </span>
+              )}
+              {addedToSite !== 'anytime' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                  <Clock size={14} />
+                  {getAddedToSiteLabel(addedToSite)}
+                  <button onClick={() => handleAddedToSiteChange('anytime')} className="hover:text-blue-900"><X size={14} /></button>
                 </span>
               )}
             </div>
@@ -825,9 +989,9 @@ const DashboardDiscover = () => {
               <p className="text-gray-500 dark:text-orange-400 mb-4">
                 Try adjusting your search or filters to find what you're looking for.
               </p>
-                <button 
+                  <button 
                   onClick={handleClearFilters}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
                 >
                   Clear Filters
                 </button>
@@ -877,7 +1041,7 @@ const DashboardDiscover = () => {
                         }
                         
                         return (
-                          <button
+                    <button
                             key={pageNum}
                             onClick={() => handlePageChange(pageNum)}
                             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
@@ -906,6 +1070,9 @@ const DashboardDiscover = () => {
           )}
         </>
       )}
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

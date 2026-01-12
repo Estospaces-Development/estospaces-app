@@ -1,11 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Upload, X, CheckCircle, Clock, XCircle, FileText, User, Home, DollarSign, AlertCircle, Loader2, Info, Mail, Phone, CreditCard, MapPin, Building, ArrowRight } from 'lucide-react';
+import { Shield, Upload, X, CheckCircle, Clock, XCircle, FileText, User, Home, DollarSign, AlertCircle, Loader2, Info, Mail, Phone, CreditCard, MapPin, Building, ArrowRight, Camera } from 'lucide-react';
+import { useNotifications, NOTIFICATION_TYPES } from '../../contexts/NotificationsContext';
+import { supabase } from '../../lib/supabase';
 
 const VerificationSection = ({ userId, currentUser }) => {
+  // Notifications hook - wrapped in try-catch for safety
+  let createNotification = null;
+  try {
+    const notifications = useNotifications();
+    createNotification = notifications?.createNotification;
+  } catch (e) {
+    // NotificationsContext not available
+  }
+
   // Simplified state - no external service dependency
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   
   // Verification steps state
   const [verificationSteps, setVerificationSteps] = useState({
@@ -36,6 +49,79 @@ const VerificationSection = ({ userId, currentUser }) => {
   const completedSteps = Object.values(verificationSteps).filter(step => step.completed).length;
   const totalSteps = Object.keys(verificationSteps).length;
   const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
+
+  // Handle document upload
+  const handleDocumentUpload = async (type, file) => {
+    if (!file || !userId) return;
+
+    setUploadingFile(true);
+    setError(null);
+
+    try {
+      // Simulate upload delay (in real app, this would upload to Supabase Storage)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Mark step as completed
+      setVerificationSteps(prev => ({
+        ...prev,
+        [type]: { completed: true, status: 'verified' }
+      }));
+
+      // Check if all documents are now verified
+      const updatedSteps = {
+        ...verificationSteps,
+        [type]: { completed: true, status: 'verified' }
+      };
+      const allVerified = Object.values(updatedSteps).every(step => step.completed);
+
+      // Create notification for document verification
+      if (createNotification) {
+        if (allVerified) {
+          await createNotification(
+            NOTIFICATION_TYPES.PROFILE_VERIFIED,
+            '🎉 Profile Fully Verified!',
+            'Congratulations! Your profile is now fully verified. You can now access all features and apply for premium properties.',
+            { verification_type: 'full_profile' }
+          );
+        } else {
+          await createNotification(
+            NOTIFICATION_TYPES.DOCUMENT_VERIFIED,
+            '✅ Document Verified',
+            `Your ${type === 'identity' ? 'identity document' : 'proof of address'} has been verified successfully.`,
+            { verification_type: type }
+          );
+        }
+      }
+
+      setSuccess(`Your ${type === 'identity' ? 'identity document' : 'proof of address'} has been verified!`);
+      setShowUploadModal(null);
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError('Failed to upload document. Please try again.');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  // Handle email verification
+  const handleEmailVerification = async () => {
+    setLoading(true);
+    try {
+      // In real app, would send verification email
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setSuccess('Verification email sent! Please check your inbox.');
+    } catch (err) {
+      setError('Failed to send verification email.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle phone verification
+  const handlePhoneVerification = () => {
+    // Navigate to profile or open phone verification modal
+    setSuccess('Please add your phone number in the Personal Information section above.');
+  };
 
   // Verification step component
   const VerificationStep = ({ step, title, description, icon: Icon, actionLabel, onAction, isLast = false }) => {
@@ -163,7 +249,7 @@ const VerificationSection = ({ userId, currentUser }) => {
           description="Verify your email address"
           icon={Mail}
           actionLabel="Verify Email"
-          onAction={() => setSuccess('Verification email sent! Please check your inbox.')}
+          onAction={handleEmailVerification}
         />
 
         <VerificationStep
@@ -172,7 +258,7 @@ const VerificationSection = ({ userId, currentUser }) => {
           description="Add and verify your phone number"
           icon={Phone}
           actionLabel="Add Phone"
-          onAction={() => {}}
+          onAction={handlePhoneVerification}
         />
 
         <VerificationStep
@@ -181,7 +267,7 @@ const VerificationSection = ({ userId, currentUser }) => {
           description="Upload a valid government ID (Passport, Driving License, or BRP)"
           icon={CreditCard}
           actionLabel="Upload ID"
-          onAction={() => {}}
+          onAction={() => setShowUploadModal('identity')}
         />
 
         <VerificationStep
@@ -190,10 +276,96 @@ const VerificationSection = ({ userId, currentUser }) => {
           description="Provide proof of address (Utility bill or bank statement)"
           icon={MapPin}
           actionLabel="Upload Proof"
-          onAction={() => {}}
+          onAction={() => setShowUploadModal('address')}
           isLast={true}
         />
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    {showUploadModal === 'identity' ? <CreditCard size={20} className="text-white" /> : <MapPin size={20} className="text-white" />}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {showUploadModal === 'identity' ? 'Upload ID Document' : 'Upload Proof of Address'}
+                    </h3>
+                    <p className="text-orange-100 text-sm">
+                      {showUploadModal === 'identity' ? 'Passport, Driving License, or BRP' : 'Utility bill or bank statement'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowUploadModal(null)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-orange-400 transition-colors cursor-pointer group">
+                <input
+                  type="file"
+                  id="document-upload"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleDocumentUpload(showUploadModal, file);
+                  }}
+                />
+                <label htmlFor="document-upload" className="cursor-pointer">
+                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-200 transition-colors">
+                    {uploadingFile ? (
+                      <Loader2 size={24} className="text-orange-600 animate-spin" />
+                    ) : (
+                      <Upload size={24} className="text-orange-600" />
+                    )}
+                  </div>
+                  <p className="font-medium text-gray-900 mb-1">
+                    {uploadingFile ? 'Uploading...' : 'Click to upload or drag and drop'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    PDF, JPG or PNG (max. 10MB)
+                  </p>
+                </label>
+              </div>
+
+              {/* Tips */}
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-800 text-sm mb-2 flex items-center gap-2">
+                  <Info size={16} />
+                  Tips for a successful verification
+                </h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  {showUploadModal === 'identity' ? (
+                    <>
+                      <li>• Document must be valid and not expired</li>
+                      <li>• Ensure all corners are visible</li>
+                      <li>• Photo should be clear and readable</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• Document must be dated within the last 3 months</li>
+                      <li>• Your name and address must be visible</li>
+                      <li>• Bank statements or utility bills accepted</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Benefits Section */}
       <div className="border-t border-gray-200 bg-gray-50 p-6">

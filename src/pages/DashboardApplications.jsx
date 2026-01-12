@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { FileText, AlertCircle, Clock, Plus, Filter, Search, X, ChevronRight, Bell, CheckCircle, XCircle, Inbox } from 'lucide-react';
+import { FileText, AlertCircle, Clock, Plus, Filter, Search, X, ChevronRight, Bell, CheckCircle, XCircle, Inbox, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApplications, APPLICATION_STATUS } from '../contexts/ApplicationsContext';
 import ApplicationCard from '../components/Dashboard/Applications/ApplicationCard';
 import ApplicationDetail from '../components/Dashboard/Applications/ApplicationDetail';
 import ApplicationCardSkeleton from '../components/Dashboard/Applications/ApplicationCardSkeleton';
 import NewApplicationModal from '../components/Dashboard/Applications/NewApplicationModal';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardApplications = () => {
+  const navigate = useNavigate();
   const {
     applications,
     selectedApplicationId,
@@ -91,6 +94,15 @@ const DashboardApplications = () => {
       {/* Header Section */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/user/dashboard')}
+            className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span>Back to Dashboard</span>
+          </button>
+
           {/* Title Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
@@ -304,6 +316,9 @@ const DashboardApplications = () => {
         isOpen={showNewApplicationModal}
         onClose={() => setShowNewApplicationModal(false)}
       />
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

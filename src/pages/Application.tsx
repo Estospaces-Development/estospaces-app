@@ -118,11 +118,17 @@ const Application = () => {
         // Map status to display format
         const statusMap: Record<string, string> = {
           'pending': 'New Application',
+          'submitted': 'New Application',
+          'appointment_booked': 'Appointment Booked',
+          'viewing_scheduled': 'Viewing Scheduled',
+          'viewing_completed': 'Viewing Completed',
           'under_review': 'In Review',
+          'documents_requested': 'Documents Required',
+          'verification_in_progress': 'Verification',
           'approved': 'Approved',
+          'completed': 'Completed',
           'rejected': 'Rejected',
           'withdrawn': 'Withdrawn',
-          'documents_requested': 'Documents Required'
         };
 
         // Calculate score based on completeness of application
@@ -249,11 +255,16 @@ const Application = () => {
     // Map display status back to DB status
     const statusMap: Record<string, string> = {
       'New Application': 'pending',
+      'Appointment Booked': 'appointment_booked',
+      'Viewing Scheduled': 'viewing_scheduled',
+      'Viewing Completed': 'viewing_completed',
       'In Review': 'under_review',
+      'Documents Required': 'documents_requested',
+      'Verification': 'verification_in_progress',
       'Approved': 'approved',
       'Rejected': 'rejected',
       'Withdrawn': 'withdrawn',
-      'Documents Required': 'documents_requested'
+      'Completed': 'completed'
     };
 
     const dbStatus = statusMap[newStatus] || 'pending';
@@ -266,6 +277,9 @@ const Application = () => {
     }
 
     try {
+      // First get the application to get the user_id
+      const application = applications.find(app => app.id === id);
+      
       const { error } = await supabase
         .from('applied_properties')
         .update({ status: dbStatus, updated_at: new Date().toISOString() })
@@ -276,6 +290,76 @@ const Application = () => {
       setApplications(applications.map(app => 
         app.id === id ? { ...app, status: newStatus, lastContact: 'Just now' } : app
       ));
+
+      // Create notification for the user based on status change
+      if (application) {
+        // Get user_id from the original application data
+        const { data: appData } = await supabase
+          .from('applied_properties')
+          .select('user_id, application_data')
+          .eq('id', id)
+          .single();
+
+        if (appData?.user_id) {
+          let notificationType = 'application_update';
+          let title = '';
+          let message = '';
+
+          const propertyTitle = application.propertyInterested || 'your property';
+
+          switch (dbStatus) {
+            case 'approved':
+              notificationType = 'appointment_approved';
+              title = '🎉 Application Approved!';
+              message = `Great news! Your application for "${propertyTitle}" has been approved. The agent will contact you soon with next steps.`;
+              break;
+            case 'rejected':
+              notificationType = 'appointment_rejected';
+              title = 'Application Update';
+              message = `Your application for "${propertyTitle}" was not approved at this time. Please contact the agent for more details.`;
+              break;
+            case 'viewing_scheduled':
+              notificationType = 'application_update';
+              title = '📅 Viewing Scheduled';
+              message = `Your viewing for "${propertyTitle}" has been confirmed. Check your email for details.`;
+              break;
+            case 'viewing_completed':
+              notificationType = 'application_update';
+              title = '✅ Viewing Completed';
+              message = `Your viewing for "${propertyTitle}" is complete. The agent will follow up with next steps.`;
+              break;
+            case 'documents_requested':
+              notificationType = 'application_update';
+              title = '📄 Documents Required';
+              message = `Please upload the required documents for your application for "${propertyTitle}".`;
+              break;
+            case 'verification_in_progress':
+              notificationType = 'application_update';
+              title = '🔍 Verification In Progress';
+              message = `Your documents for "${propertyTitle}" are being verified. We'll notify you once complete.`;
+              break;
+            case 'completed':
+              notificationType = 'application_update';
+              title = '🏠 Application Complete!';
+              message = `Congratulations! Your application for "${propertyTitle}" has been completed successfully.`;
+              break;
+            default:
+              // Don't send notification for other statuses
+              return;
+          }
+
+          // Insert notification for the user
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: appData.user_id,
+              type: notificationType,
+              title,
+              message,
+              data: { application_id: id, property_title: propertyTitle, new_status: dbStatus }
+            });
+        }
+      }
     } catch (err) {
       console.error('Error updating application status:', err);
     }
@@ -563,17 +647,27 @@ const Application = () => {
                       onChange={(e) => handleUpdateStatus(app.id, e.target.value)}
                       className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${
                         app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                        app.status === 'Appointment Booked' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400' :
+                        app.status === 'Viewing Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400' :
+                        app.status === 'Viewing Completed' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400' :
                         app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                        app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                        app.status === 'Verification' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                        app.status === 'Approved' || app.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
                         app.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
                         'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}
                     >
                       <option value="New Application">New Application</option>
+                      <option value="Appointment Booked">Appointment Booked</option>
+                      <option value="Viewing Scheduled">Viewing Scheduled</option>
+                      <option value="Viewing Completed">Viewing Completed</option>
                       <option value="In Review">In Review</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
                       <option value="Documents Required">Documents Required</option>
+                      <option value="Verification">Verification in Progress</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Rejected">Rejected</option>
+                      <option value="Withdrawn">Withdrawn</option>
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

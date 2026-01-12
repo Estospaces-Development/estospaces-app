@@ -31,12 +31,40 @@ const ApplicationCard = ({ application, onClick }) => {
           dotColor: 'bg-gray-400',
           icon: Edit,
         };
+      case APPLICATION_STATUS.PENDING:
+        return {
+          label: 'Pending Review',
+          color: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
+          dotColor: 'bg-yellow-500',
+          icon: Clock,
+        };
       case APPLICATION_STATUS.SUBMITTED:
         return {
           label: 'Submitted',
           color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
           dotColor: 'bg-blue-500',
           icon: FileText,
+        };
+      case APPLICATION_STATUS.APPOINTMENT_BOOKED:
+        return {
+          label: 'Appointment Booked',
+          color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+          dotColor: 'bg-purple-500',
+          icon: Calendar,
+        };
+      case APPLICATION_STATUS.VIEWING_SCHEDULED:
+        return {
+          label: 'Viewing Scheduled',
+          color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+          dotColor: 'bg-indigo-500',
+          icon: Calendar,
+        };
+      case APPLICATION_STATUS.VIEWING_COMPLETED:
+        return {
+          label: 'Viewing Completed',
+          color: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
+          dotColor: 'bg-cyan-500',
+          icon: CheckCircle,
         };
       case APPLICATION_STATUS.UNDER_REVIEW:
         return {
@@ -51,6 +79,13 @@ const ApplicationCard = ({ application, onClick }) => {
           color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
           dotColor: 'bg-orange-500',
           icon: Upload,
+        };
+      case APPLICATION_STATUS.VERIFICATION_IN_PROGRESS:
+        return {
+          label: 'Verification in Progress',
+          color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+          dotColor: 'bg-blue-500',
+          icon: TrendingUp,
         };
       case APPLICATION_STATUS.APPROVED:
         return {
@@ -73,9 +108,16 @@ const ApplicationCard = ({ application, onClick }) => {
           dotColor: 'bg-gray-400',
           icon: XCircle,
         };
+      case APPLICATION_STATUS.COMPLETED:
+        return {
+          label: 'Completed',
+          color: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+          dotColor: 'bg-green-500',
+          icon: CheckCircle,
+        };
       default:
         return {
-          label: status,
+          label: status?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown',
           color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
           dotColor: 'bg-gray-400',
           icon: FileText,
@@ -139,14 +181,34 @@ const ApplicationCard = ({ application, onClick }) => {
     switch (application.status) {
       case APPLICATION_STATUS.DRAFT: return 10;
       case APPLICATION_STATUS.PENDING: 
-      case APPLICATION_STATUS.SUBMITTED: return 25;
-      case APPLICATION_STATUS.UNDER_REVIEW: return 50;
+      case APPLICATION_STATUS.SUBMITTED: return 20;
+      case APPLICATION_STATUS.APPOINTMENT_BOOKED:
+      case APPLICATION_STATUS.VIEWING_SCHEDULED: return 30;
+      case APPLICATION_STATUS.VIEWING_COMPLETED: return 40;
+      case APPLICATION_STATUS.UNDER_REVIEW: return 55;
       case APPLICATION_STATUS.DOCUMENTS_REQUESTED: return 65;
-      case APPLICATION_STATUS.APPROVED: return 100;
+      case APPLICATION_STATUS.VERIFICATION_IN_PROGRESS: return 80;
+      case APPLICATION_STATUS.APPROVED:
+      case APPLICATION_STATUS.COMPLETED: return 100;
       case APPLICATION_STATUS.REJECTED: 
       case APPLICATION_STATUS.WITHDRAWN: return 0;
-      default: return 0;
+      default: return 15;
     }
+  };
+
+  // Format appointment date/time
+  const formatAppointment = () => {
+    if (!application.appointment) return null;
+    const { date, time } = application.appointment;
+    if (!date) return null;
+    
+    const appointmentDate = new Date(date);
+    const formattedDate = appointmentDate.toLocaleDateString('en-GB', { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short' 
+    });
+    return `${formattedDate}${time ? ` at ${time}` : ''}`;
   };
 
   const getPropertyTypeIcon = () => {
@@ -220,7 +282,7 @@ const ApplicationCard = ({ application, onClick }) => {
                 <span className="truncate">{application.agentName}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <Calendar size={14} className="flex-shrink-0 text-gray-400" />
+                <Clock size={14} className="flex-shrink-0 text-gray-400" />
                 <span className="truncate">{formatRelativeTime(application.lastUpdated)}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -228,6 +290,16 @@ const ApplicationCard = ({ application, onClick }) => {
                 <span className="truncate font-mono text-xs">{application.referenceId}</span>
               </div>
             </div>
+
+            {/* Appointment Info */}
+            {application.hasAppointment && formatAppointment() && (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-lg">
+                <Calendar size={14} className="text-purple-600 dark:text-purple-400" />
+                <span className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                  Appointment: {formatAppointment()}
+                </span>
+              </div>
+            )}
 
             {/* Progress Bar */}
             {application.status !== APPLICATION_STATUS.REJECTED && 

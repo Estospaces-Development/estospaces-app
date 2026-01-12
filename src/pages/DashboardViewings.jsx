@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Home, Plus, ChevronRight, X, Loader2, CheckCircle, XCircle, AlertCircle, Search } from 'lucide-react';
+import { Calendar, Clock, MapPin, Home, Plus, ChevronRight, X, Loader2, CheckCircle, XCircle, AlertCircle, Search, ArrowLeft } from 'lucide-react';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardViewings = () => {
   const navigate = useNavigate();
@@ -187,6 +188,15 @@ const DashboardViewings = () => {
 
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/user/dashboard')}
+        className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back to Dashboard</span>
+      </button>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -298,9 +308,9 @@ const DashboardViewings = () => {
             onClick={() => navigate('/user/dashboard/discover')}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
           >
-            Browse Properties
-          </button>
-        </div>
+          Browse Properties
+        </button>
+      </div>
       ) : (
         <div className="space-y-4">
           {filteredViewings.map((viewing) => (
@@ -383,6 +393,9 @@ const DashboardViewings = () => {
           ))}
         </div>
       )}
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

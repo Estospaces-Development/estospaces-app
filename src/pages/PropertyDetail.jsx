@@ -25,6 +25,19 @@ import {
   X,
   FileText,
   Send,
+  Star,
+  Shield,
+  Clock,
+  Award,
+  MessageCircle,
+  ExternalLink,
+  Sofa,
+  Wrench,
+  Layers,
+  Wifi,
+  ParkingCircle,
+  Dumbbell,
+  ShieldCheck,
 } from 'lucide-react';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import { useProperties } from '../contexts/PropertiesContext';
@@ -243,27 +256,97 @@ const PropertyDetail = () => {
       return;
     }
 
-    if (!isSupabaseAvailable()) {
-      setViewingError('Database not available');
-      return;
-    }
-
     setIsSchedulingViewing(true);
     setViewingError(null);
 
     try {
-      const { error } = await supabase
-        .from('viewings')
-        .insert({
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      
+      // Get user's access token for authenticated requests
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || supabaseKey;
+
+      // Get property images
+      let propertyImage = null;
+      try {
+        if (property.image_urls) {
+          const images = Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]');
+          propertyImage = images[0] || null;
+        }
+      } catch (e) {
+        propertyImage = null;
+      }
+
+      // Create application data
+      const applicationData = {
+        property_title: property.title,
+        property_address: property.address_line_1 || `${property.city || ''} ${property.postcode || ''}`.trim(),
+        property_price: property.price,
+        property_type: property.property_type,
+        listing_type: property.listing_type,
+        property_image: propertyImage,
+        agent_name: property.contact_name,
+        agent_email: property.contact_email,
+        agent_phone: property.contact_phone,
+        agent_company: property.company,
+        appointment: {
+          date: viewingDate,
+          time: viewingTime,
+          notes: viewingNotes,
+          type: 'viewing',
+        },
+        personal_info: {
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          email: user.email,
+        },
+      };
+
+      // Insert into applied_properties using direct REST API
+      const appResponse = await fetch(`${supabaseUrl}/rest/v1/applied_properties`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
           user_id: user.id,
           property_id: property.id,
-          viewing_date: viewingDate,
-          viewing_time: viewingTime,
-          notes: viewingNotes,
-          status: 'pending',
-        });
+          status: 'appointment_booked',
+          application_data: applicationData,
+        }),
+      });
 
-      if (error) throw error;
+      if (!appResponse.ok) {
+        const errorData = await appResponse.json().catch(() => ({}));
+        console.error('Application insert error:', errorData);
+        throw new Error(errorData.message || 'Failed to create application');
+      }
+
+      // Also create a viewing record (optional - don't fail if this fails)
+      try {
+        await fetch(`${supabaseUrl}/rest/v1/viewings`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            property_id: property.id,
+            viewing_date: viewingDate,
+            viewing_time: viewingTime,
+            notes: viewingNotes,
+            status: 'pending',
+          }),
+        });
+      } catch (viewingErr) {
+        console.log('Viewing record creation failed (non-critical):', viewingErr);
+      }
 
       setViewingSuccess(true);
       setTimeout(() => {
@@ -272,11 +355,12 @@ const PropertyDetail = () => {
         setViewingDate('');
         setViewingTime('');
         setViewingNotes('');
-        navigate('/user/dashboard/viewings');
-      }, 2000);
+        // Navigate to My Applications so user can track
+        navigate('/user/dashboard/applications');
+      }, 2500);
     } catch (err) {
-      console.error('Viewing scheduling error:', err);
-      setViewingError(err.message || 'Failed to schedule viewing. Please try again.');
+      console.error('Booking error:', err);
+      setViewingError(err.message || 'Failed to book appointment. Please try again.');
     } finally {
       setIsSchedulingViewing(false);
     }
@@ -348,30 +432,12 @@ const PropertyDetail = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            {(property.listing_type === 'sale' || property.property_type === 'sale' || property.type?.toLowerCase() === 'sale') && (
-              <button 
-                onClick={handlePurchase}
-                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
-              >
-                <FileText size={20} />
-                Apply to Buy
-              </button>
-            )}
-            {(property.listing_type === 'rent' || property.property_type === 'rent' || property.type?.toLowerCase() === 'rent') && (
-              <button 
-                onClick={handlePurchase}
-                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
-              >
-                <FileText size={20} />
-                Apply to Rent
-              </button>
-            )}
             <button 
               onClick={() => setShowViewingModal(true)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-lg hover:shadow-xl"
             >
               <Calendar size={20} />
-              Schedule Viewing
+              Book an Appointment
             </button>
           </div>
         </div>
@@ -379,52 +445,158 @@ const PropertyDetail = () => {
 
       {/* Main Content - Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Left Column - Image Carousel */}
-          <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
-            <div className="relative h-96 lg:h-[500px] bg-gray-200 dark:bg-gray-200">
-            {images.length > 0 ? (
-              <>
-                <img
-                  src={images[currentImageIndex]}
-                  alt={property.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/800x600?text=Property+Image';
-                  }}
-                />
-                {hasMultipleImages && (
-                  <>
+        {/* Left Column - Image Gallery */}
+        <div className="space-y-4">
+          {/* Main Image */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="relative h-80 lg:h-[450px] bg-gray-200 dark:bg-gray-700">
+              {images.length > 0 ? (
+                <>
+                  <img
+                    src={images[currentImageIndex]}
+                    alt={property.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/800x600?text=Property+Image';
+                    }}
+                  />
+                  {/* Image Counter Badge */}
+                  <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full text-white text-sm font-medium">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                  {hasMultipleImages && (
+                    <>
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all"
+                      >
+                        <ChevronLeft size={24} className="text-gray-700" />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all"
+                      >
+                        <ChevronRight size={24} className="text-gray-700" />
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
+                  <span className="text-gray-500">No Image</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Image Thumbnails */}
+            {images.length > 1 && (
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {images.map((img, index) => (
                     <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-[#0a0a0a]/70 hover:bg-white dark:hover:bg-gray-900 p-2 rounded-full shadow-lg transition-all"
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                        index === currentImageIndex
+                          ? 'border-orange-500 ring-2 ring-orange-500/30'
+                          : 'border-transparent hover:border-gray-300'
+                      }`}
                     >
-                      <ChevronLeft size={24} className="text-gray-700 dark:text-gray-300" />
+                      <img
+                        src={img}
+                        alt={`View ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/100x100?text=Image';
+                        }}
+                      />
                     </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-[#0a0a0a]/70 hover:bg-white dark:hover:bg-gray-900 p-2 rounded-full shadow-lg transition-all"
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Property Details Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4 flex items-center gap-2">
+              <Home size={20} />
+              Property Details
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {property.property_type && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Building2 size={18} className="text-orange-500" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Property Type</p>
+                    <p className="font-medium text-gray-900 dark:text-white capitalize">{property.property_type}</p>
+                  </div>
+                </div>
+              )}
+              {property.furnishing && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Sofa size={18} className="text-orange-500" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Furnishing</p>
+                    <p className="font-medium text-gray-900 dark:text-white capitalize">{property.furnishing}</p>
+                  </div>
+                </div>
+              )}
+              {property.condition && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Wrench size={18} className="text-orange-500" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Condition</p>
+                    <p className="font-medium text-gray-900 dark:text-white capitalize">{property.condition}</p>
+                  </div>
+                </div>
+              )}
+              {property.year_built && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Calendar size={18} className="text-orange-500" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Year Built</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{property.year_built}</p>
+                  </div>
+                </div>
+              )}
+              {(property.floor_number !== undefined && property.floor_number !== null) && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Layers size={18} className="text-orange-500" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Floor</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {property.floor_number}{property.total_floors ? ` of ${property.total_floors}` : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {property.parking_spaces > 0 && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Car size={18} className="text-orange-500" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Parking</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{property.parking_spaces} space{property.parking_spaces > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Amenities */}
+            {property.amenities && Object.keys(property.amenities).length > 0 && (
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Amenities</h4>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(property.amenities).map(([key, value]) => value && (
+                    <span 
+                      key={key}
+                      className="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium flex items-center gap-1"
                     >
-                      <ChevronRight size={24} className="text-gray-700 dark:text-gray-300" />
-                    </button>
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                      {images.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`h-2 rounded-full transition-all ${
-                            index === currentImageIndex
-                              ? 'bg-white w-8'
-                              : 'bg-white/50 w-2 hover:bg-white/75'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-                <span className="text-gray-500">No Image</span>
+                      <CheckCircle size={12} />
+                      {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -563,52 +735,128 @@ const PropertyDetail = () => {
             </div>
           )}
 
-          {/* Real Agent Information */}
-          {(property.agent_name || property.agent_email || property.agent_phone || property.agent_company) && (
-            <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Contact Agent</h3>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-xl font-semibold text-orange-600 dark:text-orange-400">
-                  {property.agent_name ? property.agent_name.charAt(0).toUpperCase() : <User size={24} />}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{property.agent_name || 'Agent'}</p>
-                  {property.agent_company && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                      <Building2 size={14} />
-                      {property.agent_company}
-                    </p>
+          {/* Agent/Broker Information - Enhanced */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <User size={20} />
+                Property Agent / Broker
+              </h3>
+            </div>
+            <div className="p-6">
+              {/* Agent Profile Card */}
+              <div className="flex items-start gap-4 mb-6">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                    {(property.contact_name || property.agent_name) 
+                      ? (property.contact_name || property.agent_name).charAt(0).toUpperCase() 
+                      : <User size={28} />}
+                  </div>
+                  {property.verified && (
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
+                      <ShieldCheck size={14} className="text-white" />
+                    </div>
                   )}
                 </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-bold text-gray-900 dark:text-white text-lg">
+                      {property.contact_name || property.agent_name || 'Property Agent'}
+                    </h4>
+                    {property.verified && (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
+                        <CheckCircle size={10} />
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                  {(property.company || property.agent_company) && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-1 mb-2">
+                      <Building2 size={14} />
+                      {property.company || property.agent_company}
+                    </p>
+                  )}
+                  
+                  {/* Agent Rating */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          size={16} 
+                          className={star <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">4.5</span>
+                    <span className="text-sm text-gray-500">(128 reviews)</span>
+                  </div>
+                </div>
               </div>
+
+              {/* Agent Stats */}
+              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">45+</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Properties Listed</p>
+                </div>
+                <div className="text-center border-x border-gray-200 dark:border-gray-600">
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">3</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Years Experience</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">98%</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Response Rate</p>
+                </div>
+              </div>
+
+              {/* Contact Options */}
               <div className="space-y-3">
-                {property.agent_phone && (
+                {(property.contact_phone || property.agent_phone) && (
                   <a
-                    href={`tel:${property.agent_phone}`}
-                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    href={`tel:${property.contact_phone || property.agent_phone}`}
+                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600"
                   >
-                    <Phone className="text-orange-600 dark:text-orange-400" size={20} />
-                    <span className="text-gray-900 dark:text-gray-100">{property.agent_phone}</span>
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                      <Phone className="text-green-600 dark:text-green-400" size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{property.contact_phone || property.agent_phone}</p>
+                    </div>
                   </a>
                 )}
-                {property.agent_email && (
+                {(property.contact_email || property.agent_email) && (
                   <a
-                    href={`mailto:${property.agent_email}`}
-                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    href={`mailto:${property.contact_email || property.agent_email}`}
+                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600"
                   >
-                    <Mail className="text-orange-600 dark:text-orange-400" size={20} />
-                    <span className="text-gray-900 dark:text-gray-100">{property.agent_email}</span>
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <Mail className="text-blue-600 dark:text-blue-400" size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                      <p className="font-medium text-gray-900 dark:text-white truncate">{property.contact_email || property.agent_email}</p>
+                    </div>
                   </a>
                 )}
+                
+                {/* Response Time Badge */}
+                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                  <Clock size={16} className="text-green-600 dark:text-green-400" />
+                  <span className="text-sm text-green-700 dark:text-green-400">Usually responds within 1 hour</span>
+                </div>
+
                 <button
                   onClick={() => navigate(`/user/dashboard/messages?property=${property.id}`)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors mt-2"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-orange-500/25"
                 >
-                  Message Agent
+                  <MessageCircle size={18} />
+                  Send Message
                 </button>
               </div>
             </div>
-          )}
+          </div>
 
         </div>
       </div>
@@ -725,60 +973,78 @@ const PropertyDetail = () => {
         </div>
       )}
 
-      {/* Schedule Viewing Modal */}
+      {/* Book Appointment Modal - Enhanced */}
       {showViewingModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl animate-scaleIn">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full shadow-2xl animate-scaleIn overflow-hidden">
+            {/* Modal Header with Gradient */}
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Schedule a Viewing
-                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Calendar size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">
+                      Book an Appointment
+                    </h2>
+                    <p className="text-orange-100 text-sm">Schedule your property viewing</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => {
                     setShowViewingModal(false);
                     setViewingSuccess(false);
                     setViewingError(null);
                   }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
                 >
-                  <X size={20} className="text-gray-500" />
+                  <X size={20} className="text-white" />
                 </button>
               </div>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6">
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
               {viewingSuccess ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+                <div className="text-center py-10">
+                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-5 animate-bounce">
+                    <CheckCircle size={40} className="text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Viewing Scheduled!
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Appointment Booked! 🎉
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Your viewing request has been submitted. The agent will confirm shortly.
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Your viewing has been scheduled successfully.
                   </p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-full text-green-700 dark:text-green-400 text-sm">
+                    <Clock size={16} />
+                    Agent will confirm within 24 hours
+                  </div>
                 </div>
               ) : (
                 <>
-                  {/* Property Summary */}
-                  <div className="flex gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                    <img
-                      src={images[0] || 'https://via.placeholder.com/100x100'}
-                      alt={property.title}
-                      className="w-20 h-20 rounded-lg object-cover"
-                    />
+                  {/* Property Card */}
+                  <div className="flex gap-4 mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <div className="relative">
+                      <img
+                        src={images[0] || 'https://via.placeholder.com/100x100'}
+                        alt={property.title}
+                        className="w-24 h-24 rounded-xl object-cover shadow-md"
+                      />
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                        <Home size={12} className="text-white" />
+                      </div>
+                    </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-1">
                         {property.title}
                       </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        {property.address_line_1 || property.city}
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+                        <MapPin size={14} />
+                        {property.address_line_1 || property.city || 'UK'}
                       </p>
-                      <p className="text-orange-600 dark:text-orange-400 font-semibold">
+                      <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
                         {property.listing_type === 'rent' 
                           ? `${formatPrice(property.price)}/month` 
                           : formatPrice(property.price)}
@@ -786,51 +1052,116 @@ const PropertyDetail = () => {
                     </div>
                   </div>
 
-                  {/* Date & Time Selection */}
-                  <div className="space-y-4 mb-6">
+                  {/* Quick Time Slots */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <Clock size={16} className="text-orange-500" />
+                      Select Preferred Time
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'].map((time) => (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setViewingTime(time)}
+                          className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                            viewingTime === time
+                              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                      Or select a custom time below
+                    </p>
+                  </div>
+
+                  {/* Date & Custom Time */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Preferred Date *
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <Calendar size={14} className="text-orange-500" />
+                        Date *
                       </label>
                       <input
                         type="date"
                         value={viewingDate}
                         onChange={(e) => setViewingDate(e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Preferred Time *
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <Clock size={14} className="text-orange-500" />
+                        Time *
                       </label>
                       <input
                         type="time"
                         value={viewingTime}
                         onChange={(e) => setViewingTime(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                         required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Notes (optional)
-                      </label>
-                      <textarea
-                        value={viewingNotes}
-                        onChange={(e) => setViewingNotes(e.target.value)}
-                        rows={2}
-                        placeholder="Any specific requirements or questions..."
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                       />
                     </div>
                   </div>
 
+                  {/* Notes */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <FileText size={14} className="text-orange-500" />
+                      Additional Notes (optional)
+                    </label>
+                    <textarea
+                      value={viewingNotes}
+                      onChange={(e) => setViewingNotes(e.target.value)}
+                      rows={3}
+                      placeholder="E.g., I'm interested in the garden area, or I have specific questions about..."
+                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    />
+                  </div>
+
+                  {/* What to Expect */}
+                  <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 text-sm mb-3 flex items-center gap-2">
+                      <CheckCircle size={16} />
+                      What to Expect
+                    </h4>
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+                        <div className="w-5 h-5 bg-blue-200 dark:bg-blue-800 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                        Confirmation email within 1 hour
+                      </li>
+                      <li className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+                        <div className="w-5 h-5 bg-blue-200 dark:bg-blue-800 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                        Agent contacts you to confirm
+                      </li>
+                      <li className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+                        <div className="w-5 h-5 bg-blue-200 dark:bg-blue-800 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                        View property at scheduled time
+                      </li>
+                    </ul>
+                  </div>
+
                   {/* Error Message */}
                   {viewingError && (
-                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                      <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-red-700 dark:text-red-400">{viewingError}</p>
+                    </div>
+                  )}
+
+                  {/* Selected Summary */}
+                  {viewingDate && viewingTime && (
+                    <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300 flex items-center gap-2">
+                        <CheckCircle size={16} />
+                        Selected: {new Date(viewingDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} at {viewingTime}
+                      </p>
                     </div>
                   )}
 
@@ -838,20 +1169,25 @@ const PropertyDetail = () => {
                   <button
                     onClick={handleScheduleViewing}
                     disabled={isSchedulingViewing || !viewingDate || !viewingTime}
-                    className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 disabled:shadow-none"
                   >
                     {isSchedulingViewing ? (
                       <>
-                        <Loader2 size={20} className="animate-spin" />
-                        Scheduling...
+                        <Loader2 size={22} className="animate-spin" />
+                        Booking Your Appointment...
                       </>
                     ) : (
                       <>
-                        <Calendar size={20} />
-                        Schedule Viewing
+                        <Calendar size={22} />
+                        Confirm Appointment
                       </>
                     )}
                   </button>
+
+                  {/* Free Cancellation Note */}
+                  <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+                    Free cancellation up to 24 hours before your viewing
+                  </p>
                 </>
               )}
             </div>

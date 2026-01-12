@@ -77,8 +77,14 @@ const DashboardLocationBased = () => {
   const [recentlyAddedProperties, setRecentlyAddedProperties] = useState([]);
   const [highDemandProperties, setHighDemandProperties] = useState([]);
   
+  // Filtered properties state (for when user applies filters)
+  const [filteredProperties, setFilteredProperties] = useState([]);
+  const [showFilteredResults, setShowFilteredResults] = useState(false);
+  const [filteredCount, setFilteredCount] = useState(0);
+  
   // Loading states for each section
   const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false); // Separate loading state for search button
   const [loadingDiscovery, setLoadingDiscovery] = useState(false);
   const [loadingMostViewed, setLoadingMostViewed] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(false);
@@ -258,40 +264,127 @@ const DashboardLocationBased = () => {
     }));
   }, [savedProperties]);
 
+  // Fetch filtered properties directly using REST API
+  const fetchFilteredProperties = useCallback(async () => {
+    setSearchLoading(true);
+    setError(null);
+    setShowFilteredResults(true);
+    
+    try {
+      const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      
+      // Build query based on filters
+      let filterParams = [];
+      let orderBy = 'created_at.desc';
+      
+      // Base filters
+      const listingType = selectedPropertyType === 'rent' ? 'rent' : 'sale';
+      filterParams.push(`listing_type=eq.${listingType}`);
+      filterParams.push('or=(status.eq.online,status.eq.published,status.eq.active)');
+      
+      // Apply filter options
+      if (selectedFilters.includes('recently_added')) {
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+        filterParams.push(`created_at=gte.${twentyFourHoursAgo.toISOString()}`);
+        orderBy = 'created_at.desc';
+      }
+      
+      if (selectedFilters.includes('most_viewed')) {
+        orderBy = 'view_count.desc.nullslast,created_at.desc';
+      }
+      
+      if (selectedFilters.includes('high_demand')) {
+        filterParams.push('view_count=gte.1');
+        if (!selectedFilters.includes('most_viewed')) {
+          orderBy = 'view_count.desc.nullslast,created_at.desc';
+        }
+      }
+      
+      if (selectedFilters.includes('budget_friendly')) {
+        if (selectedPropertyType === 'rent') {
+          filterParams.push('price=lte.2000');
+        } else {
+          filterParams.push('price=lte.500000');
+        }
+        if (!selectedFilters.includes('most_viewed') && !selectedFilters.includes('high_demand') && !selectedFilters.includes('recently_added')) {
+          orderBy = 'price.asc,created_at.desc';
+        }
+      }
+      
+      // Location filter
+      const locationTerm = searchInput.trim();
+      if (locationTerm) {
+        filterParams.push(`or=(city.ilike.*${locationTerm}*,postcode.ilike.*${locationTerm}*,address_line_1.ilike.*${locationTerm}*,state.ilike.*${locationTerm}*)`);
+      }
+      
+      const url = `${supabaseUrl}/rest/v1/properties?select=*&${filterParams.join('&')}&order=${orderBy}&limit=12`;
+      
+      console.log('[Dashboard] Fetching filtered properties:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'count=exact'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const countHeader = response.headers.get('content-range');
+      const totalCount = countHeader ? parseInt(countHeader.split('/')[1]) : data.length;
+      
+      console.log('[Dashboard] Filtered properties received:', data.length);
+      
+      setFilteredProperties(data || []);
+      setFilteredCount(totalCount || 0);
+      
+      if (data.length === 0) {
+        setLocationMessage('No properties found matching your filters. Try adjusting your search criteria.');
+      }
+    } catch (err) {
+      console.error('[Dashboard] Error fetching filtered properties:', err);
+      setError('Failed to fetch properties. Please try again.');
+      setFilteredProperties([]);
+      setFilteredCount(0);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [selectedPropertyType, selectedFilters, searchInput]);
+
   // Handle location search
   const handleLocationSearch = useCallback((e, searchQuery = null) => {
     e?.preventDefault();
-    const query = (searchQuery || searchInput || '').trim();
     
     setError(null);
     setLocationMessage(null);
     
-    // Build navigation URL with all parameters
-    const params = new URLSearchParams();
-    
-    // Add tab/type parameter
-    if (selectedPropertyType === 'buy') {
-      params.set('tab', 'buy');
-    } else if (selectedPropertyType === 'rent') {
-      params.set('tab', 'rent');
-    } else if (selectedPropertyType === 'sold') {
-      params.set('tab', 'buy'); // Sold properties - show as buy with sold status
-      params.set('status', 'sold');
+    // If filters are selected or search input is provided, fetch and show results on this page
+    if (selectedFilters.length > 0 || searchInput.trim()) {
+      fetchFilteredProperties();
+    } else {
+      // Navigate to discover page for general browsing
+      const params = new URLSearchParams();
+      
+      if (selectedPropertyType === 'buy') {
+        params.set('tab', 'buy');
+      } else if (selectedPropertyType === 'rent') {
+        params.set('tab', 'rent');
+      } else if (selectedPropertyType === 'sold') {
+        params.set('tab', 'buy');
+        params.set('status', 'sold');
+      }
+      
+      navigate(`/user/dashboard/discover?${params.toString()}`);
     }
-    
-    // Add location if provided
-    if (query) {
-      params.set('location', query);
-    }
-    
-    // Add filters if any selected
-    if (selectedFilters.length > 0) {
-      params.set('filter', selectedFilters.join(','));
-    }
-    
-    // Navigate to discover page with all filters
-    navigate(`/user/dashboard/discover?${params.toString()}`);
-  }, [searchInput, selectedPropertyType, selectedFilters, navigate]);
+  }, [searchInput, selectedPropertyType, selectedFilters, navigate, fetchFilteredProperties]);
 
   // Listen for header search location events
   useEffect(() => {
@@ -588,7 +681,7 @@ const DashboardLocationBased = () => {
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Enter postcode, city, or area..."
                   className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                  disabled={loading}
+                  disabled={searchLoading}
                 />
                 {searchInput && (
                   <button
@@ -602,10 +695,10 @@ const DashboardLocationBased = () => {
               </div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={searchLoading}
                 className="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[140px] shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30"
               >
-                {loading ? (
+                {searchLoading ? (
                   <>
                     <Loader2 className="animate-spin" size={18} />
                     <span>Searching</span>
@@ -619,7 +712,8 @@ const DashboardLocationBased = () => {
         </div>
       </div>
 
-      {/* Quick Action CTAs - Property Tech Style */}
+      {/* Quick Action CTAs - Property Tech Style (hidden when showing filtered results) */}
+      {!showFilteredResults && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           onClick={() => {
@@ -683,6 +777,104 @@ const DashboardLocationBased = () => {
           </span>
         </button>
       </div>
+      )}
+
+      {/* Filtered Properties Results */}
+      {showFilteredResults && (
+        <div className="animate-fadeIn">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500">
+                {selectedFilters.includes('recently_added') && 'Recently Added Properties'}
+                {selectedFilters.includes('most_viewed') && !selectedFilters.includes('recently_added') && 'Most Visited Properties'}
+                {selectedFilters.includes('high_demand') && !selectedFilters.includes('recently_added') && !selectedFilters.includes('most_viewed') && 'High Demand Properties'}
+                {selectedFilters.includes('budget_friendly') && !selectedFilters.includes('recently_added') && !selectedFilters.includes('most_viewed') && !selectedFilters.includes('high_demand') && 'Budget Friendly Properties'}
+                {selectedFilters.length === 0 && searchInput && `Properties in "${searchInput}"`}
+                {selectedFilters.length === 0 && !searchInput && 'Search Results'}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {searchLoading ? 'Loading...' : `${filteredCount} ${filteredCount === 1 ? 'property' : 'properties'} found`}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowFilteredResults(false);
+                setFilteredProperties([]);
+                setSelectedFilters([]);
+                setSearchInput('');
+              }}
+              className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+            >
+              <X size={16} />
+              Clear Results
+            </button>
+          </div>
+
+          {searchLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <PropertyCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filteredProperties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProperties.map((property) => {
+                const transformed = transformPropertyForCard(property);
+                if (!transformed) return null;
+                return (
+                  <PropertyCard
+                    key={property.id}
+                    property={transformed}
+                    onViewDetails={(p) => navigate(`/user/dashboard/property/${p.id}`)}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Home size={32} className="text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Properties Found</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">Try adjusting your filters or search criteria</p>
+              <button
+                onClick={() => {
+                  setShowFilteredResults(false);
+                  setSelectedFilters([]);
+                  setSearchInput('');
+                  navigate('/user/dashboard/discover');
+                }}
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Browse All Properties
+              </button>
+            </div>
+          )}
+
+          {/* View More Button */}
+          {filteredProperties.length > 0 && filteredCount > 12 && (
+            <div className="text-center mt-6">
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set('tab', selectedPropertyType === 'rent' ? 'rent' : 'buy');
+                  if (selectedFilters.length > 0) {
+                    params.set('filter', selectedFilters.join(','));
+                  }
+                  if (searchInput) {
+                    params.set('location', searchInput);
+                  }
+                  navigate(`/user/dashboard/discover?${params.toString()}`);
+                }}
+                className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors inline-flex items-center gap-2"
+              >
+                View All {filteredCount} Properties
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (
@@ -716,7 +908,8 @@ const DashboardLocationBased = () => {
         </div>
       )}
 
-      {/* Main Map View - Nearby Properties */}
+      {/* Main Map View - Nearby Properties (hidden when showing filtered results) */}
+      {!showFilteredResults && (
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -789,6 +982,7 @@ const DashboardLocationBased = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Footer Section */}
       <DashboardFooter />

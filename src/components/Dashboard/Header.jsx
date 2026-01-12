@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Bell, User, ChevronDown, Loader2, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { User, ChevronDown, Loader2, LogOut, Settings, HelpCircle } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
 import { supabase, isSupabaseAvailable } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import logoIcon from '../../assets/logo-icon.png';
@@ -10,7 +11,6 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, profile, getDisplayName, signOut } = useAuth();
   const isDashboard = location.pathname.startsWith('/user/dashboard');
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const logoRef = React.useRef(null);
@@ -19,11 +19,6 @@ const Header = () => {
   const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'User');
   const userEmail = user?.email || '';
 
-  const notifications = [
-    { id: 1, title: 'New property available', message: 'A new property matches your criteria', time: '2m ago' },
-    { id: 2, title: 'Payment received', message: 'Your payment has been processed', time: '1h ago' },
-    { id: 3, title: 'Contract updated', message: 'Your contract has been updated', time: '3h ago' },
-  ];
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -49,16 +44,30 @@ const Header = () => {
     // Wait for either sign out to complete or timeout (whichever comes first)
     await Promise.race([signOutPromise, timeoutPromise]);
     
-    // Clear any local storage auth data
+    // Clear ALL auth-related local storage data
     try {
+      // Clear all possible Supabase auth keys
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
+      localStorage.removeItem('estospaces-auth-token');
+      
+      // Clear any keys that contain 'supabase' or 'auth'
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('supabase') || key.includes('auth') || key.includes('sb-'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Clear session storage completely
       sessionStorage.clear();
     } catch (e) {
       // Ignore storage errors
     }
     
-    // Force redirect to landing page
+    // Force redirect to landing page with full page reload
     window.location.href = '/';
   };
 
@@ -92,50 +101,7 @@ const Header = () => {
         {/* Right side - Notifications, User */}
         <div className="flex items-center gap-4">
           {/* Notifications */}
-          <div className="relative">
-            <button
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative p-2 rounded-lg transition-colors"
-              style={{ backgroundColor: 'transparent' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <Bell size={20} className="text-white dark:text-gray-200" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-primary"></span>
-            </button>
-
-            {/* Notifications dropdown */}
-            {notificationsOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setNotificationsOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                      >
-                        <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{notification.title}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{notification.message}</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-2">{notification.time}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-                    <button className="w-full text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium">
-                      View all notifications
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <NotificationDropdown />
 
           {/* User menu */}
           <div className="relative">
