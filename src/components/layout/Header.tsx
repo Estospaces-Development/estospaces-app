@@ -1,7 +1,10 @@
-import { Search, Bell, User, Palette } from 'lucide-react';
+import { Search, Bell, User, Palette, Shield, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import * as managerVerificationService from '../../services/managerVerificationService';
+import type { VerificationStatus } from '../../services/managerVerificationService';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -9,15 +12,35 @@ interface HeaderProps {
 
 const Header = ({ onMenuToggle }: HeaderProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   const themeDropdownRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
   const themes = [
     { value: 'light' as const, label: 'Light' },
     { value: 'dark' as const, label: 'Dark' },
   ];
+
+  // Fetch verification status
+  useEffect(() => {
+    const fetchVerificationStatus = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const result = await managerVerificationService.getManagerProfile(user.id);
+        if (result.data) {
+          setVerificationStatus(result.data.verification_status);
+        }
+      } catch (err) {
+        console.error('Error fetching verification status:', err);
+      }
+    };
+    
+    fetchVerificationStatus();
+  }, [user?.id]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -95,6 +118,12 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
               )}
             </div>
 
+            {/* Verification Status Badge */}
+            <HeaderVerificationBadge 
+              status={verificationStatus} 
+              onClick={() => navigate('/manager/dashboard/verification')} 
+            />
+
             {/* Notifications */}
             <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
               <Bell className="w-6 h-6" />
@@ -115,6 +144,81 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         </div>
       </div>
     </header>
+  );
+};
+
+// Verification badge for header
+const HeaderVerificationBadge = ({ 
+  status, 
+  onClick 
+}: { 
+  status: VerificationStatus | null; 
+  onClick: () => void;
+}) => {
+  if (!status) return null;
+  
+  const getConfig = () => {
+    switch (status) {
+      case 'approved':
+        return {
+          icon: CheckCircle,
+          label: 'Verified',
+          bgColor: 'bg-green-100 dark:bg-green-900/30',
+          textColor: 'text-green-700 dark:text-green-400',
+          borderColor: 'border-green-200 dark:border-green-800',
+        };
+      case 'submitted':
+      case 'under_review':
+        return {
+          icon: Clock,
+          label: 'Pending',
+          bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+          textColor: 'text-yellow-700 dark:text-yellow-400',
+          borderColor: 'border-yellow-200 dark:border-yellow-800',
+        };
+      case 'rejected':
+        return {
+          icon: AlertCircle,
+          label: 'Rejected',
+          bgColor: 'bg-red-100 dark:bg-red-900/30',
+          textColor: 'text-red-700 dark:text-red-400',
+          borderColor: 'border-red-200 dark:border-red-800',
+        };
+      case 'verification_required':
+        return {
+          icon: AlertCircle,
+          label: 'Update Required',
+          bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+          textColor: 'text-orange-700 dark:text-orange-400',
+          borderColor: 'border-orange-200 dark:border-orange-800',
+        };
+      default:
+        return {
+          icon: Shield,
+          label: 'Verify Now',
+          bgColor: 'bg-gray-100 dark:bg-gray-800',
+          textColor: 'text-gray-700 dark:text-gray-400',
+          borderColor: 'border-gray-200 dark:border-gray-700',
+        };
+    }
+  };
+  
+  const config = getConfig();
+  const Icon = config.icon;
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+        ${config.bgColor} ${config.textColor} border ${config.borderColor}
+        hover:opacity-80 transition-opacity
+      `}
+      title="View verification status"
+    >
+      <Icon className="w-4 h-4" />
+      <span className="hidden sm:inline">{config.label}</span>
+    </button>
   );
 };
 

@@ -1,3 +1,44 @@
+# Dependencies
+node_modules
 
-node_modules
-node_modules
+# Build output
+dist
+
+# IDE/Editor
+.cursor
+
+# Local documentation and debug files
+ABORTERROR_FIX.md
+AUTH_FIX_SUMMARY.md
+FAVORITES_DEBUG_GUIDE.md
+FAVORITES_FIX_SUMMARY.md
+LOGIN_REDIRECT_FIX.md
+MANUAL_TEST_GUIDE.md
+PROPERTY_IMAGES_FIX.md
+QUICK_REFERENCE.md
+QUICK_TEST_FAVORITES.md
+SERVER_RELIABILITY.md
+SIGNIN_TIMEOUT_TROUBLESHOOTING.md
+TEST_NOW.md
+URL_NAVIGATION_FIX.md
+VIDEO_UPLOAD_SETUP.md
+
+# Local scripts
+health-check.ps1
+start-production.ps1
+status.bat
+test-supabase.js
+verify-session.js
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

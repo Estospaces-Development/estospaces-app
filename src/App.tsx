@@ -8,12 +8,21 @@ import { PropertyFilterProvider } from './contexts/PropertyFilterContext';
 import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
 import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import { LocationProvider } from './contexts/LocationContext';
+import { ManagerVerificationProvider } from './contexts/ManagerVerificationContext';
 import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
 import UserProtectedRoute from './components/Admin/UserProtectedRoute';
+import AdminProtectedRoute from './components/Admin/AdminProtectedRoute';
 
 // Manager Dashboard Pages
 import Dashboard from './pages/Dashboard';
+import ManagerVerificationSection from './components/Dashboard/ManagerVerificationSection';
+
+// Admin Pages
+import AdminVerificationDashboard from './pages/AdminVerificationDashboard';
+import AdminChatDashboard from './pages/AdminChatDashboard';
+import AdminLogin from './pages/AdminLogin';
+import UserAnalytics from './pages/UserAnalytics';
 import AddProperty from './pages/AddProperty';
 import PropertiesList from './pages/PropertiesList';
 import PropertyView from './pages/PropertyView';
@@ -217,6 +226,48 @@ function App() {
                               <HelpSupport />
                             </MainLayout>
                           </ManagerProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/manager/dashboard/verification"
+                        element={
+                          <ManagerProtectedRoute>
+                            <ManagerVerificationProvider>
+                              <MainLayout>
+                                <ManagerVerificationSection />
+                              </MainLayout>
+                            </ManagerVerificationProvider>
+                          </ManagerProtectedRoute>
+                        }
+                      />
+
+                      {/* Admin Routes */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      
+                      <Route
+                        path="/admin/verifications"
+                        element={
+                          <AdminProtectedRoute>
+                            <AdminVerificationDashboard />
+                          </AdminProtectedRoute>
+                        }
+                      />
+                      
+                      <Route
+                        path="/admin/chat"
+                        element={
+                          <AdminProtectedRoute>
+                            <AdminChatDashboard />
+                          </AdminProtectedRoute>
+                        }
+                      />
+                      
+                      <Route
+                        path="/admin/analytics"
+                        element={
+                          <AdminProtectedRoute>
+                            <UserAnalytics />
+                          </AdminProtectedRoute>
                         }
                       />
 

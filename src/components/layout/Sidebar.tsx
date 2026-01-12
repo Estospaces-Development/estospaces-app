@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Building2,
@@ -14,10 +14,15 @@ import {
   User,
   BadgeCheck,
   UserCircle,
-  Shield
+  Shield,
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
-import VerificationModal from '../ui/VerificationModal';
 import { useAuth } from '../../contexts/AuthContext';
+import * as managerVerificationService from '../../services/managerVerificationService';
+import type { VerificationStatus } from '../../services/managerVerificationService';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -33,19 +38,35 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
   const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'Property Manager');
   const userEmail = user?.email || profile?.email || '';
   
-  const [isVerified, setIsVerified] = useState(() => {
-    // Check profile verification status or load from localStorage
-    if (profile?.is_verified) return true;
-    const stored = localStorage.getItem('managerVerified');
-    return stored === 'true';
-  });
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  // Manager verification status
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [verificationLoading, setVerificationLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
 
-  const handleVerified = () => {
-    setIsVerified(true);
-    localStorage.setItem('managerVerified', 'true');
-  };
+  // Fetch manager verification status
+  useEffect(() => {
+    const fetchVerificationStatus = async () => {
+      if (!user?.id) {
+        setVerificationLoading(false);
+        return;
+      }
+      
+      try {
+        const result = await managerVerificationService.getManagerProfile(user.id);
+        if (result.data) {
+          setVerificationStatus(result.data.verification_status);
+        }
+      } catch (err) {
+        console.error('Error fetching verification status:', err);
+      } finally {
+        setVerificationLoading(false);
+      }
+    };
+    
+    fetchVerificationStatus();
+  }, [user?.id]);
+
+  const isVerified = verificationStatus === 'approved';
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -84,6 +105,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
   ];
 
   const footerMenuItems = [
+    { icon: Shield, label: 'Verification', path: '/manager/dashboard/verification' },
     { icon: UserCircle, label: 'Profile', path: '/manager/dashboard/profile' },
     { icon: HelpCircle, label: 'Help & Support', path: '/manager/dashboard/help' },
   ];
@@ -115,17 +137,14 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium text-gray-800 dark:text-white transition-colors duration-300 truncate">{displayName}</p>
-                  {isVerified ? (
-                    <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                  {verificationLoading ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-primary animate-spin" />
+                  ) : isVerified ? (
+                    <div className="flex items-center gap-1" title="Verified Manager">
+                      <BadgeCheck className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    </div>
                   ) : (
-                    <button
-                      onClick={() => setShowVerificationModal(true)}
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                      title="Verify your account"
-                    >
-                      <Shield className="w-3 h-3" />
-                      <span>Verify</span>
-                    </button>
+                    <VerificationStatusBadgeInline status={verificationStatus} />
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate transition-colors duration-300">{userEmail}</p>
@@ -195,15 +214,60 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         </div>
       </div>
 
-      {/* Verification Modal */}
-      <VerificationModal
-        isOpen={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
-        onVerified={handleVerified}
-        email={userEmail || 'manager@estospaces.com'}
-        phone={profile?.phone || '+1 (555) 123-4567'}
-      />
     </div>
+  );
+};
+
+// Inline verification status badge for sidebar
+const VerificationStatusBadgeInline = ({ status }: { status: VerificationStatus | null }) => {
+  const navigate = useNavigate();
+  
+  const getConfig = () => {
+    switch (status) {
+      case 'submitted':
+      case 'under_review':
+        return {
+          icon: Clock,
+          label: 'Pending',
+          bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+          textColor: 'text-yellow-700 dark:text-yellow-400',
+        };
+      case 'rejected':
+        return {
+          icon: XCircle,
+          label: 'Rejected',
+          bgColor: 'bg-red-100 dark:bg-red-900/30',
+          textColor: 'text-red-700 dark:text-red-400',
+        };
+      case 'verification_required':
+        return {
+          icon: AlertCircle,
+          label: 'Update',
+          bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+          textColor: 'text-orange-700 dark:text-orange-400',
+        };
+      default:
+        return {
+          icon: Shield,
+          label: 'Verify',
+          bgColor: 'bg-primary/10',
+          textColor: 'text-primary',
+        };
+    }
+  };
+  
+  const config = getConfig();
+  const Icon = config.icon;
+  
+  return (
+    <button
+      onClick={() => navigate('/manager/dashboard/verification')}
+      className={`flex items-center gap-1 px-2 py-0.5 text-xs ${config.bgColor} ${config.textColor} rounded-md transition-colors hover:opacity-80`}
+      title="View verification status"
+    >
+      <Icon className="w-3 h-3" />
+      <span>{config.label}</span>
+    </button>
   );
 };
 

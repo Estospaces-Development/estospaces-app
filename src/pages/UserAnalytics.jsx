@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogOut, Users, Eye, Globe, TrendingUp, RefreshCw, MessageSquare, Monitor, Smartphone, Tablet, Clock, BarChart3 } from 'lucide-react';
+import { LogOut, Users, Eye, Globe, TrendingUp, RefreshCw, MessageSquare, Monitor, Smartphone, Tablet, Clock, BarChart3, Shield } from 'lucide-react';
 
 const UserAnalytics = () => {
     const navigate = useNavigate();
@@ -209,6 +209,13 @@ const UserAnalytics = () => {
                         >
                             <RefreshCw size={18} />
                             <span>Refresh</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/admin/verifications')}
+                            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+                        >
+                            <Shield size={18} />
+                            <span>Broker Review</span>
                         </button>
                         <button
                             onClick={() => navigate('/admin/chat')}
