@@ -343,7 +343,7 @@ const initialFormData: FormData = {
 const AddProperty = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const { addProperty, updateProperty, getProperty, formatPrice, formatArea, uploadImages, fetchProperties, loading: contextLoading } = useProperties();
+  const { addProperty, updateProperty, getProperty, formatPrice, formatArea, uploadImages, uploadVideos, fetchProperties, loading: contextLoading } = useProperties();
   
   // Determine mode based on presence of ID
   const mode: FormMode = id ? 'edit' : 'create';
@@ -715,22 +715,50 @@ const AddProperty = () => {
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[DEBUG] handleVideoUpload called', { filesCount: e.target.files?.length || 0 });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:717',message:'handleVideoUpload called',data:{filesCount:e.target.files?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     const files = Array.from(e.target.files || []);
+    console.log('[DEBUG] Files extracted', { count: files.length, names: files.map(f => f.name) });
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:720',message:'Files extracted from input',data:{filesCount:files.length,fileNames:files.map(f=>f.name),fileSizes:files.map(f=>f.size)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     
     files.forEach((file) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:722',message:'Processing video file',data:{fileName:file.name,fileSize:file.size,fileType:file.type,sizeLimit:50*1024*1024},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       if (file.size > 50 * 1024 * 1024) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:723',message:'File too large - rejected',data:{fileName:file.name,fileSize:file.size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         alert(`${file.name} is too large. Maximum size is 50MB.`);
         return;
       }
       
       const reader = new FileReader();
       reader.onload = (event) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:728',message:'FileReader onload triggered',data:{fileName:file.name,hasResult:!!event.target?.result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         if (event.target?.result) {
-          setVideoPreviews(prev => [...prev, event.target!.result as string]);
-          setFormData(prev => ({
-            ...prev,
-            videos: [...prev.videos, file],
-          }));
+          setVideoPreviews(prev => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:729',message:'Adding video preview',data:{fileName:file.name,previewCount:prev.length+1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+            return [...prev, event.target!.result as string];
+          });
+          setFormData(prev => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:730',message:'Adding video to formData',data:{fileName:file.name,videosCount:prev.videos.length+1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            return {
+              ...prev,
+              videos: [...prev.videos, file],
+            };
+          });
           setIsDirty(true); // Mark form as dirty when videos added
         }
       };
@@ -791,9 +819,90 @@ const AddProperty = () => {
     return [...existingUrls, ...uploadedUrls];
   };
 
+  const processVideos = async (files: (File | string)[]): Promise<string[]> => {
+    // #region agent log
+    console.log('[DEBUG] processVideos called', { filesCount: files.length, fileTypes: files.map(f => typeof f) });
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:793',message:'processVideos called',data:{filesCount:files.length,fileTypes:files.map(f=>typeof f)},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    const existingUrls: string[] = [];
+    const newFiles: File[] = [];
+    
+    for (const file of files) {
+      if (typeof file === 'string') {
+        existingUrls.push(file);
+      } else {
+        newFiles.push(file);
+      }
+    }
+    
+    // #region agent log
+    console.log('[DEBUG] processVideos - files separated', { existingUrls: existingUrls.length, newFiles: newFiles.length });
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:805',message:'Files separated',data:{existingUrls:existingUrls.length,newFiles:newFiles.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // Upload new files to Supabase Storage
+    let uploadedUrls: string[] = [];
+    if (newFiles.length > 0) {
+      try {
+        // #region agent log
+        console.log('[DEBUG] processVideos - uploading videos', { count: newFiles.length, fileNames: newFiles.map(f => f.name) });
+        fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:838',message:'Starting video upload',data:{count:newFiles.length,fileNames:newFiles.map(f=>f.name)},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        uploadedUrls = await uploadVideos(newFiles);
+        // #region agent log
+        console.log('[DEBUG] processVideos - upload complete', { uploadedCount: uploadedUrls.length, urls: uploadedUrls });
+        fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:841',message:'Video upload complete',data:{uploadedCount:uploadedUrls.length,urls:uploadedUrls},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        if (uploadedUrls.length === 0 && newFiles.length > 0) {
+          // If no URLs returned, try base64 fallback for remaining files
+          console.warn('[DEBUG] No video URLs returned, using base64 fallback for remaining files');
+          for (const file of newFiles) {
+            if (file.size > 10 * 1024 * 1024) {
+              throw new Error(
+                `Video "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB) for base64 storage. ` +
+                'Please create the "property-videos" bucket in Supabase Storage. ' +
+                'See QUICK_VIDEO_BUCKET_SETUP.md for instructions.'
+              );
+            }
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            uploadedUrls.push(base64);
+          }
+        }
+      } catch (err: any) {
+        console.error('[DEBUG] Failed to upload videos:', err);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:848',message:'Video upload failed',data:{error:err?.message||err?.toString(),stack:err?.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        // Re-throw the error so the user sees it
+        throw new Error(`Failed to upload videos: ${err?.message || err?.toString() || 'Unknown error'}`);
+      }
+    }
+    
+    const result = [...existingUrls, ...uploadedUrls];
+    // #region agent log
+    console.log('[DEBUG] processVideos - returning', { totalUrls: result.length });
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:832',message:'processVideos returning',data:{totalUrls:result.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    return result;
+  };
+
   const buildPropertyData = async (): Promise<Partial<Property>> => {
+    // #region agent log
+    console.log('[DEBUG] buildPropertyData called', { videosInFormData: formData.videos.length });
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:794',message:'buildPropertyData called',data:{videosInFormData:formData.videos.length,videosTypes:formData.videos.map(v=>typeof v)},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const images = await processImages(formData.images);
-    const videos: string[] = []; // Video upload not yet implemented
+    const videos = await processVideos(formData.videos); // Now processing videos instead of empty array
+    // #region agent log
+    console.log('[DEBUG] buildPropertyData - videos processed', { videosCount: videos.length });
+    fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:797',message:'Videos processed',data:{videosInFormData:formData.videos.length,videosResult:videos.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     return {
       title: formData.title,
@@ -923,7 +1032,12 @@ const AddProperty = () => {
     
     setSaving(true);
     try {
+      console.log('[DEBUG] handleSaveDraft - formData.videos before buildPropertyData', { videosCount: formData.videos.length, videoPreviewsCount: videoPreviews.length });
       const propertyData = await buildPropertyData();
+      // #region agent log
+      console.log('[DEBUG] handleSaveDraft - propertyData after buildPropertyData', { videosInData: propertyData.videos?.length || 0, mediaVideos: propertyData.media?.videos?.length || 0 });
+      fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:958',message:'Property data built for save draft',data:{videosInData:propertyData.videos?.length||0,mediaVideos:propertyData.media?.videos?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       
       if (mode === 'edit' && id) {
         // EDIT MODE: Update existing property as draft
@@ -969,7 +1083,12 @@ const AddProperty = () => {
     
     setSaving(true);
     try {
+      console.log('[DEBUG] handleSaveOrPublish - formData.videos before buildPropertyData', { videosCount: formData.videos.length, videoPreviewsCount: videoPreviews.length });
       const propertyData = await buildPropertyData();
+      // #region agent log
+      console.log('[DEBUG] handleSaveOrPublish - propertyData after buildPropertyData', { videosInData: propertyData.videos?.length || 0, mediaVideos: propertyData.media?.videos?.length || 0 });
+      fetch('http://127.0.0.1:7242/ingest/f0417720-3956-4c2e-8336-eec8871282b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddProperty.tsx:1004',message:'Property data built for publish',data:{videosInData:propertyData.videos?.length||0,mediaVideos:propertyData.media?.videos?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       
       if (mode === 'edit' && id) {
         // EDIT MODE: Update existing property

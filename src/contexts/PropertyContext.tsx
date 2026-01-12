@@ -12,6 +12,61 @@ export type FurnishingStatus = 'furnished' | 'semi_furnished' | 'unfurnished';
 export type PropertyCondition = 'new' | 'excellent' | 'good' | 'fair' | 'needs_renovation';
 export type FacingDirection = 'north' | 'south' | 'east' | 'west' | 'northeast' | 'northwest' | 'southeast' | 'southwest';
 
+// Helper to map country names to ISO codes
+const COUNTRY_NAME_TO_CODE: Record<string, string> = {
+  'United Kingdom': 'GB',
+  'UK': 'GB',
+  'Great Britain': 'GB',
+  'England': 'GB',
+  'United States': 'US',
+  'USA': 'US',
+  'United States of America': 'US',
+  'India': 'IN',
+  'United Arab Emirates': 'AE',
+  'UAE': 'AE',
+  'Canada': 'CA',
+  'Australia': 'AU',
+  'Germany': 'DE',
+  'France': 'FR',
+  'Spain': 'ES',
+  'Italy': 'IT',
+  'Japan': 'JP',
+  'China': 'CN',
+  'Singapore': 'SG',
+  'Malaysia': 'MY',
+  'Indonesia': 'ID',
+  'Thailand': 'TH',
+  'Philippines': 'PH',
+  'Brazil': 'BR',
+  'Mexico': 'MX',
+  'South Africa': 'ZA',
+  'Nigeria': 'NG',
+  'Kenya': 'KE',
+  'Egypt': 'EG',
+  'Saudi Arabia': 'SA',
+  'Qatar': 'QA',
+  'Kuwait': 'KW',
+  'Bahrain': 'BH',
+  'Oman': 'OM',
+};
+
+function getCountryCodeFromName(countryName: string | null | undefined): string {
+  if (!countryName) return '';
+  const normalized = countryName.trim();
+  // Check exact match
+  if (COUNTRY_NAME_TO_CODE[normalized]) {
+    return COUNTRY_NAME_TO_CODE[normalized];
+  }
+  // Check case-insensitive match
+  const lowerName = normalized.toLowerCase();
+  for (const [name, code] of Object.entries(COUNTRY_NAME_TO_CODE)) {
+    if (name.toLowerCase() === lowerName) {
+      return code;
+    }
+  }
+  return '';
+}
+
 export interface PriceInfo {
   amount: number;
   currency: CurrencyCode;
@@ -195,6 +250,7 @@ interface PropertyContextType {
   duplicateProperty: (id: string) => Promise<Property | null>;
   getProperty: (id: string) => Property | undefined;
   uploadImages: (files: File[]) => Promise<string[]>;
+  uploadVideos: (files: File[]) => Promise<string[]>;
 
   selectProperty: (id: string) => void;
   deselectProperty: (id: string) => void;
@@ -302,6 +358,37 @@ const dbRowToProperty = (row: any): Property => {
   
   // Note: Properties without images are normal and expected
   
+  // Extract videos from database row
+  let videoUrls: string[] = [];
+  if (row.video_urls) {
+    if (Array.isArray(row.video_urls)) {
+      videoUrls = row.video_urls;
+    }
+    // If video_urls is a JSON string
+    else if (typeof row.video_urls === 'string') {
+      try {
+        const parsed = JSON.parse(row.video_urls);
+        videoUrls = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        // If it's just a single URL string
+        videoUrls = [row.video_urls];
+      }
+    }
+  }
+  // Check for 'videos' field
+  else if (row.videos) {
+    if (Array.isArray(row.videos)) {
+      videoUrls = row.videos;
+    } else if (typeof row.videos === 'string') {
+      try {
+        const parsed = JSON.parse(row.videos);
+        videoUrls = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        videoUrls = [row.videos];
+      }
+    }
+  }
+  
   return {
     id: row.id,
     title: row.title || '',
@@ -326,7 +413,7 @@ const dbRowToProperty = (row: any): Property => {
       stateCode: row.state_code,
       postalCode: row.postcode,
       country: row.country,
-      countryCode: row.country === 'United Kingdom' ? 'GB' : (row.country === 'United States' ? 'US' : (row.country === 'India' ? 'IN' : 'US')),
+      countryCode: getCountryCodeFromName(row.country),
       countryId: row.country_id,
       latitude: row.latitude ? parseFloat(row.latitude) : undefined,
       longitude: row.longitude ? parseFloat(row.longitude) : undefined,
@@ -367,11 +454,18 @@ const dbRowToProperty = (row: any): Property => {
         order: i,
         uploadedAt: row.created_at,
       })),
-      videos: [],
+      videos: videoUrls.map((url: string, i: number) => ({
+        id: `vid-${i}`,
+        url,
+        type: 'video',
+        order: i,
+        uploadedAt: row.created_at,
+      })),
       floorPlans: [],
       virtualTourUrl: row.virtual_tour_url,
     },
     images: imageUrls,
+    videos: videoUrls,
     virtualTourUrl: row.virtual_tour_url,
     contact: {
       name: row.contact_name || '',
@@ -471,6 +565,12 @@ const propertyToDbRow = (p: Partial<Property>): any => {
   // Media
   if (p.images !== undefined) {
     row.image_urls = p.images.filter((img): img is string => typeof img === 'string');
+  }
+  if (p.videos !== undefined) {
+    row.video_urls = p.videos.filter((vid): vid is string => typeof vid === 'string');
+  }
+  if (p.media?.videos !== undefined) {
+    row.video_urls = p.media.videos.map(vid => vid.url);
   }
   if (p.virtualTourUrl !== undefined) row.virtual_tour_url = p.virtualTourUrl;
   if (p.media?.virtualTourUrl !== undefined) row.virtual_tour_url = p.media.virtualTourUrl;
@@ -641,6 +741,141 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     return uploadedUrls;
   };
 
+  // Upload videos
+  const uploadVideos = async (files: File[]): Promise<string[]> => {
+    console.log('[DEBUG] uploadVideos called', { filesCount: files.length });
+    if (!supabase) throw new Error('Supabase client not initialized');
+
+    const { data: { user } } = await (supabase as SupabaseClient).auth.getUser();
+    if (!user) throw new Error('Must be logged in to upload videos');
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      try {
+        console.log('[DEBUG] Processing video file', { fileName: file.name, fileSize: file.size, fileType: file.type });
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        let publicUrl: string | null = null;
+        let bucketUsed: string | null = null;
+        let uploadSucceeded = false;
+
+        // Try property-videos bucket first (dedicated for videos)
+        console.log('[DEBUG] Attempting upload to property-videos bucket...');
+        const { error: videoError } = await (supabase as SupabaseClient).storage.from('property-videos').upload(fileName, file, {
+          contentType: file.type || 'video/mp4',
+          cacheControl: '3600',
+        });
+        
+        if (!videoError) {
+          const { data: { publicUrl: videoUrl } } = (supabase as SupabaseClient).storage.from('property-videos').getPublicUrl(fileName);
+          publicUrl = videoUrl;
+          bucketUsed = 'property-videos';
+          uploadSucceeded = true;
+          console.log('[DEBUG] ✅ Video uploaded to property-videos bucket', { url: publicUrl?.substring(0, 50) + '...' });
+        } else {
+          console.warn('[DEBUG] ⚠️ property-videos bucket failed:', videoError.message);
+          
+          // Try property-images as fallback (even though it may reject video mime types)
+          console.log('[DEBUG] Attempting upload to property-images bucket (fallback)...');
+          const { error: imageError } = await (supabase as SupabaseClient).storage.from('property-images').upload(fileName, file, {
+            contentType: file.type || 'video/mp4',
+            cacheControl: '3600',
+          });
+          
+          if (!imageError) {
+            const { data: { publicUrl: imageUrl } } = (supabase as SupabaseClient).storage.from('property-images').getPublicUrl(fileName);
+            publicUrl = imageUrl;
+            bucketUsed = 'property-images';
+            uploadSucceeded = true;
+            console.log('[DEBUG] ✅ Video uploaded to property-images bucket (fallback)', { url: publicUrl?.substring(0, 50) + '...' });
+          } else {
+            console.warn('[DEBUG] ⚠️ property-images bucket also failed:', imageError.message);
+          }
+        }
+
+        // If both buckets failed, use base64 as fallback (for small videos only)
+        if (!uploadSucceeded) {
+          console.warn('[DEBUG] Both storage buckets failed, attempting base64 fallback for video:', file.name, { sizeMB: (file.size / 1024 / 1024).toFixed(2) });
+          
+          if (file.size > 10 * 1024 * 1024) { // 10MB limit for base64
+            throw new Error(
+              `Video "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB) for base64 storage. ` +
+              'Please create the "property-videos" bucket in Supabase Storage. ' +
+              'See QUICK_VIDEO_BUCKET_SETUP.md for instructions.'
+            );
+          }
+          
+          try {
+            // Convert to base64 as fallback
+            publicUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = reader.result as string;
+                console.log('[DEBUG] ✅ Video converted to base64', { sizeMB: (file.size / 1024 / 1024).toFixed(2), base64Length: result.length });
+                resolve(result);
+              };
+              reader.onerror = (err) => {
+                console.error('[DEBUG] ❌ FileReader error:', err);
+                reject(new Error('Failed to read video file for base64 conversion'));
+              };
+              reader.readAsDataURL(file);
+            });
+            bucketUsed = 'base64';
+            uploadSucceeded = true;
+            console.log('[DEBUG] ✅ Video stored as base64 (fallback)', { size: file.size, urlLength: publicUrl.length });
+          } catch (base64Error: any) {
+            console.error('[DEBUG] ❌ Base64 conversion failed:', base64Error);
+            throw new Error(
+              `Failed to upload video "${file.name}": All storage methods failed. ` +
+              `Storage errors: ${videoError?.message || 'unknown'}, ${imageError?.message || 'unknown'}. ` +
+              `Base64 error: ${base64Error?.message || 'unknown'}. ` +
+              'Please create the "property-videos" bucket in Supabase Storage. See QUICK_VIDEO_BUCKET_SETUP.md for instructions.'
+            );
+          }
+        }
+
+        if (publicUrl && uploadSucceeded) {
+          uploadedUrls.push(publicUrl);
+          console.log('[DEBUG] ✅ Video URL added to list', { bucketUsed, urlLength: publicUrl.length, totalUploaded: uploadedUrls.length });
+        } else {
+          console.error('[DEBUG] ❌ No URL generated for video:', file.name);
+          throw new Error(`Failed to generate URL for video "${file.name}"`);
+        }
+      } catch (fileError: any) {
+        console.error('[DEBUG] ❌ Error processing video file:', file.name, fileError);
+        // If file is small enough, try base64 as last resort
+        if (file.size <= 10 * 1024 * 1024) {
+          try {
+            console.log('[DEBUG] Attempting base64 fallback for failed file:', file.name);
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            uploadedUrls.push(base64);
+            console.log('[DEBUG] ✅ Base64 fallback succeeded for:', file.name);
+          } catch (base64Error: any) {
+            console.error('[DEBUG] ❌ Base64 fallback also failed for:', file.name, base64Error);
+            // Re-throw the original error, not the base64 error
+            throw fileError;
+          }
+        } else {
+          // File too large - re-throw the error
+          throw fileError;
+        }
+      }
+    }
+
+    console.log('[DEBUG] uploadVideos complete', { uploadedCount: uploadedUrls.length, totalFiles: files.length });
+    if (uploadedUrls.length === 0 && files.length > 0) {
+      console.warn('[DEBUG] ⚠️ WARNING: No videos were uploaded successfully!');
+    }
+    return uploadedUrls;
+  };
+
   // Add property
   const addProperty = async (propertyData: Partial<Property>): Promise<Property | null> => {
     if (!supabase) {
@@ -665,7 +900,32 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         }
       });
 
-      const { data, error: insertError } = await (supabase as SupabaseClient).from('properties').insert(dbData).select().single();
+      // Retry logic for schema cache refresh (PostgREST may need a moment after migration)
+      let insertError: any = null;
+      let data: any = null;
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1 second
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const result = await (supabase as SupabaseClient).from('properties').insert(dbData).select().single();
+        insertError = result.error;
+        data = result.data;
+        
+        if (!insertError) {
+          break; // Success, exit retry loop
+        }
+        
+        // If error is about schema cache and we have retries left, wait and retry
+        if (insertError?.code === 'PGRST204' && insertError?.message?.includes('schema cache') && attempt < maxRetries - 1) {
+          console.warn(`[DEBUG] Schema cache not refreshed yet, retrying insert in ${retryDelay}ms... (Attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1))); // Exponential backoff
+          continue;
+        }
+        
+        // For other errors or last attempt, break and throw
+        break;
+      }
+      
       if (insertError) throw insertError;
 
       const newProperty = dbRowToProperty(data);
@@ -725,12 +985,37 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('Property title is required');
       }
 
-      const { data, error: updateError } = await (supabase as SupabaseClient)
-        .from('properties')
-        .update(dbData)
-        .eq('id', id)
-        .select()
-        .single();
+      // Retry logic for schema cache refresh (PostgREST may need a moment after migration)
+      let updateError: any = null;
+      let data: any = null;
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1 second
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const result = await (supabase as SupabaseClient)
+          .from('properties')
+          .update(dbData)
+          .eq('id', id)
+          .select()
+          .single();
+        
+        updateError = result.error;
+        data = result.data;
+        
+        if (!updateError) {
+          break; // Success, exit retry loop
+        }
+        
+        // If error is about schema cache and we have retries left, wait and retry
+        if (updateError?.code === 'PGRST204' && updateError?.message?.includes('schema cache') && attempt < maxRetries - 1) {
+          console.warn(`[DEBUG] Schema cache not refreshed yet, retrying in ${retryDelay}ms... (Attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1))); // Exponential backoff
+          continue;
+        }
+        
+        // For other errors or last attempt, break and throw
+        break;
+      }
         
       if (updateError) {
         console.error('Supabase update error:', updateError);
@@ -970,6 +1255,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         duplicateProperty,
         getProperty,
         uploadImages,
+        uploadVideos,
         selectProperty,
         deselectProperty,
         selectAllProperties,

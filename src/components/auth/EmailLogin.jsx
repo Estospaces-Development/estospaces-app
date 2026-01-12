@@ -1,21 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isSupabaseAvailable } from '../../lib/supabase';
-import { getUserRole, getRedirectPath } from '../../utils/authHelpers';
+import { useAuth } from '../../contexts/AuthContext';
+import authService from '../../services/authService';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
 import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
+/**
+ * EmailLogin Component
+ * 
+ * Uses the centralized authService for sign-in with retry logic.
+ * Relies on AuthContext for session state.
+ */
 const EmailLogin = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { isAuthenticated, loading: authLoading, getRole } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [checkingSession, setCheckingSession] = useState(true);
 
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
@@ -23,59 +29,100 @@ const EmailLogin = () => {
 
     // Ref to prevent multiple concurrent sign-in attempts
     const isSigningIn = useRef(false);
+    
+    // Refs for input elements (for browser automation testing)
+    const emailInputRef = useRef(null);
+    const passwordInputRef = useRef(null);
 
     // Get the intended destination from location state
     const from = location.state?.from?.pathname;
 
-    // Check if user is already logged in - simplified to avoid abort issues
-    useEffect(() => {
-        let isMounted = true;
-
-        const checkExistingSession = async () => {
-            // Skip if supabase not configured
-            if (!isSupabaseAvailable()) {
-                setCheckingSession(false);
-                return;
-            }
-
-            try {
-                // Import supabase directly to avoid wrapper issues
-                const { supabase } = await import('../../lib/supabase');
-                if (!supabase || !isMounted) {
-                    setCheckingSession(false);
-                    return;
-                }
-
-                // Quick session check from localStorage (should be instant)
-                const { data: { session } } = await supabase.auth.getSession();
-
-                if (!isMounted) return;
-
-                if (session) {
-                    // User is already logged in, redirect based on role
-                    console.log('✅ Existing session found, redirecting...');
-                    const role = await getUserRole(session.user);
-                    if (isMounted) {
-                        const redirectPath = getRedirectPath(role, from);
-                        console.log('🔄 Redirecting to:', redirectPath);
-                        navigate(redirectPath, { replace: true });
+    // Pre-fill form from URL parameters (for testing - only in development)
+    React.useEffect(() => {
+        // Only allow URL parameter testing in development mode
+        if (import.meta.env.MODE === 'development') {
+            const params = new URLSearchParams(window.location.search);
+            const testEmail = params.get('testEmail');
+            const testPassword = params.get('testPassword');
+            if (testEmail && testPassword) {
+                setEmail(testEmail);
+                setPassword(testPassword);
+                // Auto-submit after a short delay
+                setTimeout(() => {
+                    const form = document.querySelector('form');
+                    if (form) {
+                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        form.dispatchEvent(submitEvent);
                     }
-                } else {
-                    setCheckingSession(false);
-                }
-            } catch (err) {
-                // Silently handle errors - just let user sign in
-                console.log('Session check skipped:', err.message);
-                if (isMounted) setCheckingSession(false);
+                }, 500);
             }
-        };
+        }
+    }, []);
 
-        checkExistingSession();
+    // Redirect if already authenticated
+    React.useEffect(() => {
+        if (isAuthenticated && !authLoading) {
+            const role = getRole();
+            const redirectPath = authService.getRedirectPath(role, from);
+            navigate(redirectPath, { replace: true });
+        }
+    }, [isAuthenticated, authLoading, getRole, navigate, from]);
 
-        return () => {
-            isMounted = false;
-        };
-    }, [navigate, from]);
+    // Test mode: Allow setting values via window object for browser automation testing
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.__testEmailLogin = {
+                setEmail: (value) => {
+                    setEmail(value);
+                    setEmailError('');
+                    if (emailInputRef.current) {
+                        emailInputRef.current.value = value;
+                        emailInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+                        emailInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                },
+                setPassword: (value) => {
+                    setPassword(value);
+                    setPasswordError('');
+                    if (passwordInputRef.current) {
+                        passwordInputRef.current.value = value;
+                        passwordInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+                        passwordInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                },
+                submit: () => {
+                    const form = document.querySelector('form');
+                    if (form) {
+                        const event = new Event('submit', { bubbles: true, cancelable: true });
+                        form.dispatchEvent(event);
+                    }
+                },
+                fillAndSubmit: (emailValue, passwordValue) => {
+                    setEmail(emailValue);
+                    setPassword(passwordValue);
+                    setEmailError('');
+                    setPasswordError('');
+                    if (emailInputRef.current) {
+                        emailInputRef.current.value = emailValue;
+                        emailInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+                        emailInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    if (passwordInputRef.current) {
+                        passwordInputRef.current.value = passwordValue;
+                        passwordInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+                        passwordInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    setTimeout(() => {
+                        const form = document.querySelector('form');
+                        if (form) {
+                            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                            form.dispatchEvent(submitEvent);
+                        }
+                    }, 100);
+                }
+            };
+        }
+    }, []);
 
     const validateEmail = (value) => {
         if (!value) return 'Email is required';
@@ -97,12 +144,6 @@ const EmailLogin = () => {
             return;
         }
 
-        // Check if Supabase is configured
-        if (!isSupabaseAvailable()) {
-            setGeneralError('Authentication service is not configured. Please contact support.');
-            return;
-        }
-
         const emailErr = validateEmail(email);
         const passErr = validatePassword(password);
 
@@ -112,94 +153,46 @@ const EmailLogin = () => {
 
         if (emailErr || passErr) return;
 
+        // Check network connectivity
+        if (!navigator.onLine) {
+            setGeneralError('No internet connection. Please check your network and try again.');
+            return;
+        }
+
         // Set loading state and prevent concurrent attempts
         isSigningIn.current = true;
         setLoading(true);
 
         try {
-            // Check network connectivity first
-            if (!navigator.onLine) {
-                setGeneralError('No internet connection. Please check your network and try again.');
-                isSigningIn.current = false;
-                setLoading(false);
-                return;
-            }
-
-            // Import supabase directly
-            const { supabase } = await import('../../lib/supabase');
+            console.log('🔐 EmailLogin: Attempting sign in...');
             
-            if (!supabase) {
-                console.error('❌ Supabase client not available');
-                setGeneralError('Authentication service not available. Please refresh and try again.');
-                isSigningIn.current = false;
-                setLoading(false);
-                return;
-            }
+            const result = await authService.signInWithEmail(email, password);
 
-            console.log('🔐 Attempting sign in...', { email });
-            
-            // Direct sign-in call
-            const startTime = Date.now();
-            const { data, error } = await supabase.auth.signInWithPassword({ 
-                email, 
-                password 
-            });
-            const duration = Date.now() - startTime;
-            console.log(`⏱️ Sign in took ${duration}ms`);
-
-            console.log('📨 Sign in response:', {
-                hasData: !!data,
-                hasSession: !!data?.session,
-                hasError: !!error,
-                errorMessage: error?.message
-            });
-
-            if (error) {
-                console.error('❌ Sign in error:', error);
-                const msg = error.message?.toLowerCase() || '';
-                if (msg.includes('timeout') || msg.includes('taking too long')) {
-                    setGeneralError('The server is taking too long to respond. This might be due to a slow connection or server issues. Please try again in a moment.');
-                } else if (msg.includes('email') && !msg.includes('credentials')) {
-                    setEmailError(error.message);
+            if (!result.success) {
+                const errorMsg = result.error || 'Sign-in failed. Please try again.';
+                
+                // Categorize errors for better UX
+                const msg = errorMsg.toLowerCase();
+                if (msg.includes('email') && !msg.includes('password') && !msg.includes('credentials')) {
+                    setEmailError(errorMsg);
                 } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
                     setPasswordError('Invalid email or password');
-                } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
-                    setGeneralError('Network error. Please check your internet connection and try again.');
                 } else {
-                    setGeneralError(error.message || 'Sign-in failed. Please try again.');
+                    setGeneralError(errorMsg);
                 }
-            } else if (data?.session) {
-                // Successful login - get role and redirect
-                console.log('✅ Session obtained, getting user role...');
-                const role = await getUserRole(data.session.user);
-                const redirectPath = getRedirectPath(role, from);
-
-                // Debug logging (only in development)
-                if (import.meta.env.DEV) {
-                    // eslint-disable-next-line no-console
-                    console.log('✅ Login successful:', {
-                        userId: data.session.user.id,
-                        email: data.session.user.email,
-                        role,
-                        redirectPath,
-                        from
-                    });
-                    // eslint-disable-next-line no-console
-                    console.log('🔄 Navigating to:', redirectPath);
-                }
-
-                // Force a small delay to ensure state is set
-                setTimeout(() => {
-                    console.log('⏭️  Executing navigation...');
-                    navigate(redirectPath, { replace: true });
-                }, 100);
-            } else {
-                // No session returned - unexpected state
-                console.error('❌ No session in response');
-                setGeneralError('Sign-in failed. Please try again.');
+                return;
             }
+
+            // Success! Get role and redirect
+            console.log('✅ EmailLogin: Sign-in successful');
+            const role = await authService.getUserRole(result.user);
+            const redirectPath = authService.getRedirectPath(role, from);
+
+            console.log('🔄 EmailLogin: Navigating to:', redirectPath);
+            navigate(redirectPath, { replace: true });
+
         } catch (error) {
-            console.error('❌ Unexpected error during sign in:', error);
+            console.error('❌ EmailLogin: Unexpected error:', error);
             setGeneralError('An unexpected error occurred. Please try again.');
         } finally {
             isSigningIn.current = false;
@@ -208,7 +201,7 @@ const EmailLogin = () => {
     };
 
     // Show loading while checking for existing session
-    if (checkingSession) {
+    if (authLoading) {
         return (
             <AuthLayout image={building}>
                 <div className="flex flex-col items-center justify-center min-h-[300px]">
@@ -240,6 +233,7 @@ const EmailLogin = () => {
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                         <input
+                            ref={emailInputRef}
                             type="email"
                             placeholder="Enter your email"
                             value={email}
@@ -258,6 +252,7 @@ const EmailLogin = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
                         <div className="relative">
                             <input
+                                ref={passwordInputRef}
                                 type={showPassword ? 'text' : 'password'}
                                 placeholder="Enter your password"
                                 value={password}
@@ -329,4 +324,3 @@ const EmailLogin = () => {
 };
 
 export default EmailLogin;
-

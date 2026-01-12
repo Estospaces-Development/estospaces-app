@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProperties } from '../contexts/PropertyContext';
+import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import {
   ArrowLeft, Edit, Trash2, MapPin, Home, Calendar, Copy, Share2, Heart,
   Bed, Bath, Car, Maximize, Building, DollarSign, CheckCircle, X,
   Phone, Mail, Globe, Shield, Star, TrendingUp, Eye, MessageCircle,
   ChevronLeft, ChevronRight, Clock, User, FileText, Verified, Settings,
-  Send
+  Send, Video
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,12 +17,15 @@ const PropertyView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getProperty, deleteProperty, updateProperty, formatPrice, formatArea, incrementViews, incrementShares, duplicateProperty } = useProperties();
+  const { toggleProperty, isPropertySaved } = useSavedProperties();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  
+  // Check if property is favorited using the context
+  const isFavorited = id ? isPropertySaved(id) : false;
   
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
@@ -91,9 +95,12 @@ const PropertyView = () => {
     setPublishing(true);
     try {
       // Update property status from draft to published
+      // Include full property data to preserve all fields (especially title which is required)
       const updatedProperty = await updateProperty(id, {
+        ...property,
         status: 'published',
         published: true,
+        draft: false,
       });
 
       if (updatedProperty) {
@@ -145,6 +152,10 @@ const PropertyView = () => {
   const images = property.media?.images?.map(img => img.url) ||
     property.images?.filter((img): img is string => typeof img === 'string') || [];
 
+  // Get videos from the property
+  const videos = property.media?.videos?.map(vid => vid.url) ||
+    property.videos?.filter((vid): vid is string => typeof vid === 'string') || [];
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       online: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -177,14 +188,55 @@ const PropertyView = () => {
         <div className="flex flex-wrap gap-2">
           {/* Favorite */}
           <button
-            onClick={() => setIsFavorited(!isFavorited)}
+            onClick={async () => {
+              console.log('Favorite button clicked', { id, property: !!property });
+              
+              if (!property || !id) {
+                console.error('Property or ID not found', { property: !!property, id });
+                setToast({
+                  message: 'Property not found',
+                  type: 'error',
+                  visible: true
+                });
+                return;
+              }
+              
+              try {
+                console.log('Calling toggleProperty with ID:', id);
+                // Pass only the property ID instead of the full property object
+                const result = await toggleProperty(id);
+                console.log('toggleProperty result:', result);
+                
+                if (result?.success) {
+                  setToast({
+                    message: isFavorited ? 'Removed from favorites' : 'Added to favorites',
+                    type: 'success',
+                    visible: true
+                  });
+                } else {
+                  console.error('toggleProperty failed:', result?.error);
+                  setToast({
+                    message: result?.error || 'Failed to update favorites',
+                    type: 'error',
+                    visible: true
+                  });
+                }
+              } catch (err) {
+                console.error('Error toggling favorite:', err);
+                setToast({
+                  message: 'An error occurred. Please try again.',
+                  type: 'error',
+                  visible: true
+                });
+              }
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${isFavorited
               ? 'border-red-300 bg-red-50 dark:bg-red-900/20 text-red-600'
               : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
           >
             <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
-            <span className="hidden sm:inline">Favorite</span>
+            <span className="hidden sm:inline">{isFavorited ? 'Saved' : 'Favorite'}</span>
           </button>
 
           {/* Share */}
@@ -312,6 +364,33 @@ const PropertyView = () => {
               </div>
             )}
           </div>
+
+          {/* Videos Section */}
+          {videos.length > 0 && (
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                  <Video className="w-5 h-5 text-primary" />
+                  Property Videos ({videos.length})
+                </h2>
+              </div>
+              <div className="p-6 space-y-4">
+                {videos.map((videoUrl, index) => (
+                  <div key={index} className="relative">
+                    <video
+                      src={videoUrl}
+                      controls
+                      className="w-full rounded-lg"
+                      style={{ maxHeight: '600px' }}
+                      preload="metadata"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Property Details */}
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
@@ -522,8 +601,8 @@ const PropertyView = () => {
             </h3>
 
             <div className="space-y-3">
-              {/* Publish Property Button - Show only when status is draft */}
-              {property.status === 'draft' && (
+              {/* Publish Property Button - Show only when status is draft or draft flag is true */}
+              {(property.status === 'draft' || property.draft === true) && (
                 <button
                   onClick={handlePublish}
                   disabled={publishing}

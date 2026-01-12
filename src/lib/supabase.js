@@ -6,6 +6,28 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Check if Supabase credentials are configured
 const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
+// Clean up old storage keys that might conflict
+// Supabase v2 uses format: sb-{projectRef}-auth-token
+if (typeof window !== 'undefined') {
+    const oldKeys = [
+        'supabase.auth.token',
+        'sb-auth-token',
+    ];
+    
+    for (const oldKey of oldKeys) {
+        try {
+            if (localStorage.getItem(oldKey)) {
+                localStorage.removeItem(oldKey);
+                if (import.meta.env.DEV) {
+                    console.log(`🔄 Cleaned up old auth storage key: ${oldKey}`);
+                }
+            }
+        } catch (e) {
+            // Ignore errors during cleanup
+        }
+    }
+}
+
 // Create Supabase client
 /** @type {SupabaseClient | null} */
 let supabase = null;
@@ -16,13 +38,11 @@ if (isSupabaseConfigured) {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: true,
-            // Storage configuration for persistent sessions
-            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-            storageKey: 'supabase.auth.token',
             // Use PKCE flow for better security and reliability with OAuth
             flowType: 'pkce',
+            // Use default storage (localStorage) and default key format
+            // This ensures consistency with Supabase v2.x default behavior
         },
-        // Simplified configuration - removed custom headers that might cause issues
     });
     
     if (import.meta.env.DEV) {

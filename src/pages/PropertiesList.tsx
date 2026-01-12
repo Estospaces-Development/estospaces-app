@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Copy, MoreVertical,
   CheckSquare, Square, Star, Verified, TrendingUp, Home, Building, 
   DollarSign, Bed, Bath, Maximize, Calendar, MapPin, Heart, Share2,
-  FileText, FileJson, ArrowUpDown, RefreshCw, Settings, BarChart3
+  FileText, FileJson, ArrowUpDown, RefreshCw, Settings, BarChart3, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -101,6 +101,7 @@ const PropertiesList = () => {
     deleteProperty, 
     deleteProperties,
     duplicateProperty,
+    updateProperty,
     selectProperty,
     deselectProperty,
     selectAllProperties,
@@ -129,6 +130,7 @@ const PropertiesList = () => {
   const [activePropertyMenu, setActivePropertyMenu] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedPropertyForShare, setSelectedPropertyForShare] = useState<Property | null>(null);
+  const [publishingPropertyId, setPublishingPropertyId] = useState<string | null>(null);
   
   // Favorited properties state (manager-specific from database)
   const [favoritedIds, setFavoritedIds] = useState<string[]>([]);
@@ -258,6 +260,45 @@ const PropertiesList = () => {
     const duplicate = await duplicateProperty(id);
     if (duplicate) {
       navigate(`/manager/dashboard/properties/edit/${duplicate.id}`);
+    }
+  };
+
+  const handlePublish = async (id: string) => {
+    if (!id) return;
+    
+    setPublishingPropertyId(id);
+    try {
+      // Find the property in the current list to preserve all its data
+      const property = filteredProperties.find(p => p.id === id);
+      
+      if (!property) {
+        throw new Error('Property not found');
+      }
+
+      // Update with existing property data plus status changes
+      const updatedProperty = await updateProperty(id, {
+        ...property,
+        status: 'published',
+        published: true,
+        draft: false,
+      });
+
+      if (updatedProperty) {
+        // Show success message (you can add a toast notification here if available)
+        console.log('Property published successfully!');
+        setActivePropertyMenu(null);
+        // Refresh the properties list by triggering a re-fetch
+        // The properties context should automatically update
+      } else {
+        console.error('Failed to publish property');
+        alert('Failed to publish property. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error publishing property:', error);
+      const errorMessage = error?.message || 'Failed to publish property';
+      alert(`Failed to publish property: ${errorMessage}`);
+    } finally {
+      setPublishingPropertyId(null);
     }
   };
 
@@ -887,8 +928,23 @@ const PropertiesList = () => {
 
                 {/* Quick Actions */}
                 <div className={`absolute bottom-3 right-3 flex gap-2 transition-opacity ${
-                  isFavorited(property.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  isFavorited(property.id) || (property.draft || property.status === 'draft') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                 }`}>
+                  {(property.draft || property.status === 'draft') && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (property.id) {
+                          handlePublish(property.id);
+                        }
+                      }}
+                      disabled={publishingPropertyId === property.id}
+                      className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={publishingPropertyId === property.id ? 'Publishing...' : 'Publish Property'}
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  )}
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -967,6 +1023,22 @@ const PropertiesList = () => {
                           >
                             <Eye className="w-4 h-4" /> View
                           </button>
+                          {(property.draft || property.status === 'draft') && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (property.id) {
+                                  handlePublish(property.id);
+                                }
+                              }}
+                              disabled={publishingPropertyId === property.id}
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/10 dark:hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Send className="w-4 h-4" /> 
+                              {publishingPropertyId === property.id ? 'Publishing...' : 'Publish'}
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               navigate(`/manager/dashboard/properties/edit/${property.id}`);
@@ -1195,6 +1267,22 @@ const PropertiesList = () => {
                       >
                         <Eye className="w-5 h-5" />
                       </button>
+                      {(property.draft || property.status === 'draft') && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (property.id) {
+                              handlePublish(property.id);
+                            }
+                          }}
+                          disabled={publishingPropertyId === property.id}
+                          className="p-2 text-primary hover:text-primary/80 hover:bg-primary/10 dark:hover:bg-primary/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={publishingPropertyId === property.id ? 'Publishing...' : 'Publish'}
+                        >
+                          <Send className="w-5 h-5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => navigate(`/manager/dashboard/properties/edit/${property.id}`)}
                         className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"

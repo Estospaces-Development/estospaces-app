@@ -321,6 +321,21 @@ export async function getCityByNameAndState(
   }
 }
 
+// Common country name aliases to handle data inconsistencies
+const COUNTRY_NAME_ALIASES: Record<string, string[]> = {
+  'United Kingdom': ['UK', 'Great Britain', 'Britain', 'England', 'Scotland', 'Wales', 'Northern Ireland'],
+  'United States': ['USA', 'US', 'United States of America', 'America'],
+  'United Arab Emirates': ['UAE', 'Emirates'],
+  'South Korea': ['Korea', 'Republic of Korea'],
+  'North Korea': ['DPRK'],
+};
+
+// Common country code aliases
+const COUNTRY_CODE_ALIASES: Record<string, string> = {
+  'UK': 'GB',
+  'USA': 'US',
+};
+
 /**
  * Helper to resolve existing address data to IDs
  * Used when loading a property in edit mode
@@ -340,9 +355,12 @@ export async function resolveAddressToIds(
   let stateId: string | null = null;
   let cityId: string | null = null;
 
+  // Normalize country code (handle aliases like UK -> GB)
+  const normalizedCode = countryCode ? (COUNTRY_CODE_ALIASES[countryCode.toUpperCase()] || countryCode) : undefined;
+
   // Try to find country by code first, then by name
-  if (countryCode) {
-    const { data } = await getCountryByCode(countryCode);
+  if (normalizedCode) {
+    const { data } = await getCountryByCode(normalizedCode);
     if (data) {
       countryId = data.id;
     }
@@ -352,9 +370,30 @@ export async function resolveAddressToIds(
     // Load all countries and search
     const { data: countries } = await getCountries();
     if (countries) {
-      const country = countries.find(
+      // Try exact match first
+      let country = countries.find(
         c => c.name.toLowerCase() === countryName.toLowerCase()
       );
+      
+      // If no exact match, try alias matching
+      if (!country) {
+        const normalizedInput = countryName.toLowerCase().trim();
+        for (const [canonicalName, aliases] of Object.entries(COUNTRY_NAME_ALIASES)) {
+          if (aliases.some(alias => alias.toLowerCase() === normalizedInput)) {
+            country = countries.find(c => c.name === canonicalName);
+            if (country) break;
+          }
+        }
+      }
+      
+      // If still no match, try partial match as fallback
+      if (!country) {
+        country = countries.find(
+          c => c.name.toLowerCase().includes(countryName.toLowerCase()) ||
+               countryName.toLowerCase().includes(c.name.toLowerCase())
+        );
+      }
+      
       if (country) {
         countryId = country.id;
       }

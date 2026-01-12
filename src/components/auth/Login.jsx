@@ -1,95 +1,47 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../../lib/supabase';
-import { 
-    getSessionWithTimeout, 
-    getUserRole, 
-    getRedirectPath,
-    AUTH_TIMEOUTS 
-} from '../../utils/authHelpers';
+import { useAuth } from '../../contexts/AuthContext';
+import authService from '../../services/authService';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
 import { AlertCircle } from 'lucide-react';
 
+/**
+ * Login Component
+ * 
+ * Main login page with OAuth (Google) and email sign-in options.
+ * Uses the centralized authService for OAuth.
+ * Relies on AuthContext for session state.
+ */
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { isAuthenticated, loading: authLoading, getRole } = useAuth();
+    
     const [active, setActive] = useState('google');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [checkingSession, setCheckingSession] = useState(true);
 
     // Ref to prevent multiple OAuth attempts
     const isSigningIn = useRef(false);
 
     // Get the intended destination from location state
     const from = location.state?.from?.pathname;
-    const intendedRole = location.state?.intendedRole;
 
-    // Check if user is already logged in with timeout protection
+    // Redirect if already authenticated
     useEffect(() => {
-        let isMounted = true;
-
-        const checkExistingSession = async () => {
-            if (!isSupabaseAvailable()) {
-                if (isMounted) setCheckingSession(false);
-                return;
-            }
-
-            try {
-                const { data: { session }, error: sessionError } = await getSessionWithTimeout(AUTH_TIMEOUTS.SESSION_CHECK);
-                
-                if (!isMounted) return;
-
-                if (sessionError) {
-                    // Session check failed/timed out - allow user to sign in
-                    setCheckingSession(false);
-                    return;
-                }
-                
-                if (session) {
-                    // User is already logged in, get role and redirect
-                    const role = await getUserRole(session.user);
-                    if (isMounted) {
-                        const redirectPath = getRedirectPath(role, from);
-                        
-                        // Debug logging (only in development)
-                        if (import.meta.env.DEV) {
-                            // eslint-disable-next-line no-console
-                            console.log('OAuth - Existing session found:', {
-                                userId: session.user.id,
-                                email: session.user.email,
-                                role,
-                                redirectPath
-                            });
-                        }
-                        
-                        navigate(redirectPath, { replace: true });
-                    }
-                } else {
-                    setCheckingSession(false);
-                }
-            } catch {
-                if (isMounted) setCheckingSession(false);
-            }
-        };
-
-        checkExistingSession();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [navigate, from]);
+        if (isAuthenticated && !authLoading) {
+            const role = getRole();
+            const redirectPath = authService.getRedirectPath(role, from);
+            console.log('✅ Login: Already authenticated, redirecting to:', redirectPath);
+            navigate(redirectPath, { replace: true });
+        }
+    }, [isAuthenticated, authLoading, getRole, navigate, from]);
 
     const signInWithGoogle = async () => {
         // Prevent multiple concurrent OAuth attempts
         if (isSigningIn.current || loading) {
-            return;
-        }
-
-        if (!isSupabaseAvailable()) {
-            setError('Authentication service is not configured. Please contact support.');
             return;
         }
 
@@ -99,22 +51,18 @@ const Login = () => {
         setError('');
         
         try {
-            // For OAuth, we can't determine role until after login
-            // Default redirect will be to user dashboard, and auth callback will redirect appropriately
-            const { error: authError } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { 
-                    redirectTo: `${window.location.origin}/auth/callback`
-                },
-            });
+            console.log('🔐 Login: Starting Google OAuth...');
             
-            if (authError) {
-                setError(authError.message || 'Failed to sign in with Google.');
+            const { success, error: oauthError } = await authService.signInWithOAuth('google');
+            
+            if (!success && oauthError) {
+                setError(oauthError);
                 isSigningIn.current = false;
                 setLoading(false);
             }
             // Note: On success, we don't reset loading because the page will redirect
         } catch (err) {
+            console.error('❌ Login: OAuth error:', err);
             setError('Failed to sign in with Google. Please try again.');
             isSigningIn.current = false;
             setLoading(false);
@@ -127,7 +75,7 @@ const Login = () => {
     };
 
     // Show loading while checking for existing session
-    if (checkingSession) {
+    if (authLoading) {
         return (
             <AuthLayout image={building}>
                 <div className="flex flex-col items-center justify-center min-h-[300px]">
@@ -157,7 +105,7 @@ const Login = () => {
                 {/* Google Button */}
                 <button
                     onClick={signInWithGoogle}
-                    disabled={loading || checkingSession}
+                    disabled={loading}
                     className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-3 border ${
                         active === 'google'
                             ? 'bg-primary text-white border-primary'
@@ -183,27 +131,28 @@ const Login = () => {
                                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                             />
                         </svg>
-                        Sign in with Google
+                        {loading ? 'Signing in...' : 'Sign in with Google'}
                     </span>
                 </button>
 
                 {/* Email Button */}
                 <button
                     onClick={goToEmail}
+                    disabled={loading}
                     className={`w-full py-3 px-6 rounded-md font-medium text-sm transition-all duration-200 mb-4 border ${
                         active === 'email'
                             ? 'bg-primary text-white border-primary'
                             : 'bg-orange-50 dark:bg-orange-900/20 text-primary border-primary hover:bg-orange-100 dark:hover:bg-orange-900/30'
-                    }`}
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                     Sign in with Email
                 </button>
 
                 {/* Error Message */}
                 {error && (
-                    <div className="w-full mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
-                        <AlertCircle className="text-red-500 flex-shrink-0" size={18} />
-                        <p className="text-red-600 text-sm">{error}</p>
+                    <div className="w-full mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-center gap-2">
+                        <AlertCircle className="text-red-500 dark:text-red-400 flex-shrink-0" size={18} />
+                        <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
                     </div>
                 )}
 
@@ -229,4 +178,3 @@ const Login = () => {
 };
 
 export default Login;
-

@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseAvailable } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import authService from '../../services/authService';
 import AuthLayout from './AuthLayout';
 import logo from '../../assets/auth/logo.jpg';
 import building from '../../assets/auth/building.jpg';
 import { Check, X, Eye, EyeOff, User, Briefcase } from 'lucide-react';
 
+/**
+ * Signup Component
+ * 
+ * Uses the centralized authService for sign-up.
+ * Relies on AuthContext for session state.
+ */
 const Signup = () => {
     const navigate = useNavigate();
+    const { isAuthenticated, loading: authLoading, getRole } = useAuth();
+    
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -27,14 +36,17 @@ const Signup = () => {
 
     const allRulesPassed = Object.values(rules).every(Boolean);
 
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated && !authLoading) {
+            const userRole = getRole();
+            const redirectPath = authService.getRedirectPath(userRole);
+            navigate(redirectPath, { replace: true });
+        }
+    }, [isAuthenticated, authLoading, getRole, navigate]);
+
     const handleSignup = async (e) => {
         e.preventDefault();
-        
-        // Check if Supabase is configured
-        if (!isSupabaseAvailable()) {
-            setError('Authentication service is not configured. Please contact support.');
-            return;
-        }
 
         if (!name.trim()) {
             setError('Please enter your name');
@@ -55,49 +67,63 @@ const Signup = () => {
         setError('');
 
         try {
-            const { data, error: signUpError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: { 
-                    data: { 
-                        full_name: name,
-                        role: role 
-                    },
-                    emailRedirectTo: `${window.location.origin}/auth/callback`
-                },
+            console.log('📝 Signup: Starting sign-up...');
+            
+            const result = await authService.signUpWithEmail(email, password, {
+                full_name: name,
+                role: role,
             });
 
-            if (signUpError) {
+            if (!result.success) {
+                const errorMsg = result.error || 'Sign-up failed. Please try again.';
+                
                 // Handle specific error cases
-                if (signUpError.message.includes('already registered')) {
+                if (errorMsg.includes('already registered')) {
                     setError('This email is already registered. Please sign in instead.');
-                } else if (signUpError.message.includes('not authorized')) {
+                } else if (errorMsg.includes('not authorized')) {
                     setError('Email service is not configured. Please contact support or try Google sign-in.');
-                } else if (signUpError.message.includes('rate limit')) {
+                } else if (errorMsg.includes('rate limit')) {
                     setError('Too many attempts. Please try again later.');
                 } else {
-                    setError(signUpError.message);
+                    setError(errorMsg);
                 }
-            } else if (data.user) {
-                // Check if email confirmation is required
-                if (data.user.identities && data.user.identities.length === 0) {
-                    // User already exists but not confirmed
-                    setError('This email is already registered but not confirmed. Please check your email or try signing in.');
-                } else if (data.session) {
-                    // Email confirmation is disabled - user is logged in directly
-                    navigate(role === 'manager' ? '/manager/dashboard' : '/user/dashboard');
-                } else {
-                    // Email confirmation is required
-                    setSuccess(true);
-                }
+                return;
             }
-        } catch {
+
+            // Check if email confirmation is required
+            if (result.needsEmailConfirmation) {
+                setSuccess(true);
+                return;
+            }
+
+            // Signed in directly (email confirmation disabled)
+            if (result.session) {
+                console.log('✅ Signup: Auto-confirmed, redirecting...');
+                const redirectPath = authService.getRedirectPath(role);
+                navigate(redirectPath, { replace: true });
+            }
+
+        } catch (err) {
+            console.error('❌ Signup: Exception:', err);
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
+    // Show loading while checking auth
+    if (authLoading) {
+        return (
+            <AuthLayout image={building}>
+                <div className="flex flex-col items-center justify-center min-h-[300px]">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Loading...</p>
+                </div>
+            </AuthLayout>
+        );
+    }
+
+    // Success state - email confirmation required
     if (success) {
         return (
             <AuthLayout image={building}>
@@ -107,8 +133,8 @@ const Signup = () => {
                         <img src={logo} alt="Estospaces" className="h-10" />
                     </div>
                     
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                        <Check className="text-green-600" size={32} />
+                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
+                        <Check className="text-green-600 dark:text-green-400" size={32} />
                     </div>
                     
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
@@ -290,4 +316,3 @@ const Signup = () => {
 };
 
 export default Signup;
-

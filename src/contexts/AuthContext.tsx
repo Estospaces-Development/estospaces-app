@@ -1,57 +1,48 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useRef } from 'react';
-import { supabase, isSupabaseAvailable } from '../lib/supabase';
-import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
+import { isSupabaseAvailable } from '../lib/supabase';
+import authService, { 
+    AuthState, 
+    ProfileData,
+    AUTH_CONFIG 
+} from '../services/authService';
+import type { User, Session } from '@supabase/supabase-js';
 
-// Auth timeout constants - Generous for production stability
-const AUTH_TIMEOUT_MS = 15000; // 15 seconds max for initial session check
-const PROFILE_TIMEOUT_MS = 10000; // 10 seconds max for profile fetch
+// ============================================================================
+// Types
+// ============================================================================
 
-// Helper to check if error is an AbortError (should be silently ignored)
-const isAbortError = (error: unknown): boolean => {
-    if (!error) return false;
-    const err = error as { name?: string; message?: string; code?: string };
-    return (
-        err.name === 'AbortError' ||
-        err.message?.includes('aborted') ||
-        err.message?.includes('AbortError') ||
-        err.code === 'ABORT_ERR'
-    );
-};
-
-// Profile type
-export interface Profile {
-    id: string;
-    email?: string;
-    full_name?: string;
-    phone?: string;
-    location?: string;
-    bio?: string;
-    company_name?: string;
-    role?: string;
-    avatar_url?: string;
-    is_verified?: boolean;
-    created_at?: string;
-    updated_at?: string;
-}
-
-// Auth context value type
 interface AuthContextValue {
+    // State
     session: Session | null;
     user: User | null;
-    profile: Profile | null;
+    profile: ProfileData | null;
+    authState: AuthState;
     loading: boolean;
     profileLoading: boolean;
     error: string | null;
+    
+    // Authentication
     signOut: () => Promise<void>;
+    refreshSession: () => Promise<void>;
+    
+    // Computed
     isAuthenticated: boolean;
     isSupabaseConfigured: boolean;
-    fetchProfile: (userId: string) => Promise<Profile | null>;
-    updateProfile: (updates: Partial<Profile>) => Promise<{ data?: Profile; error?: string }>;
-    createProfile: (profileData?: Partial<Profile>) => Promise<{ data?: Profile; error?: string } | Profile | null>;
+    
+    // Profile methods
+    fetchProfile: (userId: string) => Promise<ProfileData | null>;
+    updateProfile: (updates: Partial<ProfileData>) => Promise<{ data?: ProfileData; error?: string }>;
+    createProfile: (profileData?: Partial<ProfileData>) => Promise<{ data?: ProfileData; error?: string } | ProfileData | null>;
+    
+    // Helpers
     getDisplayName: () => string;
     getRole: () => string;
     getAvatarUrl: () => string | null;
 }
+
+// ============================================================================
+// Context
+// ============================================================================
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -59,91 +50,97 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
+// ============================================================================
+// Provider
+// ============================================================================
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+    // Core state
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [profileLoading, setProfileLoading] = useState(false);
+    const [profile, setProfile] = useState<ProfileData | null>(null);
+    const [authState, setAuthState] = useState<AuthState>('loading');
     const [error, setError] = useState<string | null>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
 
-    // Fetch user profile from profiles table
-    const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-        if (!isSupabaseAvailable() || !supabase || !userId) {
-            return null;
-        }
+    // Refs to prevent duplicate operations
+    const initializingRef = useRef(false);
+    const mountedRef = useRef(true);
+
+    // ========================================================================
+    // Profile Operations
+    // ========================================================================
+
+    const fetchProfile = useCallback(async (userId: string): Promise<ProfileData | null> => {
+        if (!userId || !mountedRef.current) return null;
 
         setProfileLoading(true);
         try {
-            const { data, error: fetchError } = await (supabase as SupabaseClient)
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (fetchError) {
-                // If profile doesn't exist, it might not have been created yet
-                if (fetchError.code === 'PGRST116') {
-                    return null;
-                }
-                return null;
+            const profileData = await authService.fetchProfile(userId);
+            if (mountedRef.current) {
+                setProfile(profileData);
             }
-
-            setProfile(data);
-            return data;
-        } catch {
-            return null;
+            return profileData;
         } finally {
-            setProfileLoading(false);
+            if (mountedRef.current) {
+                setProfileLoading(false);
+            }
         }
     }, []);
 
-    // Update user profile (uses upsert for reliability)
-    const updateProfile = async (updates: Partial<Profile>): Promise<{ data?: Profile; error?: string }> => {
-        if (!isSupabaseAvailable() || !supabase || !user?.id) {
-            setError('Cannot update profile: not authenticated');
+    const updateProfile = useCallback(async (updates: Partial<ProfileData>): Promise<{ data?: ProfileData; error?: string }> => {
+        if (!isSupabaseAvailable() || !user?.id) {
             return { error: 'Not authenticated' };
         }
 
         setProfileLoading(true);
         try {
-            // Use upsert to create profile if it doesn't exist, or update if it does
-            const { data, error: updateError } = await (supabase as SupabaseClient)
+            const { supabase } = await import('../lib/supabase');
+            if (!supabase) {
+                return { error: 'Supabase not available' };
+            }
+
+            const { data, error: updateError } = await supabase
                 .from('profiles')
                 .upsert({
                     id: user.id,
                     email: user.email,
                     ...updates,
                     updated_at: new Date().toISOString(),
-                }, {
-                    onConflict: 'id'
-                })
+                }, { onConflict: 'id' })
                 .select()
                 .single();
 
             if (updateError) {
-                setError(updateError.message);
                 return { error: updateError.message };
             }
 
-            setProfile(data);
-            return { data };
-        } catch (err: any) {
-            setError(err.message);
-            return { error: err.message };
+            if (mountedRef.current) {
+                setProfile(data as ProfileData);
+            }
+            return { data: data as ProfileData };
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Update failed';
+            return { error: message };
         } finally {
-            setProfileLoading(false);
+            if (mountedRef.current) {
+                setProfileLoading(false);
+            }
         }
-    };
+    }, [user]);
 
-    // Create profile if it doesn't exist
-    const createProfile = async (profileData?: Partial<Profile>): Promise<{ data?: Profile; error?: string } | Profile | null> => {
-        if (!isSupabaseAvailable() || !supabase || !user?.id) {
+    const createProfile = useCallback(async (profileData?: Partial<ProfileData>): Promise<{ data?: ProfileData; error?: string } | ProfileData | null> => {
+        if (!isSupabaseAvailable() || !user?.id) {
             return { error: 'Not authenticated' };
         }
 
         try {
-            const { data, error: createError } = await (supabase as SupabaseClient)
+            const { supabase } = await import('../lib/supabase');
+            if (!supabase) {
+                return { error: 'Supabase not available' };
+            }
+
+            const { data, error: createError } = await supabase
                 .from('profiles')
                 .insert({
                     id: user.id,
@@ -164,218 +161,219 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 return { error: createError.message };
             }
 
-            setProfile(data);
-            return { data };
-        } catch (err: any) {
-            return { error: err.message };
+            if (mountedRef.current) {
+                setProfile(data as ProfileData);
+            }
+            return { data: data as ProfileData };
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Create failed';
+            return { error: message };
         }
-    };
+    }, [user, fetchProfile]);
 
-    useEffect(() => {
-        let isMounted = true;
-        let authListener: { subscription: { unsubscribe: () => void } } | null = null;
+    // ========================================================================
+    // Session Management
+    // ========================================================================
 
-        // Check if Supabase is configured
-        if (!isSupabaseAvailable() || !supabase) {
-            setLoading(false);
+    const refreshSession = useCallback(async () => {
+        if (!mountedRef.current) return;
+
+        const { session: freshSession, error: sessionError } = await authService.getSessionSafe();
+        
+        if (!mountedRef.current) return;
+
+        if (sessionError) {
+            setError(sessionError);
+            setAuthState('error');
             return;
         }
 
-        // Helper function to get session with timeout
-        const getSessionWithTimeout = async (): Promise<{ data: { session: Session | null }; error: Error | null }> => {
-            return new Promise((resolve) => {
-                const timeoutId = setTimeout(() => {
-                    resolve({ data: { session: null }, error: new Error('Session check timeout') });
-                }, AUTH_TIMEOUT_MS);
+        if (freshSession) {
+            setSession(freshSession);
+            setUser(freshSession.user);
+            setAuthState('authenticated');
+            setError(null);
+            
+            // Fetch profile in background
+            fetchProfile(freshSession.user.id);
+        } else {
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setAuthState('unauthenticated');
+            setError(null);
+        }
+    }, [fetchProfile]);
 
-                (supabase as SupabaseClient).auth.getSession()
-                    .then((result) => {
-                        clearTimeout(timeoutId);
-                        if (!isMounted) {
-                            resolve({ data: { session: null }, error: null });
-                            return;
-                        }
-                        resolve(result as { data: { session: Session | null }; error: Error | null });
-                    })
-                    .catch((err) => {
-                        clearTimeout(timeoutId);
-                        // Silently handle abort errors
-                        if (isAbortError(err)) {
-                            resolve({ data: { session: null }, error: null });
-                            return;
-                        }
-                        resolve({ data: { session: null }, error: err });
-                    });
-            });
-        };
+    const signOut = useCallback(async () => {
+        const { error: signOutError } = await authService.signOut();
+        
+        if (mountedRef.current) {
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setAuthState('unauthenticated');
+            
+            if (signOutError) {
+                setError(signOutError);
+            } else {
+                setError(null);
+            }
+        }
+    }, []);
 
-        // Get initial session with timeout protection
-        const initSession = async () => {
-            try {
-                const { data, error: sessionError } = await getSessionWithTimeout();
+    // ========================================================================
+    // Initialization
+    // ========================================================================
+
+    useEffect(() => {
+        mountedRef.current = true;
+        
+        // Prevent duplicate initialization in StrictMode
+        if (initializingRef.current) return;
+        initializingRef.current = true;
+
+        const initialize = async () => {
+            if (!isSupabaseAvailable()) {
+                setAuthState('unauthenticated');
+                return;
+            }
+
+            setAuthState('loading');
+
+            // Get initial session
+            const { session: initialSession, error: sessionError } = await authService.getSessionSafe();
+            
+            if (!mountedRef.current) return;
+
+            if (sessionError) {
+                // Don't show error for initial load - user might just not be logged in
+                console.warn('Initial session check warning:', sessionError);
+                setSession(null);
+                setUser(null);
+                setAuthState('unauthenticated');
+                return;
+            }
+
+            if (initialSession) {
+                setSession(initialSession);
+                setUser(initialSession.user);
+                setAuthState('authenticated');
                 
-                if (!isMounted) return;
-
-                if (sessionError) {
-                    // Session check failed or timed out
-                    // This is OK on initial load - user may not be logged in
-                    setError(null); // Don't show error to user for initial check
-                    setSession(null);
-                    setUser(null);
-                    setLoading(false);
-                    return;
-                }
-
-                if (!data.session) {
-                    // No session found - user is not logged in
-                    setSession(null);
-                    setUser(null);
-                    setLoading(false);
-                    return;
-                }
-
-                // Session exists - update state
-                setSession(data.session);
-                setUser(data.session.user);
-                
-                // Fetch profile if user is logged in (with timeout, but don't block)
-                if (data.session.user && isMounted) {
-                    // Use a separate try-catch to not block loading state
-                    try {
-                        const profileTimeoutPromise = new Promise<null>((resolve) => {
-                            setTimeout(() => resolve(null), PROFILE_TIMEOUT_MS);
-                        });
-                        const profilePromise = fetchProfile(data.session.user.id);
-                        await Promise.race([profilePromise, profileTimeoutPromise]);
-                    } catch {
-                        // Profile fetch failed - continue without profile
-                        // This is OK - we still have the session
-                    }
-                }
-                
-                if (isMounted) {
-                    setLoading(false);
-                }
-            } catch {
-                // Unexpected error during session check
-                if (isMounted) {
-                    setError(null);
-                    setSession(null);
-                    setUser(null);
-                    setLoading(false);
-                }
+                // Fetch profile in background (non-blocking)
+                fetchProfile(initialSession.user.id);
+            } else {
+                setAuthState('unauthenticated');
             }
         };
 
-        initSession();
+        // Set up auth state listener FIRST
+        const unsubscribe = authService.onAuthStateChange(async (event, newSession) => {
+            if (!mountedRef.current) return;
 
-        // Listen for auth changes
-        try {
-            const { data: listener } = (supabase as SupabaseClient).auth.onAuthStateChange(
-                async (event: string, currentSession: Session | null) => {
-                    if (!isMounted) return;
+            console.log('🔔 Auth state change:', event);
 
-                    setSession(currentSession);
-                    setUser(currentSession?.user ?? null);
-                    setLoading(false);
-                    setError(null);
-
-                    // Fetch profile when user signs in
-                    if (event === 'SIGNED_IN' && currentSession?.user) {
-                        try {
-                            await fetchProfile(currentSession.user.id);
-                        } catch {
-                            // Profile fetch failed - continue
-                        }
-                    }
-
-                    // Clear profile when user signs out
-                    if (event === 'SIGNED_OUT') {
-                        setProfile(null);
-                    }
+            // Ignore token refresh events - session is still valid
+            if (event === 'TOKEN_REFRESHED') {
+                if (newSession) {
+                    setSession(newSession);
+                    setUser(newSession.user);
                 }
-            );
-            authListener = listener;
-        } catch {
-            // Auth listener setup failed
-        }
+                return;
+            }
+
+            if (event === 'SIGNED_IN' && newSession) {
+                setSession(newSession);
+                setUser(newSession.user);
+                setAuthState('authenticated');
+                setError(null);
+                
+                // Fetch profile for new sign-in
+                fetchProfile(newSession.user.id);
+                return;
+            }
+
+            if (event === 'SIGNED_OUT') {
+                setSession(null);
+                setUser(null);
+                setProfile(null);
+                setAuthState('unauthenticated');
+                setError(null);
+                return;
+            }
+
+            // Handle other events (USER_UPDATED, etc.)
+            if (newSession) {
+                setSession(newSession);
+                setUser(newSession.user);
+                setAuthState('authenticated');
+            } else {
+                setSession(null);
+                setUser(null);
+                setProfile(null);
+                setAuthState('unauthenticated');
+            }
+        });
+
+        // Then initialize
+        initialize();
 
         return () => {
-            isMounted = false;
-            authListener?.subscription?.unsubscribe();
+            mountedRef.current = false;
+            unsubscribe();
         };
     }, [fetchProfile]);
 
-    const signOut = async () => {
-        if (!isSupabaseAvailable() || !supabase) {
-            // Clear local state even if Supabase is not configured
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-            // Clear localStorage
-            localStorage.removeItem('managerVerified');
-            return;
-        }
-        
-        try {
-            const { error: signOutError } = await (supabase as SupabaseClient).auth.signOut();
-            if (signOutError) throw signOutError;
-            
-            // Clear state
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-            
-            // Clear localStorage
-            localStorage.removeItem('managerVerified');
-            localStorage.removeItem('leads');
-        } catch (err: any) {
-            // Even on error, clear local state
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-            localStorage.removeItem('managerVerified');
-            localStorage.removeItem('leads');
-            setError(err.message);
-        }
-    };
+    // ========================================================================
+    // Helper Functions
+    // ========================================================================
 
-    // Get display name from profile or user metadata
-    const getDisplayName = (): string => {
+    const getDisplayName = useCallback((): string => {
         if (profile?.full_name) return profile.full_name;
         if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
         if (user?.email) return user.email.split('@')[0];
         return 'User';
-    };
+    }, [profile, user]);
 
-    // Get user role
-    const getRole = (): string => {
+    const getRole = useCallback((): string => {
         if (profile?.role) return profile.role;
         if (user?.user_metadata?.role) return user.user_metadata.role;
         return 'user';
-    };
+    }, [profile, user]);
 
-    // Get avatar URL
-    const getAvatarUrl = (): string | null => {
+    const getAvatarUrl = useCallback((): string | null => {
         if (profile?.avatar_url) return profile.avatar_url;
         if (user?.user_metadata?.avatar_url) return user.user_metadata.avatar_url;
         return null;
-    };
+    }, [profile, user]);
+
+    // ========================================================================
+    // Context Value
+    // ========================================================================
 
     const value: AuthContextValue = {
+        // State
         session,
         user,
         profile,
-        loading,
+        authState,
+        loading: authState === 'loading',
         profileLoading,
         error,
+        
+        // Authentication
         signOut,
-        isAuthenticated: !!session,
+        refreshSession,
+        
+        // Computed
+        isAuthenticated: authState === 'authenticated' && !!session,
         isSupabaseConfigured: isSupabaseAvailable(),
+        
         // Profile methods
         fetchProfile,
         updateProfile,
         createProfile,
+        
         // Helpers
         getDisplayName,
         getRole,
@@ -389,6 +387,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 };
 
+// ============================================================================
+// Hook
+// ============================================================================
+
 export const useAuth = (): AuthContextValue => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -396,5 +398,9 @@ export const useAuth = (): AuthContextValue => {
     }
     return context;
 };
+
+// Re-export types and config for convenience
+export type { AuthState, ProfileData };
+export { AUTH_CONFIG };
 
 export default AuthContext;
