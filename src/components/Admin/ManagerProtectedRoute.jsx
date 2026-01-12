@@ -29,10 +29,10 @@ const ManagerProtectedRoute = ({ children }) => {
         return <Navigate to="/auth/login" state={{ from: location, intendedRole: 'manager' }} replace />;
     }
 
-    // Check if user is a manager
+    // Check if user is a manager or admin (admins can also access manager routes)
     const role = getRole();
-    if (role !== 'manager') {
-        // Authenticated but not a manager - redirect to user dashboard
+    if (role !== 'manager' && role !== 'admin') {
+        // Authenticated but not a manager or admin - redirect to user dashboard
         return <Navigate to="/user/dashboard" replace />;
     }
 

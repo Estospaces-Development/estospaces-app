@@ -710,7 +710,15 @@ export const getUserRole = async (user: User | null): Promise<string> => {
  */
 export const getRedirectPath = (role: string, fromPath?: string | null): string => {
     if (fromPath) return fromPath;
-    return role === 'manager' ? '/manager/dashboard' : '/user/dashboard';
+    
+    switch (role) {
+        case 'admin':
+            return '/admin/verifications';
+        case 'manager':
+            return '/manager/dashboard';
+        default:
+            return '/user/dashboard';
+    }
 };
 
 // ============================================================================
