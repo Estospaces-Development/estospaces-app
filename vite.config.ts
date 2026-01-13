@@ -8,5 +8,12 @@ export default defineConfig({
     host: '0.0.0.0', // Allow external connections
     port: 5173,
     strictPort: false,
+    hmr: {
+      timeout: 30000,
+    },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    force: true,
   },
 })

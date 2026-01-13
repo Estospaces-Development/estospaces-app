@@ -1,6 +1,6 @@
 /**
  * Admin Verification Dashboard
- * Admin panel for reviewing and approving manager verifications
+ * Premium, visually stunning design for reviewing manager verifications
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -13,83 +13,66 @@ import {
   User, 
   Building2,
   Search,
-  Filter,
   RefreshCw,
-  ChevronRight,
-  Calendar,
   FileText,
   Eye,
-  Loader2,
   AlertCircle,
-  MessageSquare,
+  LayoutDashboard,
   TrendingUp,
-  LogOut
+  LogOut,
+  ExternalLink,
+  Users,
+  Briefcase,
+  Sparkles,
+  ArrowRight,
+  Filter,
+  MoreHorizontal
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import * as managerVerificationService from '../services/managerVerificationService';
 import type { ManagerProfile, VerificationStatus } from '../services/managerVerificationService';
 import ManagerReviewModal from '../components/Admin/ManagerReviewModal';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-type TabType = 'pending' | 'under_review' | 'approved' | 'rejected' | 'all';
+type TabType = 'all' | 'pending' | 'under_review' | 'approved' | 'rejected';
 
 interface ManagerWithUser extends ManagerProfile {
   user_email?: string;
   user_name?: string;
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
 const AdminVerificationDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('pending');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   const [managers, setManagers] = useState<ManagerWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [profileTypeFilter, setProfileTypeFilter] = useState<'all' | 'broker' | 'company'>('all');
   const [selectedManagerId, setSelectedManagerId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-      localStorage.removeItem('managerVerified');
-      localStorage.removeItem('leads');
-      navigate('/admin/login');
-    } catch (error) {
-      localStorage.removeItem('managerVerified');
-      localStorage.removeItem('leads');
-      navigate('/admin/login');
-    }
-  };
-
-  // Counts for tabs
   const [counts, setCounts] = useState({
+    all: 0,
     pending: 0,
     under_review: 0,
     approved: 0,
     rejected: 0,
-    all: 0,
   });
 
-  // ========================================================================
-  // Data Fetching
-  // ========================================================================
+  const handleLogout = async () => {
+    try {
+      if (supabase) await supabase.auth.signOut();
+      localStorage.clear();
+      navigate('/admin/login');
+    } catch {
+      localStorage.clear();
+      navigate('/admin/login');
+    }
+  };
 
   const fetchManagers = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
-      // Fetch managers based on active tab
       const statusMap: Record<TabType, VerificationStatus | undefined> = {
         pending: 'submitted',
         under_review: 'under_review',
@@ -97,15 +80,12 @@ const AdminVerificationDashboard: React.FC = () => {
         rejected: 'rejected',
         all: undefined,
       };
-
       const status = statusMap[activeTab];
-      const result = await managerVerificationService.getPendingVerifications(status);
-
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setManagers(result.data);
-      }
+      // When activeTab is 'all', pass allStatuses=true to fetch all records
+      const allStatuses = activeTab === 'all';
+      const result = await managerVerificationService.getPendingVerifications(status, allStatuses);
+      if (result.error) setError(result.error);
+      else setManagers(result.data);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -115,34 +95,27 @@ const AdminVerificationDashboard: React.FC = () => {
 
   const fetchCounts = useCallback(async () => {
     try {
-      // Fetch counts for each status
-      const [pending, underReview, approved, rejected, all] = await Promise.all([
+      const [all, pending, underReview, approved, rejected] = await Promise.all([
+        managerVerificationService.getPendingVerifications(undefined, true), // all statuses
         managerVerificationService.getPendingVerifications('submitted'),
         managerVerificationService.getPendingVerifications('under_review'),
         managerVerificationService.getPendingVerifications('approved'),
         managerVerificationService.getPendingVerifications('rejected'),
-        managerVerificationService.getPendingVerifications(),
       ]);
-
       setCounts({
+        all: all.data.length,
         pending: pending.data.length,
         under_review: underReview.data.length,
         approved: approved.data.length,
         rejected: rejected.data.length,
-        all: all.data.length,
       });
     } catch (err) {
       console.error('Error fetching counts:', err);
     }
   }, []);
 
-  useEffect(() => {
-    fetchManagers();
-  }, [fetchManagers]);
-
-  useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts]);
+  useEffect(() => { fetchManagers(); }, [fetchManagers]);
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -150,236 +123,308 @@ const AdminVerificationDashboard: React.FC = () => {
     setRefreshing(false);
   };
 
-  // ========================================================================
-  // Filtering
-  // ========================================================================
-
   const filteredManagers = managers.filter(manager => {
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesName = manager.user_name?.toLowerCase().includes(query);
-      const matchesEmail = manager.user_email?.toLowerCase().includes(query);
-      const matchesLicense = manager.license_number?.toLowerCase().includes(query);
-      const matchesCompany = manager.company_registration_number?.toLowerCase().includes(query);
-      if (!matchesName && !matchesEmail && !matchesLicense && !matchesCompany) {
-        return false;
-      }
-    }
-
-    // Profile type filter
-    if (profileTypeFilter !== 'all' && manager.profile_type !== profileTypeFilter) {
-      return false;
-    }
-
-    return true;
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      manager.user_name?.toLowerCase().includes(query) ||
+      manager.user_email?.toLowerCase().includes(query) ||
+      manager.license_number?.toLowerCase().includes(query) ||
+      manager.company_registration_number?.toLowerCase().includes(query)
+    );
   });
 
-  // ========================================================================
-  // Render
-  // ========================================================================
+  const getStatusConfig = (status: VerificationStatus) => {
+    const configs: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+      approved: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', dot: 'bg-emerald-500', label: 'Approved' },
+      rejected: { bg: 'bg-red-500/10', text: 'text-red-600', dot: 'bg-red-500', label: 'Rejected' },
+      under_review: { bg: 'bg-blue-500/10', text: 'text-blue-600', dot: 'bg-blue-500', label: 'In Review' },
+      submitted: { bg: 'bg-amber-500/10', text: 'text-amber-600', dot: 'bg-amber-500', label: 'Pending' },
+      verification_required: { bg: 'bg-orange-500/10', text: 'text-orange-600', dot: 'bg-orange-500', label: 'Update Needed' },
+      incomplete: { bg: 'bg-gray-500/10', text: 'text-gray-600', dot: 'bg-gray-400', label: 'Incomplete' },
+    };
+    return configs[status] || configs.incomplete;
+  };
+
+  const statCards = [
+    { id: 'pending', label: 'Pending', count: counts.pending, icon: Clock, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-50' },
+    { id: 'under_review', label: 'In Review', count: counts.under_review, icon: Eye, gradient: 'from-blue-500 to-indigo-500', bg: 'bg-blue-50' },
+    { id: 'approved', label: 'Approved', count: counts.approved, icon: CheckCircle, gradient: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-50' },
+    { id: 'rejected', label: 'Rejected', count: counts.rejected, icon: XCircle, gradient: 'from-red-500 to-rose-500', bg: 'bg-red-50' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Glassmorphism Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 border-b border-gray-200/50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <Shield className="text-orange-600 dark:text-orange-400" size={32} />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <Shield className="text-white" size={20} />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  Manager Verification
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Review and approve manager verification requests
-                </p>
+                <h1 className="font-bold text-gray-900">Verifications</h1>
+                <p className="text-xs text-gray-500">Manager Review Portal</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate('/admin/chat')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2"
               >
-                <MessageSquare size={18} />
-                <span>Chat</span>
+                <LayoutDashboard size={16} />
+                <span className="hidden sm:inline">Dashboard</span>
               </button>
               <button
                 onClick={() => navigate('/admin/analytics')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2"
               >
-                <TrendingUp size={18} />
-                <span>Analytics</span>
+                <TrendingUp size={16} />
+                <span className="hidden sm:inline">Analytics</span>
               </button>
+              <div className="w-px h-6 bg-gray-200 mx-2" />
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
+                className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50"
               >
-                <RefreshCw className={`${refreshing ? 'animate-spin' : ''}`} size={18} />
-                Refresh
+                <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium"
+                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
               >
                 <LogOut size={18} />
-                <span>Logout</span>
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <StatCard
-            label="Pending"
-            count={counts.pending}
-            icon={Clock}
-            color="yellow"
-            active={activeTab === 'pending'}
-            onClick={() => setActiveTab('pending')}
-          />
-          <StatCard
-            label="Under Review"
-            count={counts.under_review}
-            icon={Eye}
-            color="blue"
-            active={activeTab === 'under_review'}
-            onClick={() => setActiveTab('under_review')}
-          />
-          <StatCard
-            label="Approved"
-            count={counts.approved}
-            icon={CheckCircle}
-            color="green"
-            active={activeTab === 'approved'}
-            onClick={() => setActiveTab('approved')}
-          />
-          <StatCard
-            label="Rejected"
-            count={counts.rejected}
-            icon={XCircle}
-            color="red"
-            active={activeTab === 'rejected'}
-            onClick={() => setActiveTab('rejected')}
-          />
-          <StatCard
-            label="All"
-            count={counts.all}
-            icon={FileText}
-            color="gray"
-            active={activeTab === 'all'}
-            onClick={() => setActiveTab('all')}
-          />
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, email, license, or registration number..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400" size={18} />
-              <select
-                value={profileTypeFilter}
-                onChange={(e) => setProfileTypeFilter(e.target.value as 'all' | 'broker' | 'company')}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              >
-                <option value="all">All Types</option>
-                <option value="broker">Brokers</option>
-                <option value="company">Companies</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 flex items-start gap-3">
-            <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" size={20} />
-            <div>
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+      <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+            const isActive = activeTab === stat.id;
+            return (
               <button
-                onClick={handleRefresh}
-                className="text-sm text-red-600 dark:text-red-400 hover:underline mt-1"
+                key={stat.id}
+                onClick={() => setActiveTab(stat.id as TabType)}
+                className={`relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 ${
+                  isActive 
+                    ? 'bg-white shadow-xl shadow-gray-200/50 ring-2 ring-gray-900 scale-[1.02]' 
+                    : 'bg-white/60 hover:bg-white hover:shadow-lg border border-gray-100'
+                }`}
               >
-                Try again
+                <div className="flex items-start justify-between">
+                  <div className={`p-2.5 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg`}>
+                    <Icon className="text-white" size={20} />
+                  </div>
+                  {isActive && (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <p className="text-3xl font-bold text-gray-900">{stat.count}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{stat.label}</p>
+                </div>
+                {isActive && (
+                  <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradient}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Main Panel */}
+        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/40 border border-gray-100 overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-4 sm:p-6 border-b border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    activeTab === 'all'
+                      ? 'bg-gray-900 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  All ({counts.all})
+                </button>
+                <div className="h-6 w-px bg-gray-200" />
+                <div className="flex items-center gap-1">
+                  {statCards.map(stat => (
+                    <button
+                      key={stat.id}
+                      onClick={() => setActiveTab(stat.id as TabType)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                        activeTab === stat.id
+                          ? 'bg-gray-100 text-gray-900'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {stat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by name, email..."
+                    className="pl-10 pr-4 py-2.5 w-64 text-sm bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3">
+              <AlertCircle className="text-red-500" size={20} />
+              <p className="text-sm text-red-700 flex-1">{error}</p>
+              <button onClick={handleRefresh} className="text-sm font-medium text-red-600 hover:underline">
+                Retry
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Loading State */}
-        {loading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12">
-            <div className="flex items-center justify-center">
-              <Loader2 className="animate-spin text-orange-500" size={32} />
-              <span className="ml-3 text-gray-600 dark:text-gray-400">Loading verifications...</span>
+          {/* Content */}
+          {loading ? (
+            <div className="py-24 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
+                <RefreshCw className="text-gray-400 animate-spin" size={28} />
+              </div>
+              <p className="text-gray-500 font-medium">Loading applications...</p>
             </div>
-          </div>
-        ) : filteredManagers.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-            <Shield className="mx-auto text-gray-400 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              No verifications found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {searchQuery || profileTypeFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : `No ${activeTab === 'all' ? '' : activeTab} verifications at this time`}
-            </p>
-          </div>
-        ) : (
-          /* Manager List */
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Manager
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Submitted
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredManagers.map((manager) => (
-                    <ManagerRow
-                      key={manager.id}
-                      manager={manager}
-                      onReview={() => setSelectedManagerId(manager.id)}
-                    />
-                  ))}
-                </tbody>
-              </table>
+          ) : filteredManagers.length === 0 ? (
+            <div className="py-24 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-50 mb-4">
+                <Sparkles className="text-gray-300" size={36} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">No applications found</h3>
+              <p className="text-gray-500 text-sm max-w-sm mx-auto">
+                {searchQuery ? 'Try adjusting your search terms' : 'There are no verification requests in this category yet'}
+              </p>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {filteredManagers.map((manager, index) => {
+                const statusConfig = getStatusConfig(manager.verification_status);
+                const isBroker = manager.profile_type === 'broker';
+                
+                return (
+                  <div
+                    key={manager.id}
+                    className="group px-6 py-5 hover:bg-gray-50/50 transition-all cursor-pointer"
+                    onClick={() => setSelectedManagerId(manager.id)}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Avatar */}
+                      <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+                        isBroker 
+                          ? 'bg-gradient-to-br from-orange-400 to-red-500' 
+                          : 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                      }`}>
+                        {isBroker ? (
+                          <User className="text-white" size={22} />
+                        ) : (
+                          <Building2 className="text-white" size={22} />
+                        )}
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white ${statusConfig.dot}`} />
+                      </div>
 
-      {/* Review Modal */}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {manager.user_name || 'Unknown User'}
+                          </h3>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                            {statusConfig.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="truncate">{manager.user_email || '—'}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="hidden sm:inline font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
+                            {manager.license_number || manager.company_registration_number || 'No license'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Type Badge */}
+                      <div className="hidden md:block">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                          isBroker ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'
+                        }`}>
+                          {isBroker ? <Briefcase size={12} /> : <Building2 size={12} />}
+                          {isBroker ? 'Broker' : 'Company'}
+                        </span>
+                      </div>
+
+                      {/* Date */}
+                      <div className="hidden lg:block text-right">
+                        <p className="text-xs text-gray-400">Submitted</p>
+                        <p className="text-sm font-medium text-gray-700">
+                          {manager.submitted_at 
+                            ? new Date(manager.submitted_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                            : '—'}
+                        </p>
+                      </div>
+
+                      {/* Action */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedManagerId(manager.id);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                      >
+                        Review
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Footer */}
+          {!loading && filteredManagers.length > 0 && (
+            <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                Showing <span className="font-medium text-gray-900">{filteredManagers.length}</span> of{' '}
+                <span className="font-medium text-gray-900">{counts.all}</span> applications
+              </p>
+              <button
+                onClick={() => setActiveTab('all')}
+                className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+              >
+                View all →
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Modal */}
       {selectedManagerId && (
         <ManagerReviewModal
           managerId={selectedManagerId}
@@ -391,207 +436,6 @@ const AdminVerificationDashboard: React.FC = () => {
       )}
     </div>
   );
-};
-
-// ============================================================================
-// Stat Card Component
-// ============================================================================
-
-const StatCard: React.FC<{
-  label: string;
-  count: number;
-  icon: React.FC<{ size?: number; className?: string }>;
-  color: 'yellow' | 'blue' | 'green' | 'red' | 'gray';
-  active: boolean;
-  onClick: () => void;
-}> = ({ label, count, icon: Icon, color, active, onClick }) => {
-  const colorClasses = {
-    yellow: {
-      bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-      border: 'border-yellow-200 dark:border-yellow-800',
-      activeBorder: 'border-yellow-500',
-      icon: 'text-yellow-600 dark:text-yellow-400',
-      text: 'text-yellow-700 dark:text-yellow-400',
-    },
-    blue: {
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      border: 'border-blue-200 dark:border-blue-800',
-      activeBorder: 'border-blue-500',
-      icon: 'text-blue-600 dark:text-blue-400',
-      text: 'text-blue-700 dark:text-blue-400',
-    },
-    green: {
-      bg: 'bg-green-50 dark:bg-green-900/20',
-      border: 'border-green-200 dark:border-green-800',
-      activeBorder: 'border-green-500',
-      icon: 'text-green-600 dark:text-green-400',
-      text: 'text-green-700 dark:text-green-400',
-    },
-    red: {
-      bg: 'bg-red-50 dark:bg-red-900/20',
-      border: 'border-red-200 dark:border-red-800',
-      activeBorder: 'border-red-500',
-      icon: 'text-red-600 dark:text-red-400',
-      text: 'text-red-700 dark:text-red-400',
-    },
-    gray: {
-      bg: 'bg-gray-50 dark:bg-gray-800',
-      border: 'border-gray-200 dark:border-gray-700',
-      activeBorder: 'border-gray-500',
-      icon: 'text-gray-600 dark:text-gray-400',
-      text: 'text-gray-700 dark:text-gray-400',
-    },
-  };
-
-  const classes = colorClasses[color];
-
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        p-4 rounded-lg border-2 transition-all text-left
-        ${classes.bg}
-        ${active ? classes.activeBorder : classes.border}
-        hover:shadow-md
-      `}
-    >
-      <div className="flex items-center gap-3">
-        <Icon size={24} className={classes.icon} />
-        <div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{count}</p>
-          <p className={`text-sm ${classes.text}`}>{label}</p>
-        </div>
-      </div>
-    </button>
-  );
-};
-
-// ============================================================================
-// Manager Row Component
-// ============================================================================
-
-const ManagerRow: React.FC<{
-  manager: ManagerWithUser;
-  onReview: () => void;
-}> = ({ manager, onReview }) => {
-  const statusConfig = getStatusConfig(manager.verification_status);
-  const StatusIcon = statusConfig.icon;
-
-  return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center gap-3">
-          <div className={`
-            w-10 h-10 rounded-full flex items-center justify-center
-            ${manager.profile_type === 'broker' 
-              ? 'bg-orange-100 dark:bg-orange-900/30' 
-              : 'bg-blue-100 dark:bg-blue-900/30'}
-          `}>
-            {manager.profile_type === 'broker' ? (
-              <User className="text-orange-600 dark:text-orange-400" size={20} />
-            ) : (
-              <Building2 className="text-blue-600 dark:text-blue-400" size={20} />
-            )}
-          </div>
-          <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">
-              {manager.user_name || 'Unknown'}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {manager.user_email || manager.id.slice(0, 8)}
-            </p>
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`
-          inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium
-          ${manager.profile_type === 'broker'
-            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}
-        `}>
-          {manager.profile_type === 'broker' ? 'Broker' : 'Company'}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`
-          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
-          ${statusConfig.bgColor} ${statusConfig.textColor}
-        `}>
-          <StatusIcon size={12} />
-          {statusConfig.label}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-          <Calendar size={14} />
-          {manager.submitted_at 
-            ? new Date(manager.submitted_at).toLocaleDateString()
-            : 'Not submitted'}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right">
-        <button
-          onClick={onReview}
-          className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 transition-colors"
-        >
-          Review
-          <ChevronRight size={14} />
-        </button>
-      </td>
-    </tr>
-  );
-};
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-const getStatusConfig = (status: VerificationStatus) => {
-  switch (status) {
-    case 'approved':
-      return {
-        label: 'Approved',
-        icon: CheckCircle,
-        bgColor: 'bg-green-100 dark:bg-green-900/30',
-        textColor: 'text-green-700 dark:text-green-400',
-      };
-    case 'rejected':
-      return {
-        label: 'Rejected',
-        icon: XCircle,
-        bgColor: 'bg-red-100 dark:bg-red-900/30',
-        textColor: 'text-red-700 dark:text-red-400',
-      };
-    case 'under_review':
-      return {
-        label: 'Under Review',
-        icon: Eye,
-        bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-        textColor: 'text-blue-700 dark:text-blue-400',
-      };
-    case 'submitted':
-      return {
-        label: 'Pending',
-        icon: Clock,
-        bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-        textColor: 'text-yellow-700 dark:text-yellow-400',
-      };
-    case 'verification_required':
-      return {
-        label: 'Needs Update',
-        icon: AlertCircle,
-        bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-        textColor: 'text-orange-700 dark:text-orange-400',
-      };
-    default:
-      return {
-        label: 'Incomplete',
-        icon: FileText,
-        bgColor: 'bg-gray-100 dark:bg-gray-700',
-        textColor: 'text-gray-700 dark:text-gray-400',
-      };
-  }
 };
 
 export default AdminVerificationDashboard;

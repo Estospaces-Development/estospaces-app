@@ -65,6 +65,59 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
 
   const propertyImage = getPropertyImage();
   
+  // Get status color based on status value
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, { bg: string; text: string; dot: string }> = {
+      online: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-emerald-400'
+      },
+      active: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-emerald-400'
+      },
+      published: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-blue-400'
+      },
+      offline: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-gray-400'
+      },
+      draft: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-amber-400'
+      },
+      under_offer: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-orange-400'
+      },
+      sold: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-purple-400'
+      },
+      let: {
+        bg: 'bg-black/60 backdrop-blur-sm',
+        text: 'text-white',
+        dot: 'bg-indigo-400'
+      },
+    };
+    return colors[status?.toLowerCase()] || colors.online;
+  };
+
+  // Format status text (capitalize and replace underscores)
+  const formatStatus = (status: string) => {
+    if (!status) return 'Online';
+    return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+  
   return (
     <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden font-sans group relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:brightness-105 dark:hover:brightness-110">
       {/* Shine effect */}
@@ -73,10 +126,16 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
       {/* Image */}
       <div className="relative h-48 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <div className="absolute top-4 right-4 z-10 transition-transform duration-300 group-hover:scale-110">
-          <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full shadow-lg">
-            {property.status}
-          </span>
+        <div className="absolute bottom-3 left-3 z-10">
+          {(() => {
+            const statusConfig = getStatusColor(property.status);
+            return (
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text} border border-white/20`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`}></span>
+                {formatStatus(property.status)}
+              </span>
+            );
+          })()}
         </div>
         
         {/* Property Image or Placeholder */}

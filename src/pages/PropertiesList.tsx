@@ -55,14 +55,19 @@ const propertyTypeOptions: { value: PropertyType; label: string; icon: React.Rea
 ];
 
 // Status options with colors
-const statusOptions: { value: PropertyStatus; label: string; color: string; bgColor: string }[] = [
-  { value: 'available', label: 'Available', color: 'text-green-700', bgColor: 'bg-green-100' },
-  { value: 'pending', label: 'Pending', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
-  { value: 'sold', label: 'Sold', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-  { value: 'rented', label: 'Rented', color: 'text-purple-700', bgColor: 'bg-purple-100' },
-  { value: 'under_contract', label: 'Under Contract', color: 'text-orange-700', bgColor: 'bg-orange-100' },
-  { value: 'off_market', label: 'Off Market', color: 'text-gray-700', bgColor: 'bg-gray-100' },
-  { value: 'coming_soon', label: 'Coming Soon', color: 'text-indigo-700', bgColor: 'bg-indigo-100' },
+const statusOptions: { value: PropertyStatus | string; label: string; color: string; bgColor: string }[] = [
+  { value: 'available', label: 'Available', color: 'text-green-700 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-900/30' },
+  { value: 'pending', label: 'Pending', color: 'text-yellow-700 dark:text-yellow-400', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30' },
+  { value: 'sold', label: 'Sold', color: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+  { value: 'rented', label: 'Rented', color: 'text-purple-700 dark:text-purple-400', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
+  { value: 'under_contract', label: 'Under Contract', color: 'text-orange-700 dark:text-orange-400', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
+  { value: 'off_market', label: 'Off Market', color: 'text-gray-700 dark:text-gray-400', bgColor: 'bg-gray-100 dark:bg-gray-900/30' },
+  { value: 'coming_soon', label: 'Coming Soon', color: 'text-indigo-700 dark:text-indigo-400', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30' },
+  { value: 'online', label: 'Online', color: 'text-white', bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20' },
+  { value: 'active', label: 'Active', color: 'text-white', bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20' },
+  { value: 'published', label: 'Published', color: 'text-white', bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20' },
+  { value: 'offline', label: 'Offline', color: 'text-white', bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20' },
+  { value: 'draft', label: 'Draft', color: 'text-white', bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20' },
 ];
 
 // Listing type options
@@ -347,11 +352,21 @@ const PropertiesList = () => {
     setShowBulkActions(false);
   };
 
-  const getStatusBadge = (status: PropertyStatus) => {
-    const statusConfig = statusOptions.find(s => s.value === status);
+  const getStatusBadge = (status: PropertyStatus | string) => {
+    if (!status) return null;
+    const statusConfig = statusOptions.find(s => s.value === status?.toLowerCase());
+    const defaultConfig = { 
+      bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20', 
+      color: 'text-white',
+      label: status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
+    };
+    const config = statusConfig || defaultConfig;
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig?.bgColor} ${statusConfig?.color}`}>
-        {statusConfig?.label || status}
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bgColor} ${config.color}`}>
+        {config === defaultConfig && (status?.toLowerCase() === 'online' || status?.toLowerCase() === 'active') && (
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        )}
+        {config.label || status}
       </span>
     );
   };

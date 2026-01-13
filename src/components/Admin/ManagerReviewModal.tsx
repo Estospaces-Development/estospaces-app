@@ -1,15 +1,15 @@
 /**
  * Manager Review Modal
- * Admin modal for reviewing manager verification documents
+ * Premium design for reviewing manager verification documents
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  X, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  User, 
+import {
+  X,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
   Building2,
   FileText,
   Eye,
@@ -23,15 +23,18 @@ import {
   ChevronDown,
   ChevronUp,
   History,
-  MessageSquare
+  Shield,
+  Briefcase,
+  Sparkles,
+  type LucideIcon
 } from 'lucide-react';
 import * as managerVerificationService from '../../services/managerVerificationService';
 import { useAuth } from '../../contexts/AuthContext';
-import type { 
-  ManagerProfile, 
-  ManagerDocument, 
+import type {
+  ManagerProfile,
+  ManagerDocument,
   AuditLogEntry,
-  DocumentType 
+  DocumentType
 } from '../../services/managerVerificationService';
 
 // ============================================================================
@@ -55,7 +58,7 @@ interface ReviewDetails {
 // ============================================================================
 
 const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onClose }) => {
-  const { user } = useAuth();
+  const { user, getRole } = useAuth();
   const [details, setDetails] = useState<ReviewDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +92,6 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
         // Auto-start review if status is 'submitted'
         if (result.data.profile?.verification_status === 'submitted' && user?.id) {
           await managerVerificationService.startReview(managerId, user.id);
-          // Refetch to get updated status
           const updatedResult = await managerVerificationService.getManagerVerificationDetails(managerId);
           if (updatedResult.data) {
             setDetails(updatedResult.data);
@@ -120,18 +122,14 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
     setActionLoading('approve');
     setError(null);
     try {
-      console.log('Approving manager:', managerId, 'by admin:', user.id);
       const result = await managerVerificationService.approveManager(managerId, user.id, approveNotes);
-      console.log('Approval result:', result);
       if (result.error) {
         setError(result.error);
         setShowApproveConfirm(false);
       } else {
-        // Success - close the modal
         onClose();
       }
     } catch (err) {
-      console.error('Approval error:', err);
       setError((err as Error).message);
       setShowApproveConfirm(false);
     } finally {
@@ -159,24 +157,60 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
   };
 
   const handleRevokeApproval = async () => {
-    if (!user?.id || !revokeReason.trim()) return;
+    if (!user?.id) {
+      setError('You must be logged in to revoke approval');
+      return;
+    }
+
+    // Verify admin role
+    const userRole = getRole();
+    if (userRole !== 'admin') {
+      setError(`Permission denied. Admin role required. Current role: ${userRole || 'none'}`);
+      console.error('Revocation attempted by non-admin user:', { userId: user.id, role: userRole });
+      return;
+    }
+
+    if (!revokeReason.trim()) {
+      setError('Please provide a reason for revocation');
+      return;
+    }
 
     setActionLoading('revoke');
     setError(null);
     try {
-      console.log('Revoking approval for manager:', managerId);
+      console.log('Revoking manager approval:', { 
+        managerId, 
+        adminId: user.id, 
+        reasonLength: revokeReason.length,
+        userRole: user.user_metadata?.role || 'unknown'
+      });
+      
       const result = await managerVerificationService.revokeManagerApproval(managerId, user.id, revokeReason);
-      console.log('Revoke result:', result);
+
       if (result.error) {
-        setError(result.error);
-        setShowRevokeConfirm(false);
+        console.error('Revocation error:', result.error);
+        // Keep the form open so user can see the error and try again
+        setError(result.error || 'Failed to revoke approval. Please try again.');
+        // Don't close the form on error - let user see the error message
       } else {
+        console.log('Revocation successful:', result.data);
+        // Clear the form
+        setRevokeReason('');
+        setShowRevokeConfirm(false);
+        // Refresh the details to show updated status
+        await fetchDetails();
+        // Close the modal and refresh the parent list
         onClose();
       }
     } catch (err) {
-      console.error('Revoke error:', err);
-      setError((err as Error).message);
-      setShowRevokeConfirm(false);
+      console.error('Revocation exception:', err);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : typeof err === 'string'
+        ? err
+        : 'An unexpected error occurred';
+      setError(`Error: ${errorMessage}. Please check the console for details.`);
+      // Keep form open on error
     } finally {
       setActionLoading(null);
     }
@@ -214,9 +248,11 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
   if (loading) {
     return (
       <ModalWrapper onClose={onClose}>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-orange-500" size={32} />
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading verification details...</span>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mb-4 shadow-lg">
+            <Loader2 className="animate-spin text-white" size={28} />
+          </div>
+          <p className="text-gray-600 font-medium">Loading verification details...</p>
         </div>
       </ModalWrapper>
     );
@@ -225,17 +261,17 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
   if (!details || !details.profile) {
     return (
       <ModalWrapper onClose={onClose}>
-        <div className="text-center py-12">
-          <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-            Manager Not Found
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+        <div className="text-center py-16">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="text-gray-400" size={40} />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Manager Not Found</h3>
+          <p className="text-gray-500 mb-6 max-w-sm mx-auto">
             {error || 'Unable to load verification details'}
           </p>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
+            className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
           >
             Close
           </button>
@@ -250,76 +286,104 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
 
   return (
     <ModalWrapper onClose={onClose}>
-      {/* Header */}
-      <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4">
-          <div className={`
-            w-14 h-14 rounded-full flex items-center justify-center
-            ${isBroker ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}
-          `}>
-            {isBroker ? (
-              <User className="text-orange-600 dark:text-orange-400" size={28} />
-            ) : (
-              <Building2 className="text-blue-600 dark:text-blue-400" size={28} />
-            )}
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {userInfo?.full_name || 'Unknown Manager'}
-            </h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <Mail size={14} />
-              <span>{userInfo?.email || managerId.slice(0, 8)}</span>
-              <span className={`
-                ml-2 px-2 py-0.5 rounded text-xs font-medium
-                ${isBroker
-                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}
-              `}>
-                {isBroker ? 'Broker' : 'Company'}
+      {/* Premium Header */}
+      <div className="relative overflow-hidden flex-shrink-0">
+        {/* Gradient Background */}
+        <div className={`absolute inset-0 bg-gradient-to-r ${isBroker
+            ? 'from-orange-500 via-red-500 to-rose-500'
+            : 'from-blue-500 via-indigo-500 to-purple-500'
+          } opacity-10`} />
+
+        <div className="relative p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {/* Premium Avatar */}
+              <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl ${isBroker
+                  ? 'bg-gradient-to-br from-orange-400 to-red-500'
+                  : 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                }`}>
+                {isBroker ? (
+                  <User className="text-white" size={28} />
+                ) : (
+                  <Building2 className="text-white" size={28} />
+                )}
+                {/* Status indicator */}
+                <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${statusConfig.dotColor}`}>
+                  <statusConfig.icon size={10} className="text-white" />
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {userInfo?.full_name || 'Unknown Manager'}
+                </h2>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="flex items-center gap-1.5 text-sm text-gray-500">
+                    <Mail size={14} />
+                    {userInfo?.email || managerId.slice(0, 8)}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium ${isBroker
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-blue-100 text-blue-700'
+                    }`}>
+                    {isBroker ? <Briefcase size={12} /> : <Building2 size={12} />}
+                    {isBroker ? 'Broker' : 'Company'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Status Badge */}
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium shadow-sm ${statusConfig.bgColor} ${statusConfig.textColor}`}>
+                <statusConfig.icon size={14} />
+                {statusConfig.label}
               </span>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X size={20} className="text-gray-400" />
+              </button>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`
-            inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
-            ${statusConfig.bgColor} ${statusConfig.textColor}
-          `}>
-            <statusConfig.icon size={14} />
-            {statusConfig.label}
-          </span>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="mx-6 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-          <AlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={16} />
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+        <div className="mx-6 mt-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-red-900 mb-1">Error</p>
+            <p className="text-sm text-red-700 break-words">{error}</p>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-500 hover:text-red-700 flex-shrink-0 p-1 hover:bg-red-100 rounded transition-colors"
+            aria-label="Dismiss error"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
       {/* Content */}
-      <div className="p-6 max-h-[60vh] overflow-y-auto">
-        {/* Profile Information */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-            <FileText size={16} />
+      <div className="p-6 overflow-y-auto space-y-6 flex-1 min-h-0">
+        {/* Profile Information Card */}
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="p-1.5 bg-gray-900 rounded-lg">
+              <FileText size={14} className="text-white" />
+            </div>
             Profile Information
           </h3>
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {isBroker ? (
               <>
                 <InfoItem icon={Hash} label="License Number" value={profile.license_number} />
                 <InfoItem icon={Calendar} label="License Expiry" value={profile.license_expiry_date} />
-                <InfoItem icon={FileText} label="Association ID" value={profile.association_membership_id} />
+                <InfoItem icon={Shield} label="Association ID" value={profile.association_membership_id} />
               </>
             ) : (
               <>
@@ -329,23 +393,33 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
                 <InfoItem icon={Mail} label="Representative Email" value={profile.authorized_representative_email} />
               </>
             )}
-            <InfoItem 
-              icon={Calendar} 
-              label="Submitted" 
-              value={profile.submitted_at ? new Date(profile.submitted_at).toLocaleString() : undefined} 
+            <InfoItem
+              icon={Calendar}
+              label="Submitted"
+              value={profile.submitted_at ? new Date(profile.submitted_at).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+              }) : undefined}
             />
           </div>
         </div>
 
-        {/* Documents */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-            <FileText size={16} />
-            Uploaded Documents ({documents.length})
+        {/* Documents Section */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="p-1.5 bg-gray-900 rounded-lg">
+              <FileText size={14} className="text-white" />
+            </div>
+            Documents
+            <span className="ml-auto text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+              {documents.length} uploaded
+            </span>
           </h3>
           <div className="space-y-3">
             {documents.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic">No documents uploaded</p>
+              <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                <Sparkles className="mx-auto text-gray-300 mb-2" size={32} />
+                <p className="text-sm text-gray-500">No documents uploaded yet</p>
+              </div>
             ) : (
               documents.map((doc) => (
                 <DocumentCard
@@ -369,35 +443,39 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
         </div>
 
         {/* Audit Log */}
-        <div>
+        <div className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
           <button
             onClick={() => setShowAuditLog(!showAuditLog)}
-            className="w-full flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 transition-colors"
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
               <History size={16} />
-              Audit Log ({auditLog.length})
+              Activity Log
+              <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border">
+                {auditLog.length}
+              </span>
             </span>
-            {showAuditLog ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {showAuditLog ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
           </button>
           {showAuditLog && (
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-h-48 overflow-y-auto">
+            <div className="px-4 pb-4 max-h-48 overflow-y-auto">
               {auditLog.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400 italic">No audit entries</p>
+                <p className="text-sm text-gray-500 italic py-2">No activity recorded</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {auditLog.map((entry) => (
-                    <div key={entry.id} className="text-sm border-l-2 border-gray-300 dark:border-gray-600 pl-3">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {formatActionType(entry.action_type)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(entry.created_at).toLocaleString()}
-                        {entry.actor_role && ` · ${entry.actor_role}`}
-                      </p>
-                      {entry.notes && (
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{entry.notes}</p>
-                      )}
+                    <div key={entry.id} className="flex gap-3 text-sm">
+                      <div className="w-2 h-2 rounded-full bg-gray-300 mt-1.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900">{formatActionType(entry.action_type)}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(entry.created_at).toLocaleString()}
+                          {entry.actor_role && ` • ${entry.actor_role}`}
+                        </p>
+                        {entry.notes && (
+                          <p className="text-xs text-gray-600 mt-1 bg-white px-2 py-1 rounded border">{entry.notes}</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -408,36 +486,41 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
       </div>
 
       {/* Actions Footer */}
-      <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="p-6 border-t border-gray-100 bg-gradient-to-br from-gray-50 to-white flex-shrink-0">
         {profile.verification_status === 'approved' ? (
-          // Revoke approval option for approved managers
           showRevokeConfirm ? (
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Revocation Reason *
-              </label>
-              <textarea
-                value={revokeReason}
-                onChange={(e) => setRevokeReason(e.target.value)}
-                placeholder="Explain why this approval is being revoked..."
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
-                rows={3}
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Revocation Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={revokeReason}
+                  onChange={(e) => {
+                    setRevokeReason(e.target.value);
+                    setError(null); // Clear error when user types
+                  }}
+                  placeholder="Explain why this approval is being revoked..."
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  rows={3}
+                  autoFocus
+                />
+                {!revokeReason.trim() && (
+                  <p className="text-xs text-gray-500 mt-1">Please provide a reason for revocation</p>
+                )}
+              </div>
               <div className="flex gap-3">
                 <button
                   onClick={handleRevokeApproval}
                   disabled={!revokeReason.trim() || actionLoading === 'revoke'}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20"
                 >
                   {actionLoading === 'revoke' && <Loader2 className="animate-spin" size={16} />}
                   Confirm Revocation
                 </button>
                 <button
-                  onClick={() => {
-                    setShowRevokeConfirm(false);
-                    setRevokeReason('');
-                  }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+                  onClick={() => { setShowRevokeConfirm(false); setRevokeReason(''); }}
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
@@ -445,75 +528,89 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                <CheckCircle size={18} />
-                <span className="text-sm font-medium">This manager is approved</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <CheckCircle className="text-emerald-600" size={20} />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Verified Manager</p>
+                  <p className="text-xs text-gray-500">This account has been approved</p>
+                </div>
               </div>
               <button
-                onClick={() => setShowRevokeConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Revoke button clicked');
+                  setShowRevokeConfirm(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 active:bg-red-800 transition-colors shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={actionLoading !== null}
+                type="button"
               >
-                <XCircle size={18} />
+                <XCircle size={16} />
                 Revoke Approval
               </button>
             </div>
           )
         ) : showRejectForm ? (
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Rejection Reason *
-            </label>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Explain why this verification is being rejected..."
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
-              rows={3}
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rejection Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Explain why this verification is being rejected..."
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                rows={3}
+              />
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={handleReject}
                 disabled={!rejectReason.trim() || actionLoading === 'reject'}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20"
               >
                 {actionLoading === 'reject' && <Loader2 className="animate-spin" size={16} />}
                 Confirm Rejection
               </button>
               <button
-                onClick={() => {
-                  setShowRejectForm(false);
-                  setRejectReason('');
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+                onClick={() => { setShowRejectForm(false); setRejectReason(''); }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
             </div>
           </div>
         ) : showApproveConfirm ? (
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Approval Notes (Optional)
-            </label>
-            <textarea
-              value={approveNotes}
-              onChange={(e) => setApproveNotes(e.target.value)}
-              placeholder="Add any notes for this approval..."
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
-              rows={2}
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Approval Notes <span className="text-gray-400">(Optional)</span>
+              </label>
+              <textarea
+                value={approveNotes}
+                onChange={(e) => setApproveNotes(e.target.value)}
+                placeholder="Add any notes for this approval..."
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                rows={2}
+              />
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={handleApprove}
                 disabled={actionLoading === 'approve'}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
               >
                 {actionLoading === 'approve' && <Loader2 className="animate-spin" size={16} />}
+                <CheckCircle size={16} />
                 Confirm Approval
               </button>
               <button
                 onClick={() => setShowApproveConfirm(false)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
@@ -524,14 +621,14 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
             <button
               onClick={() => setShowApproveConfirm(true)}
               disabled={documents.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
             >
               <CheckCircle size={18} />
               Approve
             </button>
             <button
               onClick={() => setShowRejectForm(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all shadow-lg shadow-red-500/20"
             >
               <XCircle size={18} />
               Reject
@@ -544,32 +641,35 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
 };
 
 // ============================================================================
-// Modal Wrapper
+// Modal Wrapper - Premium Glassmorphism Design
 // ============================================================================
 
-const ModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ 
-  children, 
-  onClose 
+const ModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({
+  children,
+  onClose
 }) => {
-  // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
   }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50" 
+      {/* Premium Backdrop */}
+      <div
+        className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      
-      {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+
+      {/* Modal with slide-up animation */}
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
         {children}
       </div>
     </div>
@@ -581,16 +681,18 @@ const ModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }>
 // ============================================================================
 
 const InfoItem: React.FC<{
-  icon: React.FC<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   label: string;
   value?: string | null;
 }> = ({ icon: Icon, label, value }) => (
-  <div className="flex items-start gap-2">
-    <Icon size={14} className="text-gray-400 mt-0.5" />
-    <div>
-      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-        {value || <span className="text-gray-400 italic">Not provided</span>}
+  <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-100">
+    <div className="p-2 bg-gray-100 rounded-lg">
+      <Icon size={14} className="text-gray-600" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-xs text-gray-500 mb-0.5">{label}</p>
+      <p className="text-sm font-medium text-gray-900 truncate">
+        {value || <span className="text-gray-400 italic font-normal">Not provided</span>}
       </p>
     </div>
   </div>
@@ -621,181 +723,181 @@ const DocumentCard: React.FC<{
   actionLoading,
   disabled,
 }) => {
-  const docStatusConfig = getDocStatusConfig(document.verification_status);
-  const DocStatusIcon = docStatusConfig.icon;
+    const docStatusConfig = getDocStatusConfig(document.verification_status);
 
-  return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-lg ${docStatusConfig.bgColor}`}>
-            <DocStatusIcon className={docStatusConfig.textColor} size={18} />
-          </div>
-          <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">
-              {managerVerificationService.getDocumentTypeName(document.document_type)}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {document.document_name || 'Document'}
-              {document.expiry_date && ` · Expires: ${new Date(document.expiry_date).toLocaleDateString()}`}
-            </p>
-            {document.document_number && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Number: {document.document_number}
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className={`p-2.5 rounded-xl ${docStatusConfig.bgColor}`}>
+              <FileText className={docStatusConfig.textColor} size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-gray-900">
+                {managerVerificationService.getDocumentTypeName(document.document_type)}
               </p>
-            )}
+              <p className="text-xs text-gray-500 mt-0.5">
+                {document.document_name || 'Document uploaded'}
+                {document.expiry_date && ` • Expires: ${new Date(document.expiry_date).toLocaleDateString()}`}
+              </p>
+              {document.document_number && (
+                <p className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block">
+                  {document.document_number}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`
-            px-2 py-0.5 rounded text-xs font-medium
-            ${docStatusConfig.bgColor} ${docStatusConfig.textColor}
-          `}>
+          <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${docStatusConfig.bgColor} ${docStatusConfig.textColor}`}>
+            <docStatusConfig.icon size={12} />
             {docStatusConfig.label}
           </span>
         </div>
-      </div>
 
-      {document.rejection_reason && (
-        <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
-          <strong>Rejection reason:</strong> {document.rejection_reason}
-        </div>
-      )}
-
-      {showReuploadForm ? (
-        <div className="mt-3 space-y-2">
-          <textarea
-            value={reuploadReason}
-            onChange={(e) => setReuploadReason(e.target.value)}
-            placeholder="Explain what's wrong with this document..."
-            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
-            rows={2}
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={onSubmitReupload}
-              disabled={!reuploadReason.trim() || actionLoading}
-              className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 disabled:opacity-50"
-            >
-              {actionLoading && <Loader2 className="animate-spin" size={12} />}
-              Request Re-upload
-            </button>
-            <button
-              onClick={onCancelReupload}
-              className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs"
-            >
-              Cancel
-            </button>
+        {document.rejection_reason && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-700">
+            <strong>Rejection reason:</strong> {document.rejection_reason}
           </div>
-        </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-2">
-          <a
-            href={document.document_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
-            <Eye size={12} />
-            View
-          </a>
-          <a
-            href={document.document_url}
-            download
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
-            <Download size={12} />
-            Download
-          </a>
-          {!disabled && document.verification_status !== 'rejected' && document.verification_status !== 'reupload_required' && (
-            <button
-              onClick={onRequestReupload}
-              className="flex items-center gap-1 px-3 py-1.5 border border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 rounded text-xs hover:bg-orange-50 dark:hover:bg-orange-900/20"
+        )}
+
+        {showReuploadForm ? (
+          <div className="mt-4 space-y-3">
+            <textarea
+              value={reuploadReason}
+              onChange={(e) => setReuploadReason(e.target.value)}
+              placeholder="Explain what's wrong with this document..."
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none resize-none transition-all"
+              rows={2}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={onSubmitReupload}
+                disabled={!reuploadReason.trim() || actionLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors"
+              >
+                {actionLoading && <Loader2 className="animate-spin" size={12} />}
+                Request Re-upload
+              </button>
+              <button
+                onClick={onCancelReupload}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 flex items-center gap-2">
+            <a
+              href={document.document_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
             >
-              <RefreshCw size={12} />
-              Request Re-upload
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+              <Eye size={12} />
+              View
+            </a>
+            <a
+              href={document.document_url}
+              download
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+            >
+              <Download size={12} />
+              Download
+            </a>
+            {!disabled && document.verification_status !== 'rejected' && document.verification_status !== 'reupload_required' && (
+              <button
+                onClick={onRequestReupload}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-orange-200 bg-orange-50 text-orange-600 rounded-lg text-xs font-medium hover:bg-orange-100 transition-colors"
+              >
+                <RefreshCw size={12} />
+                Request Re-upload
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
-const getStatusConfig = (status: string) => {
+const getStatusConfig = (status: string): { label: string; icon: LucideIcon; bgColor: string; textColor: string; dotColor: string } => {
   switch (status) {
     case 'approved':
       return {
         label: 'Approved',
         icon: CheckCircle,
-        bgColor: 'bg-green-100 dark:bg-green-900/30',
-        textColor: 'text-green-700 dark:text-green-400',
+        bgColor: 'bg-emerald-100',
+        textColor: 'text-emerald-700',
+        dotColor: 'bg-emerald-500',
       };
     case 'rejected':
       return {
         label: 'Rejected',
         icon: XCircle,
-        bgColor: 'bg-red-100 dark:bg-red-900/30',
-        textColor: 'text-red-700 dark:text-red-400',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-700',
+        dotColor: 'bg-red-500',
       };
     case 'under_review':
       return {
-        label: 'Under Review',
+        label: 'In Review',
         icon: Eye,
-        bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-        textColor: 'text-blue-700 dark:text-blue-400',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-700',
+        dotColor: 'bg-blue-500',
       };
     case 'submitted':
       return {
         label: 'Pending',
         icon: Clock,
-        bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-        textColor: 'text-yellow-700 dark:text-yellow-400',
+        bgColor: 'bg-amber-100',
+        textColor: 'text-amber-700',
+        dotColor: 'bg-amber-500',
       };
     default:
       return {
         label: 'Incomplete',
         icon: FileText,
-        bgColor: 'bg-gray-100 dark:bg-gray-700',
-        textColor: 'text-gray-700 dark:text-gray-400',
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-700',
+        dotColor: 'bg-gray-400',
       };
   }
 };
 
-const getDocStatusConfig = (status: string) => {
+const getDocStatusConfig = (status: string): { label: string; icon: LucideIcon; bgColor: string; textColor: string } => {
   switch (status) {
     case 'approved':
       return {
         label: 'Approved',
         icon: CheckCircle,
-        bgColor: 'bg-green-100 dark:bg-green-900/30',
-        textColor: 'text-green-600 dark:text-green-400',
+        bgColor: 'bg-emerald-100',
+        textColor: 'text-emerald-600',
       };
     case 'rejected':
     case 'reupload_required':
       return {
-        label: status === 'rejected' ? 'Rejected' : 'Re-upload Required',
+        label: status === 'rejected' ? 'Rejected' : 'Re-upload',
         icon: XCircle,
-        bgColor: 'bg-red-100 dark:bg-red-900/30',
-        textColor: 'text-red-600 dark:text-red-400',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-600',
       };
     case 'under_review':
       return {
         label: 'Reviewing',
         icon: Eye,
-        bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-        textColor: 'text-blue-600 dark:text-blue-400',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-600',
       };
     default:
       return {
         label: 'Pending',
         icon: Clock,
-        bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-        textColor: 'text-yellow-600 dark:text-yellow-400',
+        bgColor: 'bg-amber-100',
+        textColor: 'text-amber-600',
       };
   }
 };
@@ -817,6 +919,7 @@ const formatActionType = (actionType: string): string => {
     'status_changed': 'Status Changed',
     'license_expired': 'License Expired',
     'critical_field_edited': 'Critical Field Edited',
+    'approval_revoked': 'Approval Revoked',
   };
   return map[actionType] || actionType;
 };

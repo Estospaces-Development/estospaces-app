@@ -500,9 +500,12 @@ export const getManagerVerificationSummary = async (
 
 /**
  * Get all pending verifications (admin only)
+ * @param status - specific status to filter, or undefined/null for all statuses
+ * @param allStatuses - if true, fetch all statuses regardless of status param
  */
 export const getPendingVerifications = async (
-  status?: VerificationStatus
+  status?: VerificationStatus,
+  allStatuses: boolean = false
 ): Promise<{ data: (ManagerProfile & { user_email?: string; user_name?: string })[]; error: string | null }> => {
   try {
     if (!supabase) {
@@ -516,10 +519,13 @@ export const getPendingVerifications = async (
       .order('submitted_at', { ascending: true, nullsFirst: false });
 
     if (status) {
+      // Filter by specific status
       query = query.eq('verification_status', status);
-    } else {
+    } else if (!allStatuses) {
+      // Default: show only pending verifications (submitted and under_review)
       query = query.in('verification_status', ['submitted', 'under_review']);
     }
+    // If allStatuses is true and no specific status, don't apply any filter (show all)
 
     const { data: managerProfiles, error: profilesError } = await query;
 
@@ -775,6 +781,12 @@ export const revokeManagerApproval = async (
       return { data: null, error: 'Revocation reason is required' };
     }
 
+    console.log('Attempting to revoke manager approval:', {
+      managerId,
+      adminId,
+      reasonLength: reason.length
+    });
+
     // Update manager profile to rejected status
     const { data, error } = await supabase
       .from('manager_profiles')
@@ -789,17 +801,36 @@ export const revokeManagerApproval = async (
       .single();
 
     if (error) {
-      throw error;
+      console.error('Supabase update error:', error);
+      // Provide more detailed error message
+      const errorMessage = error.message || error.code || 'Unknown database error';
+      const detailedError = error.code === '42501' 
+        ? 'Permission denied. Please ensure you are logged in as an admin.'
+        : error.code === 'PGRST116'
+        ? 'No rows found to update. The manager profile may not exist.'
+        : `Database error: ${errorMessage}`;
+      return { data: null, error: detailedError };
     }
 
+    if (!data) {
+      return { data: null, error: 'No data returned from update. The manager profile may not exist.' };
+    }
+
+    console.log('Manager profile updated successfully:', data);
+
     // Update profiles table to mark as not verified
-    await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ is_verified: false })
       .eq('id', managerId);
 
+    if (profileError) {
+      console.warn('Warning: Failed to update profiles table:', profileError);
+      // Don't fail the whole operation if this fails, but log it
+    }
+
     // Log the revocation
-    await logAuditEvent({
+    const auditError = await logAuditEvent({
       actionType: 'approval_revoked',
       actorId: adminId,
       actorRole: 'admin',
@@ -809,10 +840,21 @@ export const revokeManagerApproval = async (
       details: { reason, action: 'approval_revoked' },
     });
 
+    if (auditError) {
+      console.warn('Warning: Failed to log audit event:', auditError);
+      // Don't fail the whole operation if audit logging fails
+    }
+
+    console.log('Revocation completed successfully');
     return { data, error: null };
   } catch (error) {
     console.error('Error revoking manager approval:', error);
-    return { data: null, error: (error as Error).message };
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+      ? error 
+      : 'An unexpected error occurred while revoking approval';
+    return { data: null, error: errorMessage };
   }
 };
 

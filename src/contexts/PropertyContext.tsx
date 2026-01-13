@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -702,15 +702,64 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   const filtered = filteredProperties();
 
+  // Apply client-side sorting to filtered results
+  const sortedAndFiltered = useMemo(() => {
+    const result = [...filtered];
+    
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sort.field) {
+        case 'price':
+          aValue = a.price?.amount || 0;
+          bValue = b.price?.amount || 0;
+          break;
+        case 'area':
+          aValue = a.area?.value || 0;
+          bValue = b.area?.value || 0;
+          break;
+        case 'bedrooms':
+          aValue = a.bedrooms || 0;
+          bValue = b.bedrooms || 0;
+          break;
+        case 'views':
+          aValue = a.views || 0;
+          bValue = b.views || 0;
+          break;
+        case 'title':
+          aValue = (a.title || '').toLowerCase();
+          bValue = (b.title || '').toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt || 0).getTime();
+          bValue = new Date(b.createdAt || 0).getTime();
+          break;
+        case 'updatedAt':
+          aValue = new Date(a.updatedAt || 0).getTime();
+          bValue = new Date(b.updatedAt || 0).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sort.order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sort.order === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return result;
+  }, [filtered, sort]);
+
   useEffect(() => {
     setPagination(prev => ({
       ...prev,
-      total: filtered.length,
-      totalPages: Math.ceil(filtered.length / prev.limit),
+      total: sortedAndFiltered.length,
+      totalPages: Math.ceil(sortedAndFiltered.length / prev.limit),
     }));
-  }, [filtered.length, pagination.limit]);
+  }, [sortedAndFiltered.length, pagination.limit]);
 
-  const paginatedProperties = filtered.slice(
+  const paginatedProperties = sortedAndFiltered.slice(
     (pagination.page - 1) * pagination.limit,
     pagination.page * pagination.limit
   );
@@ -1188,7 +1237,11 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const exportProperties = (format: 'csv' | 'json' | 'pdf', ids?: string[]) => {
-    const toExport = ids ? properties.filter(p => ids.includes(p.id)) : paginatedProperties;
+    // If specific IDs are provided, export those (respecting current sort)
+    // Otherwise, export ALL filtered and sorted properties (not just current page)
+    const toExport = ids 
+      ? sortedAndFiltered.filter(p => ids.includes(p.id))
+      : sortedAndFiltered;
 
     if (format === 'json') {
       const dataStr = JSON.stringify(toExport, null, 2);

@@ -106,9 +106,9 @@ export const ManagerVerificationProvider = ({ children }: ManagerVerificationPro
   const fetchData = useCallback(async () => {
     if (!user?.id || !isAuthenticated || fetchingRef.current) return;
     
-    // Only fetch for managers
+    // Fetch for managers and admins (admins might also have manager profiles)
     const role = getRole();
-    if (role !== 'manager') {
+    if (role !== 'manager' && role !== 'admin') {
       setIsLoading(false);
       return;
     }
