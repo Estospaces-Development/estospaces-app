@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Home, Plus, ChevronRight, X, Loader2, CheckCircle, XCircle, AlertCircle, Search, ArrowLeft } from 'lucide-react';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { notifyViewingCancelled } from '../services/notificationsService';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardViewings = () => {
@@ -127,7 +128,7 @@ const DashboardViewings = () => {
 
   // Cancel viewing
   const handleCancelViewing = async (viewingId) => {
-    if (!isSupabaseAvailable()) return;
+    if (!isSupabaseAvailable() || !user?.id) return;
 
     try {
       const { error } = await supabase
@@ -137,9 +138,28 @@ const DashboardViewings = () => {
 
       if (error) throw error;
 
+      // Find the viewing to get property details for notification
+      const viewing = viewings.find(v => v.id === viewingId);
+      
       setViewings(prev => prev.map(v => 
         v.id === viewingId ? { ...v, status: 'cancelled' } : v
       ));
+
+      // Send cancellation notification
+      if (viewing) {
+        try {
+          await notifyViewingCancelled(
+            user.id,
+            viewing.propertyTitle,
+            viewing.propertyId,
+            viewing.date,
+            'Cancelled by you'
+          );
+          console.log('🔔 Viewing cancellation notification sent');
+        } catch (notifyErr) {
+          console.log('⚠️ Could not send notification:', notifyErr);
+        }
+      }
     } catch (err) {
       console.error('Error cancelling viewing:', err);
     }

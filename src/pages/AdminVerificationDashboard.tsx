@@ -350,14 +350,16 @@ const AdminVerificationDashboard: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-gray-900 truncate">
-                            {manager.user_name || 'Unknown User'}
+                            {manager.user_name || 
+                             manager.user_email?.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 
+                             `Manager ${manager.id.slice(0, 8)}`}
                           </h3>
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
                             {statusConfig.label}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className="truncate">{manager.user_email || '—'}</span>
+                          <span className="truncate">{manager.user_email || manager.id.slice(0, 8) + '...'}</span>
                           <span className="hidden sm:inline">•</span>
                           <span className="hidden sm:inline font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
                             {manager.license_number || manager.company_registration_number || 'No license'}

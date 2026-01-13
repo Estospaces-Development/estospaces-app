@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { notifyPropertySaved } from '../services/notificationsService';
 
 const SavedPropertiesContext = createContext();
 
@@ -180,6 +181,16 @@ export const SavedPropertiesProvider = ({ children }) => {
       // Refresh the full list to get property details
       console.log('🔖 Refreshing saved properties list...');
       await fetchSavedProperties();
+      
+      // Send notification for property saved
+      const propertyTitle = property.title || 'Property';
+      const propertyImage = property.image_urls?.[0] || property.imageUrl;
+      try {
+        await notifyPropertySaved(user.id, propertyTitle, propertyId, propertyImage);
+        console.log('🔔 Property saved notification sent');
+      } catch (notifyErr) {
+        console.log('⚠️ Could not send notification:', notifyErr);
+      }
       
       console.log('✅ Property saved successfully:', data);
       return { success: true, data };

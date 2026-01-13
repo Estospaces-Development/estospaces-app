@@ -8,6 +8,7 @@ import { PropertyFilterProvider } from './contexts/PropertyFilterContext';
 import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
 import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import { LocationProvider } from './contexts/LocationContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 import { ManagerVerificationProvider } from './contexts/ManagerVerificationContext';
 import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
@@ -50,6 +51,7 @@ import DashboardReviews from './pages/DashboardReviews';
 import DashboardSaved from './pages/DashboardSaved';
 import DashboardSettings from './pages/DashboardSettings';
 import DashboardHelp from './pages/DashboardHelp';
+import DashboardNotifications from './pages/DashboardNotifications';
 import PropertyDetail from './pages/PropertyDetail';
 
 // Auth Components
@@ -401,6 +403,16 @@ function App() {
                           <UserProtectedRoute>
                             <DashboardLayout>
                               <DashboardHelp />
+                            </DashboardLayout>
+                          </UserProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/user/dashboard/notifications"
+                        element={
+                          <UserProtectedRoute>
+                            <DashboardLayout>
+                              <DashboardNotifications />
                             </DashboardLayout>
                           </UserProtectedRoute>
                         }

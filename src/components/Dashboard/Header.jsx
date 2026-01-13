@@ -72,7 +72,7 @@ const Header = () => {
   };
 
   return (
-    <header className="h-16 bg-primary dark:bg-[#0a0a0a] sticky top-0 z-30 shadow-sm border-b border-primary/80 dark:border-gray-800">
+    <header className="h-16 bg-primary sticky top-0 z-30 shadow-sm border-b border-primary/80">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
         {/* Left side - Logo - Clickable to go to dashboard */}
         <div className="flex items-center gap-6">

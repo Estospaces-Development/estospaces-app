@@ -5,13 +5,49 @@ import { supabase } from '../lib/supabase';
 const NotificationsContext = createContext();
 
 export const NOTIFICATION_TYPES = {
+  // Appointments/Viewings
   APPOINTMENT_APPROVED: 'appointment_approved',
   APPOINTMENT_REJECTED: 'appointment_rejected',
+  APPOINTMENT_REMINDER: 'appointment_reminder',
+  VIEWING_BOOKED: 'viewing_booked',
+  VIEWING_CONFIRMED: 'viewing_confirmed',
+  VIEWING_CANCELLED: 'viewing_cancelled',
+  VIEWING_RESCHEDULED: 'viewing_rescheduled',
+
+  // Applications
   APPLICATION_UPDATE: 'application_update',
+  APPLICATION_SUBMITTED: 'application_submitted',
+  APPLICATION_APPROVED: 'application_approved',
+  APPLICATION_REJECTED: 'application_rejected',
+  DOCUMENTS_REQUESTED: 'documents_requested',
+
+  // Verification
   DOCUMENT_VERIFIED: 'document_verified',
   PROFILE_VERIFIED: 'profile_verified',
+
+  // Messages
+  MESSAGE_RECEIVED: 'message_received',
   TICKET_RESPONSE: 'ticket_response',
+
+  // Properties
+  PROPERTY_SAVED: 'property_saved',
+  PRICE_DROP: 'price_drop',
+  NEW_PROPERTY_MATCH: 'new_property_match',
+  PROPERTY_AVAILABLE: 'property_available',
+  PROPERTY_UNAVAILABLE: 'property_unavailable',
+
+  // Payments
+  PAYMENT_REMINDER: 'payment_reminder',
+  PAYMENT_RECEIVED: 'payment_received',
+  PAYMENT_FAILED: 'payment_failed',
+
+  // Contracts
+  CONTRACT_UPDATE: 'contract_update',
+  CONTRACT_EXPIRING: 'contract_expiring',
+
+  // System
   SYSTEM: 'system',
+  WELCOME: 'welcome',
 };
 
 export const NotificationsProvider = ({ children }) => {

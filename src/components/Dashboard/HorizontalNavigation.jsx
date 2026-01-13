@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   Home,
   Heart,
+  Settings,
 } from 'lucide-react';
 import { useMessages } from '../../contexts/MessagesContext';
 import { usePropertyFilter } from '../../contexts/PropertyFilterContext';
@@ -44,6 +45,7 @@ const HorizontalNavigation = () => {
     { icon: CreditCard, label: 'Payments', path: '/user/dashboard/payments' },
     { icon: FileText, label: 'Contracts', path: '/user/dashboard/contracts' },
     { icon: User, label: 'Profile', path: '/user/dashboard/profile' },
+    { icon: Settings, label: 'Settings', path: '/user/dashboard/settings' },
     { icon: HelpCircle, label: 'Help & Support', path: '/user/dashboard/help' },
   ];
 
@@ -112,7 +114,7 @@ const HorizontalNavigation = () => {
 
   return (
     <nav 
-      className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-16 z-20 shadow-sm"
+      className="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-sm"
       role="navigation"
       aria-label="Main navigation"
     >

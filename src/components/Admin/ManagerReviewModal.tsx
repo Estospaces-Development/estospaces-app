@@ -315,12 +315,14 @@ const ManagerReviewModal: React.FC<ManagerReviewModalProps> = ({ managerId, onCl
 
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {userInfo?.full_name || 'Unknown Manager'}
+                  {userInfo?.full_name || 
+                   userInfo?.email?.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 
+                   'Unknown Manager'}
                 </h2>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="flex items-center gap-1.5 text-sm text-gray-500">
                     <Mail size={14} />
-                    {userInfo?.email || managerId.slice(0, 8)}
+                    {userInfo?.email || managerId.slice(0, 8) + '...'}
                   </span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium ${isBroker
                       ? 'bg-orange-100 text-orange-700'

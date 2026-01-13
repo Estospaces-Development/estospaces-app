@@ -45,6 +45,7 @@ import { useAuth } from '../contexts/AuthContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import { notifyViewingBooked } from '../services/notificationsService';
 import ShareModal from '../components/Dashboard/ShareModal';
 
 const PropertyDetail = () => {
@@ -349,6 +350,27 @@ const PropertyDetail = () => {
       }
 
       setViewingSuccess(true);
+      
+      // Send notification for viewing booked
+      try {
+        const formattedDate = new Date(viewingDate).toLocaleDateString('en-GB', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        await notifyViewingBooked(
+          user.id,
+          property.title,
+          property.id,
+          formattedDate,
+          viewingTime
+        );
+        console.log('🔔 Viewing booked notification sent');
+      } catch (notifyErr) {
+        console.log('⚠️ Could not send notification:', notifyErr);
+      }
+      
       setTimeout(() => {
         setShowViewingModal(false);
         setViewingSuccess(false);

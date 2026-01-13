@@ -539,6 +539,8 @@ export const getPendingVerifications = async (
 
     // Get the user info from profiles table
     const userIds = managerProfiles.map(mp => mp.id);
+    console.log('Fetching user profiles for manager IDs:', userIds);
+    
     const { data: userProfiles, error: usersError } = await supabase
       .from('profiles')
       .select('id, email, full_name')
@@ -547,20 +549,46 @@ export const getPendingVerifications = async (
     if (usersError) {
       console.error('Error fetching user profiles:', usersError);
       // Continue without user info rather than failing
+    } else {
+      console.log('Fetched user profiles:', userProfiles?.length || 0, 'profiles found');
     }
 
     // Create a map for quick lookup
     const userMap = new Map<string, { email?: string; full_name?: string }>();
     (userProfiles || []).forEach(up => {
-      userMap.set(up.id, { email: up.email, full_name: up.full_name });
+      // If full_name is empty/null, try to create a name from email
+      let displayName = up.full_name;
+      if (!displayName && up.email) {
+        // Extract name from email: "john.doe@example.com" -> "John Doe"
+        const emailPart = up.email.split('@')[0];
+        displayName = emailPart
+          .replace(/[._-]/g, ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+      }
+      
+      userMap.set(up.id, { 
+        email: up.email || null,
+        full_name: displayName || null
+      });
     });
 
+    // Log missing profiles
+    const missingProfiles = userIds.filter(id => !userMap.has(id));
+    if (missingProfiles.length > 0) {
+      console.warn('Managers without profiles found:', missingProfiles.length);
+    }
+
     // Transform the data to include user info
-    const transformed = managerProfiles.map(item => ({
-      ...item,
-      user_email: userMap.get(item.id)?.email,
-      user_name: userMap.get(item.id)?.full_name,
-    }));
+    const transformed = managerProfiles.map(item => {
+      const userInfo = userMap.get(item.id);
+      return {
+        ...item,
+        user_email: userInfo?.email || null,
+        user_name: userInfo?.full_name || null,
+      };
+    });
 
     return { data: transformed, error: null };
   } catch (error) {
@@ -599,12 +627,26 @@ export const getManagerVerificationDetails = async (
       supabase.from('profiles').select('email, full_name').eq('id', managerId).single(),
     ]);
 
+    // Process user info - extract name from email if full_name is missing
+    let processedUserInfo = userResult.data;
+    if (processedUserInfo && !processedUserInfo.full_name && processedUserInfo.email) {
+      const emailPart = processedUserInfo.email.split('@')[0];
+      processedUserInfo = {
+        ...processedUserInfo,
+        full_name: emailPart
+          .replace(/[._-]/g, ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ')
+      };
+    }
+
     return {
       data: {
         profile: profileResult.data,
         documents: documentsResult.data || [],
         auditLog: auditResult.data || [],
-        userInfo: userResult.data,
+        userInfo: processedUserInfo,
       },
       error: null,
     };
