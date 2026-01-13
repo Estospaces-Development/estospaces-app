@@ -162,6 +162,7 @@ const EmailLogin = () => {
         // Set loading state and prevent concurrent attempts
         isSigningIn.current = true;
         setLoading(true);
+        setGeneralError('');
 
         try {
             console.log('🔐 EmailLogin: Attempting sign in...');

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { CreditCard, Calendar, CheckCircle, Clock, AlertCircle, Receipt } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle, Clock, AlertCircle, Receipt, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardPayments = () => {
+  const navigate = useNavigate();
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
@@ -135,6 +138,15 @@ const DashboardPayments = () => {
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/user/dashboard')}
+        className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back to Dashboard</span>
+      </button>
+
       <div className="mb-6">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">Payments</h1>
         <p className="text-gray-600 dark:text-orange-400">Manage your rent and utility bill payments</p>
@@ -399,6 +411,9 @@ const DashboardPayments = () => {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

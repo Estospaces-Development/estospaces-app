@@ -24,9 +24,80 @@ const LakshmiAssistant = () => {
   const [smartSuggestions, setSmartSuggestions] = useState([]);
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false); // Disabled welcome popup
   
+  // Draggable button state
+  const [buttonPosition, setButtonPosition] = useState({ x: null, y: null }); // null means use default position
+  const [isDragging, setIsDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false); // Track if user actually moved the button
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const buttonRef = useRef(null);
+  
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const inputRef = useRef(null);
+  
+  // Handle mouse/touch drag start
+  const handleDragStart = useCallback((e) => {
+    if (!buttonRef.current) return;
+    
+    e.preventDefault();
+    setIsDragging(true);
+    setHasDragged(false); // Reset drag tracking
+    
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+    
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    });
+  }, []);
+  
+  // Handle mouse/touch drag move
+  const handleDragMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    e.preventDefault();
+    setHasDragged(true); // User is actually dragging
+    
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+    
+    // Calculate new position (accounting for button size)
+    const buttonWidth = buttonRef.current?.offsetWidth || 140;
+    const buttonHeight = buttonRef.current?.offsetHeight || 44;
+    
+    // Keep within viewport bounds
+    const newX = Math.max(0, Math.min(window.innerWidth - buttonWidth, clientX - dragOffset.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - buttonHeight, clientY - dragOffset.y));
+    
+    setButtonPosition({ x: newX, y: newY });
+  }, [isDragging, dragOffset]);
+  
+  // Handle mouse/touch drag end
+  const handleDragEnd = useCallback(() => {
+    // Small delay to allow click handler to check hasDragged
+    setTimeout(() => {
+      setIsDragging(false);
+    }, 10);
+  }, []);
+  
+  // Add/remove event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleDragMove);
+      window.addEventListener('mouseup', handleDragEnd);
+      window.addEventListener('touchmove', handleDragMove, { passive: false });
+      window.addEventListener('touchend', handleDragEnd);
+    }
+    
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleDragMove);
+      window.removeEventListener('touchend', handleDragEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   // Onboarding prompts
   const onboardingPrompts = [
@@ -598,21 +669,55 @@ const LakshmiAssistant = () => {
     };
   };
 
+  // Calculate button style based on position
+  const getButtonStyle = () => {
+    if (buttonPosition.x !== null && buttonPosition.y !== null) {
+      return {
+        left: buttonPosition.x,
+        top: buttonPosition.y,
+        right: 'auto',
+        bottom: 'auto',
+      };
+    }
+    // Default position (bottom right)
+    return {
+      right: 24,
+      bottom: 24,
+    };
+  };
+
   return (
     <>
-      {/* Chat Bubble Button */}
+      {/* Chat Bubble Button - Draggable */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-40">
+        <div 
+          ref={buttonRef}
+          className="fixed z-40"
+          style={getButtonStyle()}
+        >
           <button
-            onClick={() => {
-              setShowWelcomeAnimation(false);
-              setIsOpen(true);
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            onClick={(e) => {
+              // Only open if not dragged (simple click)
+              if (!hasDragged) {
+                setShowWelcomeAnimation(false);
+                setIsOpen(true);
+              }
+              setHasDragged(false); // Reset for next interaction
             }}
-            className="px-4 py-3 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-2 relative"
-            aria-label="Ask Lakshmi"
+            className={`px-4 py-3 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 relative select-none ${
+              isDragging ? 'cursor-grabbing scale-105 opacity-90' : 'cursor-grab hover:scale-105'
+            }`}
+            aria-label="Ask Lakshmi - Drag to move"
+            title="Click to chat, drag to move"
           >
             <Bot size={20} className="flex-shrink-0" />
             <span className="font-medium text-sm whitespace-nowrap">Ask Lakshmi</span>
+            {/* Drag indicator */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-white/30 rounded-full flex items-center justify-center">
+              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+            </div>
           </button>
         </div>
       )}

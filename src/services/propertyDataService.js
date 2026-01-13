@@ -279,52 +279,78 @@ export const fetchPropertiesWithFallback = async ({
 
 /**
  * Get property by ID
- * Tries Supabase first, then Zoopla as fallback
+ * Uses direct REST API for reliability with timeout
  */
 export const getPropertyById = async (propertyId, userId = null) => {
+  console.log('[propertyDataService] getPropertyById called with:', propertyId);
+  
   try {
-    // First, try to get from Supabase
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', propertyId)
-        .single();
-
-      if (!error && data) {
-        // Enrich with user status if authenticated
-        if (userId) {
-          const enriched = await propertiesService.enrichPropertiesWithUserStatus([data], userId);
-          return { data: enriched[0], error: null };
-        }
-        return { data, error: null };
-      }
-    }
-
-    // Fallback: Try Zoopla API if property ID looks like a Zoopla listing ID
-    // (This assumes Zoopla listing IDs are numeric strings)
+    // Use direct REST API for reliability
+    const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
     try {
-      const zooplaProperty = await zooplaService.getPropertyDetails(propertyId);
-      if (zooplaProperty) {
-        const transformed = zooplaService.transformZooplaProperty(zooplaProperty);
-        // Enrich with user status
-        if (userId) {
-          const enriched = await propertiesService.enrichPropertiesWithUserStatus([transformed], userId);
-          return { data: enriched[0], error: null };
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/properties?id=eq.${propertyId}&select=*`,
+        {
+          method: 'GET',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal
         }
-        return { data: transformed, error: null };
+      );
+      
+      clearTimeout(timeoutId);
+      
+      console.log('[propertyDataService] Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    } catch (zooplaError) {
-      if (import.meta.env.DEV) {
-        console.warn('Zoopla API error:', zooplaError);
+      
+      const data = await response.json();
+      console.log('[propertyDataService] Data received:', data?.length, 'properties');
+      
+      if (data && data.length > 0) {
+        const property = data[0];
+        
+        // Enrich with user status if authenticated (with timeout protection)
+        if (userId && propertiesService?.enrichPropertiesWithUserStatus) {
+          try {
+            const enrichPromise = propertiesService.enrichPropertiesWithUserStatus([property], userId);
+            const enrichTimeout = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Enrich timeout')), 3000)
+            );
+            const enriched = await Promise.race([enrichPromise, enrichTimeout]);
+            return { data: enriched[0], error: null };
+          } catch (enrichError) {
+            console.warn('[propertyDataService] Enrich failed, returning raw data:', enrichError);
+            return { data: property, error: null };
+          }
+        }
+        
+        return { data: property, error: null };
       }
+      
+      return { data: null, error: { message: 'Property not found' } };
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error('[propertyDataService] Request timed out');
+        return { data: null, error: { message: 'Request timed out. Please try again.' } };
+      }
+      
+      throw fetchError;
     }
-
-    return { data: null, error: { message: 'Property not found' } };
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('Error fetching property by ID:', error);
-    }
+    console.error('[propertyDataService] Error fetching property by ID:', error);
     return { data: null, error: { message: error.message || 'Failed to fetch property' } };
   }
 };

@@ -72,9 +72,10 @@ function App() {
             <MessagesProvider>
               <SavedPropertiesProvider>
                 <ApplicationsProvider>
-                  <Router>
-                    <LocationProvider>
-                      <PropertyFilterProvider>
+                  <NotificationsProvider>
+                    <Router>
+                      <LocationProvider>
+                        <PropertyFilterProvider>
                         <Routes>
                       {/* Landing Page */}
                       <Route path="/" element={<Home />} />
@@ -426,10 +427,11 @@ function App() {
                           </UserProtectedRoute>
                         }
                       />
-                        </Routes>
-                      </PropertyFilterProvider>
-                    </LocationProvider>
-                  </Router>
+                          </Routes>
+                        </PropertyFilterProvider>
+                      </LocationProvider>
+                    </Router>
+                  </NotificationsProvider>
                 </ApplicationsProvider>
               </SavedPropertiesProvider>
             </MessagesProvider>

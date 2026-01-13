@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileText, Download, Eye, CheckCircle, Clock, AlertCircle, FileCheck, 
   Search, Filter, SortAsc, SortDesc, List, Grid, Calendar, MapPin,
-  MoreVertical, Copy, Share2, X, ChevronRight, Loader2, TrendingUp, Bell
+  MoreVertical, Copy, Share2, X, ChevronRight, Loader2, TrendingUp, Bell, ArrowLeft
 } from 'lucide-react';
 import ContractViewer from '../components/Dashboard/ContractViewer';
 import SignatureModal from '../components/Dashboard/SignatureModal';
 import { useNavigate } from 'react-router-dom';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardContracts = () => {
   const navigate = useNavigate();
@@ -334,6 +335,15 @@ const DashboardContracts = () => {
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/user/dashboard')}
+        className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back to Dashboard</span>
+      </button>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -955,6 +965,9 @@ const DashboardContracts = () => {
           onClick={() => setQuickActionMenu(null)}
         />
       )}
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

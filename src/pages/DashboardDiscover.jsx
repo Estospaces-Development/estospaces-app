@@ -266,6 +266,37 @@ const DashboardDiscover = () => {
     setPostcodeSuggestions([]);
   };
 
+  // Handler for "Added to site" filter change
+  const handleAddedToSiteChange = useCallback((value) => {
+    setAddedToSite(value);
+    
+    // Update URL params
+    const newParams = new URLSearchParams(searchParams);
+    if (value === 'anytime') {
+      newParams.delete('added');
+    } else {
+      newParams.set('added', value);
+    }
+    setSearchParams(newParams);
+    
+    // Fetch with new filter
+    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
+    fetchPropertiesFromSupabase({
+      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
+      category: propertyCategory,
+      location: locationQuery,
+      currentPage: 1,
+      filter: selectedFilter,
+      search: searchQuery,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      bedsFilter: beds,
+      bathsFilter: baths,
+      addedFilter: value
+    });
+    setPage(1);
+  }, [searchParams, setSearchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
     fetchProperties(false);
@@ -365,6 +396,15 @@ const DashboardDiscover = () => {
 
   return (
     <div className="p-4 lg:p-6">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/user/dashboard')}
+        className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back to Dashboard</span>
+      </button>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-orange-500 mb-2">Discover Properties</h1>
@@ -405,7 +445,8 @@ const DashboardDiscover = () => {
       {/* Smart Search and Filters */}
       <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 p-4 lg:p-6 mb-6">
         {/* Main Search Bar */}
-        <div className="relative mb-6">
+        <div className="flex gap-3 mb-6">
+          <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
@@ -557,6 +598,25 @@ const DashboardDiscover = () => {
                 </select>
               </div>
             </div>
+
+          {/* Added to Site Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-2">Added to site</label>
+              <div className="relative">
+                <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <select 
+                  value={addedToSite}
+                  onChange={(e) => handleAddedToSiteChange(e.target.value)}
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+                >
+                  <option value="anytime">Anytime</option>
+                  <option value="24hours">Last 24 hours</option>
+                  <option value="3days">Last 3 days</option>
+                  <option value="7days">Last 7 days</option>
+                  <option value="14days">Last 14 days</option>
+                </select>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -671,6 +731,9 @@ const DashboardDiscover = () => {
           )}
         </>
       )}
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

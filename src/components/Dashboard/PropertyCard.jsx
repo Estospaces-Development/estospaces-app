@@ -182,12 +182,12 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
   const nextImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
   };
 
   const prevImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
   };
 
   const formatPrice = (price) => {
@@ -263,10 +263,10 @@ const PropertyCard = ({ property, onViewDetails }) => {
       <div className="bg-white dark:bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
         {/* Image Carousel */}
         <div className="relative h-56 bg-gray-200 overflow-hidden">
-          {images.length > 0 ? (
+          {validImages.length > 0 ? (
             <>
               <img
-                src={images[currentImageIndex]}
+                src={validImages[currentImageIndex]}
                 alt={property.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
@@ -294,7 +294,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                   
                   {/* Image Dots */}
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {images.map((_, index) => (
+                    {validImages.map((_, index) => (
                       <button
                         key={index}
                         onClick={(e) => {
@@ -442,43 +442,6 @@ const PropertyCard = ({ property, onViewDetails }) => {
             >
               View Details
             </button>
-            
-            {/* Apply/Buy/Rent button */}
-            {!isApplied ? (
-              <button
-                onClick={handleApply}
-                disabled={isApplying}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                  isApplying 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : showApplySuccess
-                    ? 'bg-green-500'
-                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-sm hover:shadow-md'
-                } text-white`}
-              >
-                {isApplying ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Applying...</span>
-                  </>
-                ) : showApplySuccess ? (
-                  <>
-                    <CheckCircle size={16} />
-                    <span>Applied!</span>
-                  </>
-                ) : (
-                  <span>{property.listing_type === 'rent' || property.type?.toLowerCase() === 'rent' ? 'Apply to Rent' : 'Apply to Buy'}</span>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/user/dashboard/applications')}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <CheckCircle size={16} />
-                <span>Track Application</span>
-              </button>
-            )}
             
             <button
               onClick={(e) => {

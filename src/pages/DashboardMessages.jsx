@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, AlertCircle } from 'lucide-react';
+import { MessageSquare, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useMessages } from '../contexts/MessagesContext';
 import ConversationList from '../components/Dashboard/Messaging/ConversationList';
 import ConversationThread from '../components/Dashboard/Messaging/ConversationThread';
@@ -7,8 +8,10 @@ import MessageInput from '../components/Dashboard/Messaging/MessageInput';
 import ConversationListSkeleton from '../components/Dashboard/Messaging/ConversationListSkeleton';
 import ConversationThreadSkeleton from '../components/Dashboard/Messaging/ConversationThreadSkeleton';
 import NearestBrokerWidget from '../components/Dashboard/NearestBrokerWidget';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardMessages = () => {
+  const navigate = useNavigate();
   const {
     conversations,
     selectedConversationId,
@@ -52,6 +55,15 @@ const DashboardMessages = () => {
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/user/dashboard')}
+          className="mb-3 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span>Back to Dashboard</span>
+        </button>
+
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-orange-500 mb-2">
           Messages
         </h1>
@@ -130,6 +142,9 @@ const DashboardMessages = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <DashboardFooter />
     </div>
   );
 };

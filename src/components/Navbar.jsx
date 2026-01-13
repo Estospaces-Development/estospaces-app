@@ -47,8 +47,9 @@ const Navbar = () => {
         // Wait for either sign out to complete or timeout (whichever comes first)
         await Promise.race([signOutPromise, timeoutPromise]);
         
-        // Clear any local storage auth data
+        // Clear ALL auth-related local storage data
         try {
+            // Clear all possible Supabase auth keys
             localStorage.removeItem('supabase.auth.token');
             localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
             localStorage.removeItem('managerVerified');
@@ -58,7 +59,7 @@ const Navbar = () => {
             // Ignore storage errors
         }
         
-        // Force redirect to home page
+        // Force redirect to home page with full page reload
         window.location.href = '/';
     };
 
