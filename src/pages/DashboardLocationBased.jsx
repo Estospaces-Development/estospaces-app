@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
-  Search, Home, Heart, FileText, Map as MapIcon, 
+  Search, Home, Heart, Map as MapIcon, 
   ArrowRight, MapPin, AlertCircle, TrendingUp, Star,
   Loader2, X, Compass, Clock, Zap, Eye, Bath, Filter, ChevronDown, DollarSign, Sparkles,
-  Building2, Key, Bookmark, ClipboardList
+  Building2, Key, ClipboardList
 } from 'lucide-react';
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
@@ -30,7 +30,7 @@ const DashboardLocationBased = () => {
   useEffect(() => {
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/user/dashboard/') && currentPath !== '/user/dashboard' && 
-        !currentPath.match(/^\/user\/dashboard\/(discover|saved|applications|viewings|messages|reviews|payments|contracts|settings|help|profile|property\/[^/]+)$/)) {
+        !currentPath.match(/^\/user\/dashboard\/(discover|saved|applications|viewings|messages|reviews|payments|contracts|settings|help|profile|overseas|oversears|property\/[^/]+)$/)) {
       // Invalid path, redirect to main dashboard
       navigate('/user/dashboard', { replace: true });
     }
@@ -284,10 +284,20 @@ const DashboardLocationBased = () => {
       filterParams.push('or=(status.eq.online,status.eq.published,status.eq.active)');
       
       // Apply filter options
-      if (selectedFilters.includes('recently_added')) {
-        const twentyFourHoursAgo = new Date();
-        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-        filterParams.push(`created_at=gte.${twentyFourHoursAgo.toISOString()}`);
+      if (selectedFilters.includes('last_24h')) {
+        const date = new Date();
+        date.setHours(date.getHours() - 24);
+        filterParams.push(`created_at=gte.${date.toISOString()}`);
+        orderBy = 'created_at.desc';
+      } else if (selectedFilters.includes('last_7d')) {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        filterParams.push(`created_at=gte.${date.toISOString()}`);
+        orderBy = 'created_at.desc';
+      } else if (selectedFilters.includes('last_30d')) {
+        const date = new Date();
+        date.setDate(date.getDate() - 30);
+        filterParams.push(`created_at=gte.${date.toISOString()}`);
         orderBy = 'created_at.desc';
       }
       
@@ -308,7 +318,11 @@ const DashboardLocationBased = () => {
         } else {
           filterParams.push('price=lte.500000');
         }
-        if (!selectedFilters.includes('most_viewed') && !selectedFilters.includes('high_demand') && !selectedFilters.includes('recently_added')) {
+        if (!selectedFilters.includes('most_viewed') && 
+            !selectedFilters.includes('high_demand') && 
+            !selectedFilters.includes('last_24h') && 
+            !selectedFilters.includes('last_7d') && 
+            !selectedFilters.includes('last_30d')) {
           orderBy = 'price.asc,created_at.desc';
         }
       }
@@ -616,7 +630,9 @@ const DashboardLocationBased = () => {
             <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
               {[
                 { id: 'all', label: 'All Properties', icon: Sparkles },
-                { id: 'recently_added', label: 'Recently Added', icon: Clock },
+                { id: 'last_24h', label: 'Last 24 Hours', icon: Clock },
+                { id: 'last_7d', label: 'Last 7 Days', icon: Clock },
+                { id: 'last_30d', label: 'Last 30 Days', icon: Clock },
                 { id: 'most_viewed', label: 'Most Visited', icon: Eye },
                 { id: 'high_demand', label: 'High Demand', icon: TrendingUp },
                 { id: 'budget_friendly', label: 'Budget Friendly', icon: DollarSign },
@@ -754,7 +770,7 @@ const DashboardLocationBased = () => {
           className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
         >
           <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
-            <Bookmark size={24} className="text-white" strokeWidth={1.5} />
+            <Heart size={24} className="text-white" strokeWidth={1.5} />
           </div>
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
@@ -991,4 +1007,3 @@ const DashboardLocationBased = () => {
 };
 
 export default DashboardLocationBased;
-

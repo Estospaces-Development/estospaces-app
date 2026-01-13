@@ -68,6 +68,15 @@ const DashboardFooter = () => {
                                 </Link>
                             </li>
                             <li>
+                                <Link
+                                    to="/user/dashboard/overseas"
+                                    onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })}
+                                    className="text-gray-700 hover:text-orange-600 transition-colors"
+                                >
+                                    Overseas
+                                </Link>
+                            </li>
+                            <li>
                                 <Link to="/user/dashboard/discover?location=london" className="text-gray-700 hover:text-orange-600 transition-colors">
                                     London
                                 </Link>

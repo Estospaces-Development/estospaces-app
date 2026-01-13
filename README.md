@@ -367,6 +367,7 @@ All pages feature smart navigation that returns users to their previous location
 - **Messages**: `http://localhost:5173/user/dashboard/messages`
 - **Payments**: `http://localhost:5173/user/dashboard/payments`
 - **Contracts**: `http://localhost:5173/user/dashboard/contracts`
+- **Overseas**: `http://localhost:5173/user/dashboard/overseas`
 - **Reviews**: `http://localhost:5173/user/dashboard/reviews`
 - **Settings**: `http://localhost:5173/user/dashboard/settings`
 - **Help & Support**: `http://localhost:5173/user/dashboard/help`
@@ -586,13 +587,16 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 
 - **Enhanced Search & Filters**: All filter options (search, location, price range, beds, baths) now work properly with real-time Supabase queries
 - **Multiple Filter Selection**: Users can now select multiple filter options at once (Recently Added, Most Visited, High Demand, Budget Friendly)
-- **Property-Tech Style Icons**: Updated quick action cards with modern property-tech style icons (Building2, Key, Bookmark, ClipboardList)
+- **Property-Tech Style Icons**: Updated quick action cards with modern property-tech style icons (Building2, Key, Heart, ClipboardList)
 - **Simple Greeting**: Clean, minimal greeting text at the top of dashboard with user's name
 - **Viewings Page**: Added timeout protection to prevent infinite loading
 - **LocationProvider**: Added LocationProvider context for proper location management
 - **Footer Cleanup**: Removed "Promote Your Property" link from footer
 - **Auth Improvements**: Added timeout protection for session checks and profile fetches
 - **Improved Session Persistence**: Enhanced Supabase client with explicit localStorage storage configuration
+- **Overseas Dashboard**: Added `/user/dashboard/overseas` page with country filters and dedicated hero
+- **Footer Locations Link**: Added “Overseas” link in footer locations for quick access
+- **Navigation UX**: Dashboard scroll container resets to top on route change
 
 ### Notifications System (January 2026)
 

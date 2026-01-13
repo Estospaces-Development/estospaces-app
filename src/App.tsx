@@ -32,6 +32,7 @@ import Home from './pages/Home';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import DashboardLocationBased from './pages/DashboardLocationBased';
 import DashboardDiscover from './pages/DashboardDiscover';
+import DashboardOverseas from './pages/DashboardOverseas';
 import DashboardMessages from './pages/DashboardMessages';
 import DashboardPayments from './pages/DashboardPayments';
 import DashboardProfile from './pages/DashboardProfile';
@@ -319,6 +320,20 @@ function App() {
                             </DashboardLayout>
                           </UserProtectedRoute>
                         }
+                      />
+                      <Route
+                        path="/user/dashboard/overseas"
+                        element={
+                          <UserProtectedRoute>
+                            <DashboardLayout>
+                              <DashboardOverseas />
+                            </DashboardLayout>
+                          </UserProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/user/dashboard/oversears"
+                        element={<Navigate to="/user/dashboard/overseas" replace />}
                       />
                       <Route
                         path="/user/dashboard/reviews"
