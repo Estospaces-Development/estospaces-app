@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProperties } from '../contexts/PropertiesContext';
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import MapView from '../components/Dashboard/MapView';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import * as postcodeService from '../services/postcodeService';
 
 const DashboardDiscover = () => {
@@ -266,36 +267,22 @@ const DashboardDiscover = () => {
     setPostcodeSuggestions([]);
   };
 
-  // Handler for "Added to site" filter change
-  const handleAddedToSiteChange = useCallback((value) => {
-    setAddedToSite(value);
-    
-    // Update URL params
-    const newParams = new URLSearchParams(searchParams);
-    if (value === 'anytime') {
-      newParams.delete('added');
-    } else {
-      newParams.set('added', value);
-    }
-    setSearchParams(newParams);
-    
-    // Fetch with new filter
-    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
-    fetchPropertiesFromSupabase({
-      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
-      category: propertyCategory,
-      location: locationQuery,
-      currentPage: 1,
-      filter: selectedFilter,
-      search: searchQuery,
-      minPrice: priceRange.min,
-      maxPrice: priceRange.max,
-      bedsFilter: beds,
-      bathsFilter: baths,
-      addedFilter: value
-    });
-    setPage(1);
-  }, [searchParams, setSearchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+  // Handler for "Added to site" filter change (commented out - requires additional state and functions)
+  // const handleAddedToSiteChange = useCallback((value) => {
+  //   setAddedToSite(value);
+  //   
+  //   // Update URL params
+  //   const newParams = new URLSearchParams(searchParams);
+  //   if (value === 'anytime') {
+  //     newParams.delete('added');
+  //   } else {
+  //     newParams.set('added', value);
+  //   }
+  //   setSearchParams(newParams);
+  //   
+  //   // Fetch with new filter
+  //   fetchPropertiesFromAPI(activeTab, true);
+  // }, [searchParams, setSearchParams, activeTab, locationQuery, searchQuery, priceRange, beds, baths, fetchPropertiesFromAPI]);
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
@@ -456,6 +443,7 @@ const DashboardDiscover = () => {
             className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
           />
         </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Location Filter */}
@@ -598,25 +586,6 @@ const DashboardDiscover = () => {
                 </select>
               </div>
             </div>
-
-          {/* Added to Site Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-2">Added to site</label>
-              <div className="relative">
-                <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <select 
-                  value={addedToSite}
-                  onChange={(e) => handleAddedToSiteChange(e.target.value)}
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
-                >
-                  <option value="anytime">Anytime</option>
-                  <option value="24hours">Last 24 hours</option>
-                  <option value="3days">Last 3 days</option>
-                  <option value="7days">Last 7 days</option>
-                  <option value="14days">Last 14 days</option>
-                </select>
-          </div>
-        </div>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import * as managerVerificationService from '../../services/managerVerificationService';
 import type { VerificationStatus } from '../../services/managerVerificationService';
+import NotificationDropdown from '../Dashboard/NotificationDropdown';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -125,12 +126,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             />
 
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
-            </button>
+            <NotificationDropdown />
 
             {/* User Profile */}
             <button

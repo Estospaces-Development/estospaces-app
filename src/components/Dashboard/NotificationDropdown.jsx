@@ -15,6 +15,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useNotifications, NOTIFICATION_TYPES } from '../../contexts/NotificationsContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,6 +28,8 @@ const NotificationDropdown = () => {
     markAllAsRead,
     deleteNotification,
   } = useNotifications();
+  const toast = useToast();
+  const prevNotificationsRef = useRef([]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,6 +42,37 @@ const NotificationDropdown = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Show toast when new notifications arrive
+  useEffect(() => {
+    if (notifications.length > 0 && prevNotificationsRef.current.length > 0) {
+      const prevNotificationIds = new Set(prevNotificationsRef.current.map(n => n.id));
+      const newNotifications = notifications.filter(n => !prevNotificationIds.has(n.id));
+      
+      if (newNotifications.length > 0) {
+        // Show toast for the most recent new notification
+        const latestNotification = newNotifications[0];
+        const notificationType = latestNotification.type || '';
+        
+        // Determine toast type based on notification type
+        let toastMethod = toast.info;
+        if (notificationType.includes('error') || notificationType.includes('rejected') || notificationType.includes('failed')) {
+          toastMethod = toast.error;
+        } else if (notificationType.includes('warning') || notificationType.includes('reminder')) {
+          toastMethod = toast.warning;
+        } else if (notificationType.includes('approved') || notificationType.includes('verified') || notificationType.includes('success')) {
+          toastMethod = toast.success;
+        }
+        
+        toastMethod(latestNotification.message || latestNotification.title, {
+          title: latestNotification.title,
+          duration: 5000,
+          position: 'top-right',
+        });
+      }
+    }
+    prevNotificationsRef.current = notifications;
+  }, [notifications, toast]);
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -99,11 +133,13 @@ const NotificationDropdown = () => {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+        type="button"
+        aria-label="Notifications"
       >
         <Bell size={22} className="text-gray-600 dark:text-gray-300" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse pointer-events-none">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -111,7 +147,7 @@ const NotificationDropdown = () => {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-scaleIn">
+        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-[9999] overflow-hidden animate-scaleIn">
           {/* Header */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-orange-500 to-orange-600">
             <div className="flex items-center gap-2">

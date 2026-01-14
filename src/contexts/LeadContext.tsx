@@ -16,7 +16,7 @@ export interface Lead {
 
 interface LeadContextType {
   leads: Lead[];
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => Lead;
+  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Lead>;
   updateLead: (id: string, lead: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
   getLead: (id: string) => Lead | undefined;
@@ -141,7 +141,7 @@ export const LeadProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('leads', JSON.stringify(leads));
   }, [leads]);
 
-  const addLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Lead => {
+  const addLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead> => {
     const newLead: Lead = {
       ...leadData,
       id: Date.now().toString(),
@@ -149,6 +149,20 @@ export const LeadProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date().toISOString(),
     };
     setLeads((prev) => [...prev, newLead]);
+
+    // Notify managers and admins about new lead
+    try {
+      const { notifyManagersNewLead } = await import('../services/notificationsService');
+      await notifyManagersNewLead(
+        leadData.name,
+        leadData.email,
+        leadData.propertyInterested,
+        newLead.id
+      );
+    } catch (notifyErr) {
+      console.log('Could not send lead notification:', notifyErr);
+    }
+
     return newLead;
   };
 

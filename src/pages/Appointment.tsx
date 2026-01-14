@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
@@ -15,7 +15,10 @@ import {
   Edit,
   Trash2,
   MapPin,
+  Loader2,
 } from 'lucide-react';
+import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Appointment {
   id: string;
@@ -27,50 +30,112 @@ interface Appointment {
   property?: string;
   phone?: string;
   email?: string;
+  propertyId?: string;
+  userId?: string;
 }
 
 const Appointment = () => {
   const navigate = useNavigate();
+  const { user, getRole } = useAuth();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      clientName: 'Sarah Johnson',
-      date: '2025-01-15',
-      time: '10:00 AM',
-      description: 'Property viewing - Modern Downtown Apartment',
-      status: 'Confirmed',
-    },
-    {
-      id: '2',
-      clientName: 'Michel Chen',
-      date: '2025-01-16',
-      time: '2:00 PM',
-      description: 'Property viewing - Luxury Condo with City View',
-      status: 'Confirmed',
-    },
-    {
-      id: '3',
-      clientName: 'Emily Rodriguez',
-      date: '2025-01-17',
-      time: '11:00 AM',
-      description: 'Property viewing - Spacious Penthouse',
-      status: 'Pending',
-    },
-    {
-      id: '4',
-      clientName: 'David Smith',
-      date: '2025-01-18',
-      time: '3:30 PM',
-      description: 'Property viewing - Modern Downtown Apartment',
-      status: 'Completed',
-    },
-  ]);
+  // Fetch appointments from database
+  const fetchAppointments = useCallback(async () => {
+    if (!isSupabaseAvailable() || !user) {
+      setAppointments([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const role = getRole();
+      const isManagerOrAdmin = role === 'manager' || role === 'admin';
+
+      // Build query - managers/admins see all, users see only their own
+      let query = supabase
+        .from('viewings')
+        .select(`
+          id,
+          user_id,
+          property_id,
+          viewing_date,
+          viewing_time,
+          status,
+          notes,
+          created_at,
+          properties (
+            id,
+            title,
+            address_line_1,
+            city,
+            postcode
+          ),
+          profiles:user_id (
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .order('viewing_date', { ascending: true });
+
+      // If not manager/admin, filter by user_id
+      if (!isManagerOrAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        setAppointments([]);
+        return;
+      }
+
+      // Transform data to match Appointment interface
+      const transformedAppointments: Appointment[] = (data || []).map((item: any) => {
+        const property = item.properties || {};
+        const userProfile = item.profiles || {};
+        const propertyAddress = property.address_line_1 
+          ? `${property.address_line_1}, ${property.city || ''} ${property.postcode || ''}`.trim()
+          : property.title || 'Property Location';
+
+        return {
+          id: item.id,
+          clientName: userProfile.full_name || userProfile.email?.split('@')[0] || 'Client',
+          date: item.viewing_date,
+          time: item.viewing_time || 'TBD',
+          description: `Property viewing - ${property.title || 'Property'}`,
+          status: item.status === 'pending' ? 'Pending' : 
+                 item.status === 'confirmed' ? 'Confirmed' : 
+                 item.status === 'completed' ? 'Completed' : 
+                 item.status === 'cancelled' ? 'Cancelled' : 'Pending',
+          property: propertyAddress,
+          phone: userProfile.phone || '',
+          email: userProfile.email || '',
+          propertyId: item.property_id,
+          userId: item.user_id,
+        };
+      });
+
+      setAppointments(transformedAppointments);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, getRole]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const handleAddAppointment = (appointmentData: Omit<Appointment, 'id'>) => {
     if (editingAppointment) {
@@ -135,31 +200,31 @@ const Appointment = () => {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SummaryCard
           title="New Appointments"
-          value={1}
+          value={appointments.filter(a => a.status === 'Pending').length}
           icon={CalendarIcon}
           iconColor="bg-blue-500"
         />
         <SummaryCard
           title="Confirmed"
-          value={2}
+          value={appointments.filter(a => a.status === 'Confirmed').length}
           icon={CheckCircle}
           iconColor="bg-green-500"
         />
         <SummaryCard
           title="Pending"
-          value={1}
+          value={appointments.filter(a => a.status === 'Pending').length}
           icon={Clock}
           iconColor="bg-yellow-500"
         />
         <SummaryCard
           title="Completed"
-          value={1}
+          value={appointments.filter(a => a.status === 'Completed').length}
           icon={CalendarCheck}
           iconColor="bg-purple-500"
         />
         <SummaryCard
           title="Cancelled"
-          value={0}
+          value={appointments.filter(a => a.status === 'Cancelled').length}
           icon={XCircle}
           iconColor="bg-red-500"
         />
@@ -207,7 +272,12 @@ const Appointment = () => {
             <h2 className="text-lg font-semibold text-gray-800">Appointments ({appointments.length})</h2>
           </div>
           <div className="divide-y divide-gray-200">
-            {appointments.length === 0 ? (
+            {loading ? (
+              <div className="p-12 text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-4" />
+                <p className="text-gray-500">Loading appointments...</p>
+              </div>
+            ) : appointments.length === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-gray-500 mb-4">No appointments scheduled</p>
                 <button
