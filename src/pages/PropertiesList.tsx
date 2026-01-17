@@ -647,7 +647,7 @@ const PropertiesList = () => {
                           {statusOptions.map((option) => (
                             <button
                               key={option.value}
-                              onClick={() => handleBulkStatusChange(option.value)}
+                              onClick={() => handleBulkStatusChange(option.value as PropertyStatus | string)}
                               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg"
                             >
                               <span className={`w-2 h-2 rounded-full ${option.bgColor}`} />
@@ -778,7 +778,7 @@ const PropertiesList = () => {
                           }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          selectedStatuses.includes(option.value)
+                          selectedStatuses.includes(option.value as PropertyStatus | string)
                             ? `${option.bgColor} ${option.color}`
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}

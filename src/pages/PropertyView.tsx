@@ -879,7 +879,7 @@ const PropertyView = () => {
       </AnimatePresence>
 
       {/* Share Property Modal */}
-      {property && (
+      {property ? (
         <SharePropertyModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
@@ -902,7 +902,7 @@ const PropertyView = () => {
           }}
           onShare={handleShare}
         />
-      )}
+      ) : null}
 
       {/* Toast Notification */}
       <Toast
