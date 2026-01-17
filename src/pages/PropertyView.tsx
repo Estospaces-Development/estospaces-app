@@ -879,15 +879,35 @@ const PropertyView = () => {
       </AnimatePresence>
 
       {/* Share Property Modal */}
-      <SharePropertyModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        property={property}
-        onShare={handleShare}
-      />
+      {property ? (
+        <SharePropertyModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          property={{
+            id: property.id,
+            title: property.title,
+            description: property.description,
+            price: property.price ? {
+              amount: typeof property.price === 'number' ? property.price : property.price.amount,
+              currency: typeof property.price === 'number' ? 'GBP' : (property.price.currency || 'GBP')
+            } : undefined,
+            priceString: property.priceString,
+            location: property.location ? {
+              city: property.location.city,
+              state: property.location.state,
+              country: property.location.country
+            } : undefined,
+            images: property.images ? property.images.filter((img): img is string => typeof img === 'string') : undefined,
+            media: property.media
+          }}
+          onShare={handleShare}
+        />
+      ) : null}
 
       {/* Toast Notification */}
       <Toast
+        id="property-view-toast"
+        title={toast.type === 'success' ? 'Success' : 'Error'}
         message={toast.message}
         type={toast.type}
         isVisible={toast.visible}

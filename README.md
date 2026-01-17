@@ -661,5 +661,5 @@ For support:
 
 **Branch**: user-dahboard  
 **Repository**: https://github.com/Estospaces/estospaces-app  
-**Live Demo**: https://estospaces-app.vercel.app  
+**Deployment**: See `docs/REMOVE_VERCEL_AND_DEPLOYMENT_GUIDE.md` for deployment instructions  
 Built with ❤️ by the Estospaces team
