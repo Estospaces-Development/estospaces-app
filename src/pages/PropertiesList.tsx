@@ -237,7 +237,7 @@ const PropertiesList = () => {
   const [selectedPriceRange, setSelectedPriceRange] = useState(0);
   const [selectedBedrooms, setSelectedBedrooms] = useState<number | undefined>(filters.bedroomsMin);
   const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<PropertyType[]>(filters.propertyType || []);
-  const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>(filters.status || []);
+  const [selectedStatuses, setSelectedStatuses] = useState<(PropertyStatus | string)[]>(filters.status || []);
   const [selectedListingTypes, setSelectedListingTypes] = useState<ListingType[]>(filters.listingType || []);
 
   const stats = useMemo(() => getPropertyStats(), [properties]);
@@ -346,8 +346,8 @@ const PropertiesList = () => {
     }
   };
 
-  const handleBulkStatusChange = async (status: PropertyStatus) => {
-    await bulkUpdateStatus(selectedProperties, status);
+  const handleBulkStatusChange = async (status: PropertyStatus | string) => {
+    await bulkUpdateStatus(selectedProperties, status as PropertyStatus);
     clearSelection();
     setShowBulkActions(false);
   };
@@ -771,10 +771,10 @@ const PropertiesList = () => {
                       <button
                         key={option.value}
                         onClick={() => {
-                          if (selectedStatuses.includes(option.value)) {
+                          if (selectedStatuses.includes(option.value as PropertyStatus | string)) {
                             setSelectedStatuses(selectedStatuses.filter(s => s !== option.value));
                           } else {
-                            setSelectedStatuses([...selectedStatuses, option.value]);
+                            setSelectedStatuses([...selectedStatuses, option.value as PropertyStatus | string]);
                           }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${

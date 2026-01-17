@@ -94,7 +94,7 @@ export async function createNotification({
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZDG6XjdzhFDxcFae0hDSraFhazdNsU';
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await (supabase?.auth.getSession() || Promise.resolve({ data: { session: null }, error: null }));
     const accessToken = sessionData?.session?.access_token || supabaseKey;
 
     const response = await fetch(`${supabaseUrl}/rest/v1/notifications`, {
@@ -633,7 +633,7 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZDG6XjdzhFDxcFae0hDSraFhazdNsU';
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await (supabase?.auth.getSession() || Promise.resolve({ data: { session: null }, error: null }));
     const accessToken = sessionData?.session?.access_token || supabaseKey;
 
     const response = await fetch(
@@ -665,7 +665,7 @@ export async function updateNotificationPreferences(
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZDG6XjdzhFDxcFae0hDSraFhazdNsU';
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await (supabase?.auth.getSession() || Promise.resolve({ data: { session: null }, error: null }));
     const accessToken = sessionData?.session?.access_token || supabaseKey;
 
     // First try to upsert (insert or update)
