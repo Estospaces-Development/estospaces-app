@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { Shield, Globe, FileText, Lock, ChevronDown, ChevronUp, Mail, Phone, MapPin } from 'lucide-react';
 
 const Terms = () => {
@@ -251,8 +249,6 @@ const Terms = () => {
                     </div>
                 </div>
             </main>
-
-            <Footer />
         </div>
     );
 };
