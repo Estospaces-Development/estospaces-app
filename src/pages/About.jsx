@@ -1,6 +1,4 @@
 import React from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { Linkedin, Twitter, Globe, Target, Heart, Zap } from 'lucide-react';
 
 const About = () => {
@@ -26,7 +24,6 @@ const About = () => {
 
     return (
         <div className="font-sans text-gray-800 bg-gray-50 min-h-screen">
-            <Navbar />
 
             {/* Hero Section */}
             <section className="pt-40 pb-20 bg-secondary text-white relative overflow-hidden">
@@ -136,8 +133,6 @@ const About = () => {
                     </div>
                 </div>
             </section>
-
-            <Footer />
         </div>
     );
 };

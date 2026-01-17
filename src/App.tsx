@@ -37,7 +37,6 @@ import Analytics from './pages/Analytics';
 import Billing from './pages/Billing';
 import Profile from './pages/Profile';
 import HelpSupport from './pages/HelpSupport';
-import Home from './pages/Home';
 
 // User Dashboard Pages
 import DashboardLayout from './components/Dashboard/DashboardLayout';
@@ -83,8 +82,8 @@ function App() {
                           <PropertyFilterProvider>
                             <NotificationContainer />
                         <Routes>
-                      {/* Landing Page */}
-                      <Route path="/" element={<Home />} />
+                      {/* Redirect root to auth or dashboard based on authentication */}
+                      <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
                       {/* Auth Routes */}
                       <Route path="/auth/login" element={<Login />} />
