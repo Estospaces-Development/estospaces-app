@@ -199,7 +199,7 @@ const VerificationSection = ({ userId, currentUser }) => {
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <Shield size={24} />
-            </div>
+        </div>
             <div>
               <h2 className="text-xl font-semibold">Account Verification</h2>
               <p className="text-orange-100 text-sm mt-0.5">Complete these steps to verify your account</p>
@@ -227,7 +227,7 @@ const VerificationSection = ({ userId, currentUser }) => {
           <p className="text-green-700 text-sm">{success}</p>
           <button onClick={() => setSuccess(null)} className="ml-auto text-green-600 hover:text-green-800">
             <X size={18} />
-          </button>
+            </button>
         </div>
       )}
 
@@ -237,7 +237,7 @@ const VerificationSection = ({ userId, currentUser }) => {
           <p className="text-red-700 text-sm">{error}</p>
           <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-800">
             <X size={18} />
-          </button>
+            </button>
         </div>
       )}
 
@@ -288,20 +288,20 @@ const VerificationSection = ({ userId, currentUser }) => {
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                     {showUploadModal === 'identity' ? <CreditCard size={20} className="text-white" /> : <MapPin size={20} className="text-white" />}
-                  </div>
-                  <div>
+              </div>
+              <div>
                     <h3 className="text-lg font-semibold text-white">
                       {showUploadModal === 'identity' ? 'Upload ID Document' : 'Upload Proof of Address'}
                     </h3>
                     <p className="text-orange-100 text-sm">
                       {showUploadModal === 'identity' ? 'Passport, Driving License, or BRP' : 'Utility bill or bank statement'}
-                    </p>
-                  </div>
-                </div>
-                <button
+                </p>
+              </div>
+            </div>
+              <button
                   onClick={() => setShowUploadModal(null)}
                   className="p-2 hover:bg-white/20 rounded-full transition-colors"
                 >
@@ -330,7 +330,7 @@ const VerificationSection = ({ userId, currentUser }) => {
                     ) : (
                       <Upload size={24} className="text-orange-600" />
                     )}
-                  </div>
+              </div>
                   <p className="font-medium text-gray-900 mb-1">
                     {uploadingFile ? 'Uploading...' : 'Click to upload or drag and drop'}
                   </p>
@@ -352,14 +352,14 @@ const VerificationSection = ({ userId, currentUser }) => {
                       <li>• Document must be valid and not expired</li>
                       <li>• Ensure all corners are visible</li>
                       <li>• Photo should be clear and readable</li>
-                    </>
-                  ) : (
-                    <>
+                  </>
+                ) : (
+                  <>
                       <li>• Document must be dated within the last 3 months</li>
                       <li>• Your name and address must be visible</li>
                       <li>• Bank statements or utility bills accepted</li>
-                    </>
-                  )}
+                  </>
+                )}
                 </ul>
               </div>
             </div>

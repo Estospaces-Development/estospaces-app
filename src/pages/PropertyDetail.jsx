@@ -252,7 +252,11 @@ const PropertyDetail = () => {
   };
 
   const handleScheduleViewing = async () => {
-    if (!user || !property || !viewingDate || !viewingTime) {
+    if (!user) {
+      setViewingError('You must be logged in to book an appointment');
+      return;
+    }
+    if (!property || !viewingDate || !viewingTime) {
       setViewingError('Please select a date and time');
       return;
     }
@@ -261,12 +265,13 @@ const PropertyDetail = () => {
     setViewingError(null);
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
-      
-      // Get user's access token for authenticated requests
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token || supabaseKey;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        setViewingError('You must be logged in to book an appointment');
+        return;
+      }
 
       // Get property images
       let propertyImage = null;
@@ -274,8 +279,15 @@ const PropertyDetail = () => {
         if (property.image_urls) {
           const images = Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]');
           propertyImage = images[0] || null;
+          
+          // Sanity check: if image URL is too long (likely base64), truncate or ignore it to prevent payload issues
+          if (propertyImage && propertyImage.length > 2000) {
+            console.warn('Property image URL too long, skipping image in application data');
+            propertyImage = null;
+          }
         }
       } catch (e) {
+        console.warn('Error parsing property images:', e);
         propertyImage = null;
       }
 
@@ -303,50 +315,33 @@ const PropertyDetail = () => {
         },
       };
 
-      // Insert into applied_properties using direct REST API
-      const appResponse = await fetch(`${supabaseUrl}/rest/v1/applied_properties`, {
-        method: 'POST',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          property_id: property.id,
-          status: 'appointment_booked',
-          application_data: applicationData,
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      let response;
 
-      if (!appResponse.ok) {
-        const errorData = await appResponse.json().catch(() => ({}));
-        console.error('Application insert error:', errorData);
-        throw new Error(errorData.message || 'Failed to create application');
-      }
-
-      // Also create a viewing record (optional - don't fail if this fails)
       try {
-        await fetch(`${supabaseUrl}/rest/v1/viewings`, {
+        response = await fetch('/api/appointments/book', {
           method: 'POST',
           headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
-            user_id: user.id,
             property_id: property.id,
             viewing_date: viewingDate,
             viewing_time: viewingTime,
             notes: viewingNotes,
-            status: 'pending',
+            application_data: applicationData,
           }),
+          signal: controller.signal,
         });
-      } catch (viewingErr) {
-        console.log('Viewing record creation failed (non-critical):', viewingErr);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error?.message || 'Failed to book appointment. Please try again.');
       }
 
       setViewingSuccess(true);
@@ -382,7 +377,11 @@ const PropertyDetail = () => {
       }, 2500);
     } catch (err) {
       console.error('Booking error:', err);
-      setViewingError(err.message || 'Failed to book appointment. Please try again.');
+      if (err?.name === 'AbortError') {
+        setViewingError('Request timed out. Please try again.');
+      } else {
+        setViewingError(err.message || 'Failed to book appointment. Please try again.');
+      }
     } finally {
       setIsSchedulingViewing(false);
     }
@@ -1034,15 +1033,24 @@ const PropertyDetail = () => {
                     <CheckCircle size={40} className="text-green-600 dark:text-green-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Appointment Booked! 🎉
+                    Appointment Submitted!
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Your viewing has been scheduled successfully.
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                    The appointment is submitted. We will notify you once the agent approves your appointment.
                   </p>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-full text-green-700 dark:text-green-400 text-sm">
-                    <Clock size={16} />
-                    Agent will confirm within 24 hours
-                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setShowViewingModal(false);
+                      setViewingSuccess(false);
+                      setViewingDate('');
+                      setViewingTime('');
+                      setViewingNotes('');
+                    }}
+                    className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-orange-500/30"
+                  >
+                    Close
+                  </button>
                 </div>
               ) : (
                 <>

@@ -172,13 +172,13 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
-            <button
-              onClick={onClose}
-              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-            >
-              <ArrowLeft size={20} />
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          >
+            <ArrowLeft size={20} />
               <span className="font-medium">Back to Applications</span>
-            </button>
+          </button>
             
             <div className="flex items-center gap-3">
               {canWithdraw && (
@@ -189,7 +189,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                   Withdraw
                 </button>
               )}
-            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -209,8 +209,8 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                   e.target.src = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400';
                 }}
               />
-            </div>
-            
+          </div>
+
             {/* Property Info */}
             <div className="flex-1 p-6">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -256,24 +256,24 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
               
               {/* Quick Info */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <div>
+              <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Submitted</p>
                   <p className="font-semibold text-gray-900 dark:text-white">
                     {formatDate(application.submittedDate)}
-                  </p>
-                </div>
-                <div>
+                    </p>
+                  </div>
+                  <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
                   <p className="font-semibold text-gray-900 dark:text-white">
                     {formatDate(application.lastUpdated)}
-                  </p>
-                </div>
-                <div>
+                    </p>
+                  </div>
+                  <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Property Type</p>
                   <p className="font-semibold text-gray-900 dark:text-white capitalize">
                     {application.propertyType}
-                  </p>
-                </div>
+                    </p>
+                  </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Application Type</p>
                   <p className="font-semibold text-gray-900 dark:text-white capitalize">
@@ -288,7 +288,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
         {/* Status Tracker */}
         <div className="mb-6">
           <StatusTracker status={application.status} listingType={application.listingType} />
-        </div>
+          </div>
 
         {/* Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -322,21 +322,21 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <User size={20} className="text-orange-500" />
-                    Agent Information
+              Agent Information
                   </h3>
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
                       {application.agentName?.charAt(0)?.toUpperCase() || 'A'}
-                    </div>
+                </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-gray-900 dark:text-white">
-                        {application.agentName}
+                    {application.agentName}
                       </h4>
                       {application.agentAgency && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
                           <Building2 size={14} />
-                          {application.agentAgency}
-                        </p>
+                    {application.agentAgency}
+                  </p>
                       )}
                       {application.agentEmail && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
@@ -350,15 +350,15 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                           {application.agentPhone}
                         </p>
                       )}
-                    </div>
-                  </div>
-                  <button
+                </div>
+              </div>
+              <button
                     onClick={() => navigate('/user/dashboard/messages')}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
-                  >
+              >
                     <MessageSquare size={18} />
-                    <span>Message Agent</span>
-                  </button>
+                <span>Message Agent</span>
+              </button>
                 </div>
 
                 {/* Application Summary */}
@@ -400,10 +400,10 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                         {application.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     </div>
-                  </div>
-                </div>
+            </div>
+          </div>
 
-                {/* Next Steps */}
+          {/* Next Steps */}
                 {application.status !== APPLICATION_STATUS.APPROVED && 
                  application.status !== APPLICATION_STATUS.REJECTED &&
                  application.status !== APPLICATION_STATUS.WITHDRAWN && (
@@ -465,8 +465,8 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                         </>
                       )}
                     </div>
-                  </div>
-                )}
+            </div>
+          )}
 
                 {/* Approved Message */}
                 {application.status === APPLICATION_STATUS.APPROVED && (
@@ -483,7 +483,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                           The agent has approved your application. Contact them to proceed with the next steps
                           {application.listingType === 'rent' ? ' including signing the tenancy agreement and arranging your move-in date.' : ' including contract signing and completion.'}
                         </p>
-                        <button
+              <button
                           onClick={() => navigate('/user/dashboard/messages')}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
                         >
@@ -527,7 +527,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                         </div>
                         <button className="px-3 py-1.5 text-sm font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
                           {index < 2 ? 'View' : 'Upload'}
-                        </button>
+              </button>
                       </div>
                     ))}
                   </div>
@@ -581,8 +581,8 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                     })}
                   </div>
                 </div>
-              </div>
-            )}
+            </div>
+          )}
           </div>
         </div>
       </div>

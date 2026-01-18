@@ -882,7 +882,12 @@ const PropertyView = () => {
       <SharePropertyModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        property={property}
+        property={{
+          ...property,
+          images: Array.isArray(property.images)
+            ? property.images.filter((img): img is string => typeof img === 'string')
+            : undefined,
+        }}
         onShare={handleShare}
       />
 

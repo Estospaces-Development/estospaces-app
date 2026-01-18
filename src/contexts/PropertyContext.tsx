@@ -5,7 +5,21 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // Type definitions
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR' | 'AED' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'SGD';
 export type AreaUnit = 'sqft' | 'sqm' | 'acres' | 'hectares';
-export type PropertyStatus = 'online' | 'offline' | 'under_offer' | 'sold' | 'let' | 'draft' | 'published' | 'active';
+export type PropertyStatus =
+  | 'online'
+  | 'offline'
+  | 'under_offer'
+  | 'sold'
+  | 'let'
+  | 'draft'
+  | 'published'
+  | 'active'
+  | 'available'
+  | 'pending'
+  | 'rented'
+  | 'under_contract'
+  | 'off_market'
+  | 'coming_soon';
 export type PropertyType = 'apartment' | 'house' | 'condo' | 'townhouse' | 'villa' | 'penthouse' | 'studio' | 'duplex' | 'triplex' | 'land' | 'commercial' | 'industrial' | 'office';
 export type ListingType = 'sale' | 'rent' | 'lease' | 'short_term' | 'vacation';
 export type FurnishingStatus = 'furnished' | 'semi_furnished' | 'unfurnished';
@@ -1096,7 +1110,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       setError(errorMsg);
       // Create a new error with the formatted message to ensure it's properly thrown
       const errorToThrow = new Error(errorMsg);
-      errorToThrow.cause = err;
+      (errorToThrow as any).cause = err;
       throw errorToThrow;
     } finally {
       setLoading(false);

@@ -788,6 +788,77 @@ app.get('/api/health', async (req, res) => {
   res.status(statusCode).json(healthCheck);
 });
 
+app.post('/api/appointments/book', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!token) {
+      return res.status(401).json({ error: { message: 'Missing authorization token' } });
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !userData?.user?.id) {
+      return res.status(401).json({ error: { message: 'Invalid session' } });
+    }
+
+    const userId = userData.user.id;
+    const { property_id, viewing_date, viewing_time, notes, application_data } = req.body || {};
+
+    if (!property_id || !viewing_date || !viewing_time) {
+      return res.status(400).json({ error: { message: 'Missing required fields' } });
+    }
+
+    const db =
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? supabase
+        : createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY || supabaseKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } },
+            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+          });
+
+    const { data: insertedApps, error: appError } = await db
+      .from('applied_properties')
+      .insert({
+        user_id: userId,
+        property_id,
+        status: 'appointment_booked',
+        application_data: application_data || {
+          appointment: { date: viewing_date, time: viewing_time, notes: notes || '', type: 'viewing' },
+        },
+      })
+      .select('id')
+      .limit(1);
+
+    if (appError) {
+      return res.status(400).json({ error: { message: appError.message } });
+    }
+
+    const { error: viewingError } = await db.from('viewings').insert({
+      user_id: userId,
+      property_id,
+      viewing_date,
+      viewing_time,
+      notes: notes || '',
+      status: 'pending',
+    });
+
+    if (viewingError) {
+      return res.status(201).json({
+        ok: true,
+        application_id: insertedApps?.[0]?.id || null,
+        warning: { message: viewingError.message },
+      });
+    }
+
+    return res.status(201).json({ ok: true, application_id: insertedApps?.[0]?.id || null });
+  } catch (error) {
+    console.error('❌ Server Error:', error);
+    return res.status(500).json({ error: { message: 'Internal server error' } });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err);
@@ -836,4 +907,3 @@ const server = app.listen(PORT, () => {
   console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
   console.log(`⏰ Server started at: ${new Date().toISOString()}`);
 });
-

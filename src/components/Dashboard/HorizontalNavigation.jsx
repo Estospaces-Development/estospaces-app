@@ -12,6 +12,7 @@ import {
   Home,
   Heart,
   Settings,
+  Globe,
 } from 'lucide-react';
 import { useMessages } from '../../contexts/MessagesContext';
 import { usePropertyFilter } from '../../contexts/PropertyFilterContext';
@@ -44,6 +45,7 @@ const HorizontalNavigation = () => {
     { icon: MessageSquare, label: 'Messages', path: '/user/dashboard/messages', showBadge: true, badgeCount: totalUnreadCount },
     { icon: CreditCard, label: 'Payments', path: '/user/dashboard/payments' },
     { icon: FileText, label: 'Contracts', path: '/user/dashboard/contracts' },
+    { icon: Globe, label: 'Overseas', path: '/user/dashboard/overseas' },
     { icon: User, label: 'Profile', path: '/user/dashboard/profile' },
     { icon: Settings, label: 'Settings', path: '/user/dashboard/settings' },
     { icon: HelpCircle, label: 'Help & Support', path: '/user/dashboard/help' },
@@ -457,4 +459,3 @@ const HorizontalNavigation = () => {
 };
 
 export default HorizontalNavigation;
-

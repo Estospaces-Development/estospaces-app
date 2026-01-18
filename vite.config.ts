@@ -11,6 +11,12 @@ export default defineConfig({
     hmr: {
       timeout: 30000,
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+      },
+    },
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],

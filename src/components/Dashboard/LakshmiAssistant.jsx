@@ -528,6 +528,7 @@ const LakshmiAssistant = () => {
       'messages': '/user/dashboard/messages',
       'payments': '/user/dashboard/payments',
       'contracts': '/user/dashboard/contracts',
+      'overseas': '/user/dashboard/overseas',
       'profile': '/user/dashboard/profile',
       'settings': '/user/dashboard/settings',
       'help': '/user/dashboard/help',
