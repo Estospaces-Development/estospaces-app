@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Search, Filter, MapPin, Home, DollarSign, Bed, Bath, Map as MapIcon, Grid, List, ChevronLeft, ChevronRight, AlertCircle, Clock, ArrowLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProperties } from '../contexts/PropertiesContext';
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
@@ -43,6 +43,7 @@ const DashboardDiscover = () => {
   const [postcodeSuggestions, setPostcodeSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionTimer, setSuggestionTimer] = useState(null);
+  const [addedToSite, setAddedToSite] = useState('anytime');
 
   // Debounced search
   useEffect(() => {
@@ -117,7 +118,7 @@ const DashboardDiscover = () => {
       if (addedToSite && addedToSite !== 'anytime') {
         const now = new Date();
         let dateFrom = new Date();
-        
+
         switch (addedToSite) {
           case '24hours':
             dateFrom.setDate(now.getDate() - 1);
@@ -134,7 +135,7 @@ const DashboardDiscover = () => {
           default:
             dateFrom = null;
         }
-        
+
         if (dateFrom) {
           params.append('created_after', dateFrom.toISOString());
         }
@@ -142,14 +143,14 @@ const DashboardDiscover = () => {
 
       // Use the Vite proxy endpoint (in dev) or direct API (in prod)
       const apiUrl = `/api/properties?${params.toString()}`;
-      
+
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
@@ -246,10 +247,10 @@ const DashboardDiscover = () => {
 
   // Transform properties for display
   const transformPropertyForCard = (property) => {
-    const images = property.image_urls 
+    const images = property.image_urls
       ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]'))
       : [];
-    
+
     return {
       id: property.id,
       title: property.title,
@@ -298,7 +299,7 @@ const DashboardDiscover = () => {
   // Handler for "Added to site" filter change
   const handleAddedToSiteChange = useCallback((value) => {
     setAddedToSite(value);
-    
+
     // Update URL params
     const newParams = new URLSearchParams(searchParams);
     if (value === 'anytime') {
@@ -307,7 +308,7 @@ const DashboardDiscover = () => {
       newParams.set('added', value);
     }
     setSearchParams(newParams);
-    
+
     // Fetching is handled by useEffect on addedToSite change
   }, [searchParams, setSearchParams]);
 
@@ -319,11 +320,11 @@ const DashboardDiscover = () => {
 
   // Mock properties for fallback (if Supabase is not configured)
   const mockProperties = [
-    { 
-      id: 1, 
-      title: 'Modern Apartment', 
-      location: '123 Main St, Downtown', 
-      price: 2450, 
+    {
+      id: 1,
+      title: 'Modern Apartment',
+      location: '123 Main St, Downtown',
+      price: 2450,
       type: 'Apartment',
       beds: 2,
       baths: 2,
@@ -333,11 +334,11 @@ const DashboardDiscover = () => {
       image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=60',
       description: 'A beautiful modern apartment in the heart of downtown.'
     },
-    { 
-      id: 2, 
-      title: 'Cozy House', 
-      location: '456 Oak Ave, Suburbs', 
-      price: 1800, 
+    {
+      id: 2,
+      title: 'Cozy House',
+      location: '456 Oak Ave, Suburbs',
+      price: 1800,
       type: 'House',
       beds: 3,
       baths: 2,
@@ -347,11 +348,11 @@ const DashboardDiscover = () => {
       image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800&auto=format&fit=crop&q=60',
       description: 'Perfect family home with a large backyard.'
     },
-    { 
-      id: 3, 
-      title: 'Luxury Condo', 
-      location: '789 Pine Ln, Waterfront', 
-      price: 3200, 
+    {
+      id: 3,
+      title: 'Luxury Condo',
+      location: '789 Pine Ln, Waterfront',
+      price: 3200,
       type: 'Condo',
       beds: 2,
       baths: 2,
@@ -361,11 +362,11 @@ const DashboardDiscover = () => {
       image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=60',
       description: 'Stunning waterfront views and luxury amenities.'
     },
-    { 
-      id: 4, 
-      title: 'Studio Loft', 
-      location: '101 Maple Dr, Arts District', 
-      price: 2100, 
+    {
+      id: 4,
+      title: 'Studio Loft',
+      location: '101 Maple Dr, Arts District',
+      price: 2100,
       type: 'Studio',
       beds: 1,
       baths: 1,
@@ -375,11 +376,11 @@ const DashboardDiscover = () => {
       image: 'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800&auto=format&fit=crop&q=60',
       description: 'Open concept loft in the trendy arts district.'
     },
-    { 
-      id: 5, 
-      title: 'Family Home', 
-      location: '202 Cedar Ct, Residential', 
-      price: 2750, 
+    {
+      id: 5,
+      title: 'Family Home',
+      location: '202 Cedar Ct, Residential',
+      price: 2750,
       type: 'House',
       beds: 4,
       baths: 3,
@@ -389,11 +390,11 @@ const DashboardDiscover = () => {
       image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b91d?w=800&auto=format&fit=crop&q=60',
       description: 'Spacious family home in a quiet neighborhood.'
     },
-    { 
-      id: 6, 
-      title: 'Penthouse', 
-      location: '303 Birch Blvd, City Center', 
-      price: 4950, 
+    {
+      id: 6,
+      title: 'Penthouse',
+      location: '303 Birch Blvd, City Center',
+      price: 4950,
       type: 'Apartment',
       beds: 3,
       baths: 3,
@@ -435,21 +436,19 @@ const DashboardDiscover = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'grid'
+            className={`p-2 rounded-lg transition-colors ${viewMode === 'grid'
                 ? 'bg-orange-500 text-white'
                 : 'bg-white dark:bg-white border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-800'
-            }`}
+              }`}
           >
             <Grid size={20} />
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'map'
+            className={`p-2 rounded-lg transition-colors ${viewMode === 'map'
                 ? 'bg-orange-500 text-white'
                 : 'bg-white dark:bg-white border border-gray-300 dark:border-gray-300 text-gray-700 dark:text-gray-800'
-            }`}
+              }`}
           >
             <MapIcon size={20} />
           </button>
@@ -461,16 +460,16 @@ const DashboardDiscover = () => {
         {/* Main Search Bar */}
         <div className="flex gap-3 mb-6">
           <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by postcode, street, address, keyword, or property title..."
-            className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
-          />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by postcode, street, address, keyword, or property title..."
+              className="w-full pl-10 pr-4 py-3 border border-orange-300 dark:border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+            />
+          </div>
         </div>
-      </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Location Filter */}
@@ -501,7 +500,7 @@ const DashboardDiscover = () => {
                 placeholder="Postcode, street, or address"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-white text-gray-900 dark:text-gray-900"
               />
-              
+
               {/* Postcode Suggestions Dropdown */}
               {showSuggestions && postcodeSuggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white dark:bg-white border border-gray-300 dark:border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
@@ -526,7 +525,7 @@ const DashboardDiscover = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
             <div className="relative">
               <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <select 
+              <select
                 value={propertyType}
                 onChange={(e) => {
                   const newType = e.target.value;
@@ -582,7 +581,7 @@ const DashboardDiscover = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Beds</label>
               <div className="relative">
                 <Bed className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <select 
+                <select
                   value={beds || ''}
                   onChange={(e) => setBeds(e.target.value ? e.target.value : null)}
                   className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
@@ -600,7 +599,7 @@ const DashboardDiscover = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Baths</label>
               <div className="relative">
                 <Bath className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <select 
+                <select
                   value={baths || ''}
                   onChange={(e) => setBaths(e.target.value ? e.target.value : null)}
                   className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
@@ -618,23 +617,23 @@ const DashboardDiscover = () => {
           {/* Added to Site Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-2">Added to site</label>
-              <div className="relative">
-                <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <select 
-                  value={addedToSite}
-                  onChange={(e) => handleAddedToSiteChange(e.target.value)}
-                  className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
-                >
-                  <option value="anytime">Anytime</option>
-                  <option value="24hours">Last 24 hours</option>
-                  <option value="3days">Last 3 days</option>
-                  <option value="7days">Last 7 days</option>
-                  <option value="14days">Last 14 days</option>
-                </select>
+            <div className="relative">
+              <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <select
+                value={addedToSite}
+                onChange={(e) => handleAddedToSiteChange(e.target.value)}
+                className="w-full pl-8 pr-2 py-2 border border-gray-300 dark:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none text-sm bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+              >
+                <option value="anytime">Anytime</option>
+                <option value="24hours">Last 24 hours</option>
+                <option value="3days">Last 3 days</option>
+                <option value="7days">Last 7 days</option>
+                <option value="14days">Last 14 days</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* Properties Display */}
       {viewMode === 'map' ? (
@@ -652,7 +651,7 @@ const DashboardDiscover = () => {
       ) : (
         <>
           {loading ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <PropertyCardSkeleton key={i} />
               ))}
@@ -676,23 +675,23 @@ const DashboardDiscover = () => {
                 No properties found for {activeTab === 'buy' ? 'Buy' : activeTab === 'rent' ? 'Rent' : 'this category'}
               </h3>
               <p className="text-gray-500 dark:text-orange-400 mb-4">
-                {activeTab === 'buy' 
+                {activeTab === 'buy'
                   ? "We couldn't find any properties for sale. Try switching to 'Rent' or 'Browse Properties' to see all available listings."
                   : activeTab === 'rent'
-                  ? "We couldn't find any rental properties. Try switching to 'Buy' or 'Browse Properties' to see all available listings."
-                  : "Try adjusting your search or filters to find what you're looking for."
+                    ? "We couldn't find any rental properties. Try switching to 'Buy' or 'Browse Properties' to see all available listings."
+                    : "Try adjusting your search or filters to find what you're looking for."
                 }
               </p>
               <div className="flex gap-3 justify-center">
                 {activeTab !== 'all' && (
-                  <button 
+                  <button
                     onClick={() => setActiveTabFromContext('all')}
                     className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
                   >
                     Browse All Properties
                   </button>
                 )}
-                <button 
+                <button
                   onClick={handleClearFilters}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
                 >

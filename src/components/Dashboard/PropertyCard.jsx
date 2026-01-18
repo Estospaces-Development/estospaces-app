@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Heart, 
-  Bookmark, 
-  Bed, 
-  Bath, 
-  Maximize, 
-  MapPin, 
-  Star, 
+import {
+  Heart,
+  Bookmark,
+  Bed,
+  Bath,
+  Maximize,
+  MapPin,
+  Star,
   Share2,
   ChevronLeft,
   ChevronRight,
@@ -37,7 +37,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
   const createApplication = applicationsContext?.createApplication;
   const allApplications = applicationsContext?.allApplications || [];
   const navigate = useNavigate();
-  
+
   // Check saved status from SavedPropertiesContext (source of truth)
   const isSaved = isPropertySaved(property.id);
   // Check if already applied to this property
@@ -62,25 +62,25 @@ const PropertyCard = ({ property, onViewDetails }) => {
   const handleSave = async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     console.log('[PropertyCard] Save button clicked for property:', property.id, property.title);
     console.log('[PropertyCard] Current isSaved status:', isSaved);
-    
+
     const wasAlreadySaved = isSaved;
     setIsSaving(true);
-    
+
     try {
       // Toggle property in SavedPropertiesContext (handles both local and Supabase)
       console.log('[PropertyCard] Calling toggleProperty...');
       await toggleProperty(property);
       console.log('[PropertyCard] toggleProperty completed');
-      
+
       // Show toast notification
       const message = wasAlreadySaved ? 'Property removed from saved' : 'Property saved successfully!';
       console.log('[PropertyCard] Showing toast:', message);
       setSaveToastMessage(message);
       setShowSaveToast(true);
-      
+
       // Auto-hide toast after 3 seconds
       setTimeout(() => {
         setShowSaveToast(false);
@@ -126,7 +126,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
       };
 
       const result = await createApplication(applicationData);
-      
+
       if (result.success) {
         setShowApplySuccess(true);
         // Navigate to applications after brief delay
@@ -150,7 +150,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
     if (property.images && Array.isArray(property.images) && property.images.length > 0) {
       return property.images.slice(0, 4);
     }
-    
+
     // If images is a JSON string, parse it
     if (typeof property.images === 'string') {
       try {
@@ -165,29 +165,29 @@ const PropertyCard = ({ property, onViewDetails }) => {
         }
       }
     }
-    
+
     // Fallback to other possible field names
-    const singleImage = property.image || property.image_url || property.thumbnail_url || 
-                        property.photo || property.main_image;
-    
+    const singleImage = property.image || property.image_url || property.thumbnail_url ||
+      property.photo || property.main_image;
+
     if (singleImage) {
       return [singleImage].filter(Boolean);
     }
-    
+
     return [];
   };
-  
+
   const images = getPropertyImages();
   const hasMultipleImages = images.length > 1;
 
   const nextImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   const formatPrice = (price) => {
@@ -215,18 +215,17 @@ const PropertyCard = ({ property, onViewDetails }) => {
   // Toast component to be rendered via portal
   const ToastNotification = () => {
     if (!showSaveToast) return null;
-    
+
     return ReactDOM.createPortal(
-      <div 
+      <div
         className="fixed bottom-8 left-1/2 z-[99999] pointer-events-auto"
         style={{ transform: 'translateX(-50%)' }}
       >
-        <div 
-          className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl ${
-            saveToastMessage.includes('removed') || saveToastMessage.includes('Failed')
-              ? 'bg-gray-900 text-white'
-              : 'bg-green-500 text-white'
-          }`}
+        <div
+          className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl ${saveToastMessage.includes('removed') || saveToastMessage.includes('Failed')
+            ? 'bg-gray-900 text-white'
+            : 'bg-green-500 text-white'
+            }`}
           style={{
             animation: 'slideUp 0.3s ease-out',
             boxShadow: '0 25px 50px rgba(0,0,0,0.4)'
@@ -263,10 +262,10 @@ const PropertyCard = ({ property, onViewDetails }) => {
       <div className="bg-white dark:bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
         {/* Image Carousel */}
         <div className="relative h-56 bg-gray-200 overflow-hidden">
-          {validImages.length > 0 ? (
+          {images.length > 0 ? (
             <>
               <img
-                src={validImages[currentImageIndex]}
+                src={images[currentImageIndex]}
                 alt={property.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
@@ -275,7 +274,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                   e.target.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
                 }}
               />
-              
+
               {/* Image Navigation */}
               {hasMultipleImages && (
                 <>
@@ -291,21 +290,20 @@ const PropertyCard = ({ property, onViewDetails }) => {
                   >
                     <ChevronRight size={16} className="text-gray-700" />
                   </button>
-                  
+
                   {/* Image Dots */}
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {validImages.map((_, index) => (
+                    {images.map((_, index) => (
                       <button
                         key={index}
                         onClick={(e) => {
                           e.stopPropagation();
                           setCurrentImageIndex(index);
                         }}
-                        className={`h-1.5 rounded-full transition-all ${
-                          index === currentImageIndex
-                            ? 'bg-white w-4'
-                            : 'bg-white/50 w-1.5 hover:bg-white/75'
-                        }`}
+                        className={`h-1.5 rounded-full transition-all ${index === currentImageIndex
+                          ? 'bg-white w-4'
+                          : 'bg-white/50 w-1.5 hover:bg-white/75'
+                          }`}
                       />
                     ))}
                   </div>
@@ -321,13 +319,12 @@ const PropertyCard = ({ property, onViewDetails }) => {
           {/* Property Type Badge */}
           {property.type && (
             <div className="absolute top-3 left-3">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${
-                property.type?.toLowerCase() === 'rent' 
-                  ? 'bg-blue-500 text-white' 
-                  : property.type?.toLowerCase() === 'sale' 
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white/95 backdrop-blur-sm text-gray-800'
-              }`}>
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${property.type?.toLowerCase() === 'rent'
+                ? 'bg-blue-500 text-white'
+                : property.type?.toLowerCase() === 'sale'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white/95 backdrop-blur-sm text-gray-800'
+                }`}>
                 {property.type === 'Sale' ? 'For Sale' : property.type === 'Rent' ? 'For Rent' : property.type}
               </span>
             </div>
@@ -338,11 +335,10 @@ const PropertyCard = ({ property, onViewDetails }) => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className={`p-2 rounded-full backdrop-blur-sm transition-all ${
-                isSaved
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white/90 dark:bg-white/90 text-gray-700 dark:text-gray-800 hover:bg-white dark:hover:bg-white'
-              } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`p-2 rounded-full backdrop-blur-sm transition-all ${isSaved
+                ? 'bg-red-500 text-white'
+                : 'bg-white/90 dark:bg-white/90 text-gray-700 dark:text-gray-800 hover:bg-white dark:hover:bg-white'
+                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label={isSaved ? 'Remove from saved' : 'Save property'}
               title={isSaved ? 'Saved' : 'Save property'}
             >
@@ -442,7 +438,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
             >
               View Details
             </button>
-            
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
