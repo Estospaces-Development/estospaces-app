@@ -150,7 +150,22 @@ export const getFeaturedProperties = async ({
     if (supabase) {
       let query = supabase
         .from('properties')
-        .select('*')
+        .select(`
+          id,
+          title,
+          address_line_1,
+          city,
+          postcode,
+          price,
+          property_type,
+          listing_type,
+          image_urls,
+          status,
+          bedrooms,
+          bathrooms,
+          created_at,
+          featured
+        `)
         .eq('country', 'UK')
         .eq('status', 'online')
         .order('created_at', { ascending: false })
@@ -423,7 +438,21 @@ export const getTrendingProperties = async ({
         property_id,
         view_count,
         viewed_at,
-        properties (*)
+        properties (
+          id,
+          title,
+          address_line_1,
+          city,
+          postcode,
+          price,
+          property_type,
+          listing_type,
+          image_urls,
+          status,
+          bedrooms,
+          bathrooms,
+          created_at
+        )
       `)
       .gte('viewed_at', cutoffDate.toISOString())
       .order('view_count', { ascending: false })

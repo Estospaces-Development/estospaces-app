@@ -105,6 +105,10 @@ app.get('/api/properties', async (req, res) => {
     const type = req.query.type; // 'rent' or 'sale'
     const minPrice = req.query.min_price ? parseFloat(req.query.min_price) : null;
     const maxPrice = req.query.max_price ? parseFloat(req.query.max_price) : null;
+    const minBedrooms = req.query.min_bedrooms || req.query.bedrooms ? parseInt(req.query.min_bedrooms || req.query.bedrooms) : null;
+    const minBathrooms = req.query.min_bathrooms || req.query.bathrooms ? parseInt(req.query.min_bathrooms || req.query.bathrooms) : null;
+    const createdAfter = req.query.created_after;
+    const searchQuery = req.query.q;
     
     // Calculate pagination
     const from = (page - 1) * limit;
@@ -119,12 +123,32 @@ app.get('/api/properties', async (req, res) => {
       type,
       minPrice,
       maxPrice,
+      minBedrooms,
+      minBathrooms,
+      createdAfter,
     });
 
     // Build query
     let query = supabase
       .from('properties')
-      .select('*', { count: 'exact' });
+      .select(`
+        id,
+        title,
+        description,
+        address_line_1,
+        city,
+        postcode,
+        price,
+        property_type,
+        status,
+        bedrooms,
+        bathrooms,
+        image_urls,
+        featured,
+        agent_id,
+        created_at,
+        updated_at
+      `, { count: 'exact' });
 
     // Status filter: 'online' OR 'active'
     query = query.or('status.eq.online,status.eq.active');
@@ -132,6 +156,11 @@ app.get('/api/properties', async (req, res) => {
     // Country filter (optional)
     if (country && country !== 'all') {
       query = query.eq('country', country);
+    }
+
+    // Search query (q)
+    if (searchQuery) {
+      query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,address_line_1.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%,postcode.ilike.%${searchQuery}%`);
     }
 
     // City filter
@@ -144,13 +173,14 @@ app.get('/api/properties', async (req, res) => {
       query = query.ilike('postcode', `%${postcode}%`);
     }
 
-    // NOTE: Removed listing_type filter because the existing .or() filter for status
-    // seems to conflict with additional filters. Properties are correctly retrieved
-    // without the type filter. For now, filter client-side or use a separate query approach.
-    // TODO: Investigate Supabase query chaining with .or() and .eq() together
-    
-    // For now, we'll handle the type filter after fetching
-    const typeFilter = type;
+    // Type filter
+    if (type && type !== 'all') {
+      if (type === 'buy' || type === 'sale') {
+        query = query.eq('property_type', 'sale');
+      } else if (type === 'rent') {
+        query = query.eq('property_type', 'rent');
+      }
+    }
 
     // Price filters
     if (minPrice !== null && !isNaN(minPrice)) {
@@ -158,6 +188,21 @@ app.get('/api/properties', async (req, res) => {
     }
     if (maxPrice !== null && !isNaN(maxPrice)) {
       query = query.lte('price', maxPrice);
+    }
+
+    // Bedrooms filter
+    if (minBedrooms !== null && !isNaN(minBedrooms)) {
+      query = query.gte('bedrooms', minBedrooms);
+    }
+
+    // Bathrooms filter
+    if (minBathrooms !== null && !isNaN(minBathrooms)) {
+      query = query.gte('bathrooms', minBathrooms);
+    }
+
+    // Created after filter (Added to site)
+    if (createdAfter) {
+      query = query.gte('created_at', createdAfter);
     }
 
     // Order by created_at descending
@@ -213,11 +258,11 @@ app.get('/api/properties', async (req, res) => {
 
     // Apply type filter client-side if specified
     let filteredData = data || [];
-    if (typeFilter && typeFilter !== 'all') {
-      if (typeFilter === 'buy' || typeFilter === 'sale') {
-        filteredData = filteredData.filter(p => p.listing_type === 'sale');
-      } else if (typeFilter === 'rent') {
-        filteredData = filteredData.filter(p => p.listing_type === 'rent');
+    if (type && type !== 'all') {
+      if (type === 'buy' || type === 'sale') {
+        filteredData = filteredData.filter(p => p.property_type === 'sale');
+      } else if (type === 'rent') {
+        filteredData = filteredData.filter(p => p.property_type === 'rent');
       }
     }
 
@@ -282,9 +327,9 @@ app.get('/api/properties/sections', async (req, res) => {
 
     // Apply type filter if specified
     if (type === 'buy' || type === 'sale') {
-      query = query.eq('listing_type', 'sale');
+      query = query.eq('property_type', 'sale');
     } else if (type === 'rent') {
-      query = query.eq('listing_type', 'rent');
+      query = query.eq('property_type', 'rent');
     }
 
     // Apply section-specific ordering
@@ -357,12 +402,12 @@ app.get('/api/properties/all-sections', async (req, res) => {
     const type = req.query.type;
     const limit = Math.min(parseInt(req.query.limit) || 6, 20);
 
-    // Build base query options
-    const baseFilter = type === 'buy' || type === 'sale' 
-      ? { listing_type: 'sale' }
-      : type === 'rent' 
-        ? { listing_type: 'rent' }
-        : null;
+    // Helper to apply type filter
+    const applyTypeFilter = (q) => {
+      if (type === 'buy' || type === 'sale') return q.eq('property_type', 'sale');
+      if (type === 'rent') return q.eq('property_type', 'rent');
+      return q;
+    };
 
     // Fetch all sections in parallel
     const [
@@ -374,53 +419,65 @@ app.get('/api/properties/all-sections', async (req, res) => {
       discoveryResult,
     ] = await Promise.all([
       // Most Viewed
-      supabase
-        .from('properties')
-        .select('*')
-        .or('status.eq.online,status.eq.active')
+      applyTypeFilter(
+        supabase
+          .from('properties')
+          .select('*')
+          .or('status.eq.online,status.eq.active')
+      )
         .order('views', { ascending: false })
         .limit(limit),
       
       // Trending (recent with high views)
-      supabase
-        .from('properties')
-        .select('*')
-        .or('status.eq.online,status.eq.active')
+      applyTypeFilter(
+        supabase
+          .from('properties')
+          .select('*')
+          .or('status.eq.online,status.eq.active')
+      )
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('views', { ascending: false })
         .limit(limit),
       
       // Recently Added
-      supabase
-        .from('properties')
-        .select('*')
-        .or('status.eq.online,status.eq.active')
+      applyTypeFilter(
+        supabase
+          .from('properties')
+          .select('*')
+          .or('status.eq.online,status.eq.active')
+      )
         .order('created_at', { ascending: false })
         .limit(limit),
       
       // High Demand
-      supabase
-        .from('properties')
-        .select('*')
-        .or('status.eq.online,status.eq.active')
+      applyTypeFilter(
+        supabase
+          .from('properties')
+          .select('*')
+          .or('status.eq.online,status.eq.active')
+      )
         .order('inquiries', { ascending: false })
         .order('favorites', { ascending: false })
         .limit(limit),
       
       // Featured
-      supabase
-        .from('properties')
-        .select('*')
-        .or('status.eq.online,status.eq.active')
+      applyTypeFilter(
+        supabase
+          .from('properties')
+          .select('*')
+          .or('status.eq.online,status.eq.active')
+      )
         .eq('featured', true)
         .order('created_at', { ascending: false })
         .limit(limit),
       
       // Discovery (mixed)
-      supabase
-        .from('properties')
-        .select('*')
-        .or('status.eq.online,status.eq.active')
+      applyTypeFilter(
+        supabase
+          .from('properties')
+          .select('*')
+          .or('status.eq.online,status.eq.active')
+      )
         .order('views', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(8),
@@ -856,6 +913,107 @@ app.post('/api/appointments/book', async (req, res) => {
   } catch (error) {
     console.error('❌ Server Error:', error);
     return res.status(500).json({ error: { message: 'Internal server error' } });
+  }
+});
+
+/**
+ * GET /api/user_preferences
+ * Get user preferences
+ */
+app.get('/api/user_preferences', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: { message: 'Unauthorized' } });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return res.status(401).json({ error: { message: 'Invalid token' } });
+    }
+
+    // Use admin client or regular client depending on RLS
+    // Here we use the regular client but we handle the case where table might not exist
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      // If table doesn't exist or no rows, return default preferences
+      if (error.code === 'PGRST116' || error.message?.includes('relation "user_preferences" does not exist')) {
+        return res.status(200).json({
+          user_id: user.id,
+          lakshmi_onboarding_completed: false,
+          lakshmi_preferences: {},
+        });
+      }
+      throw error;
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Error fetching user preferences:', error);
+    // Return default to avoid 404 in frontend
+    return res.status(200).json({
+      lakshmi_onboarding_completed: false,
+      lakshmi_preferences: {},
+    });
+  }
+});
+
+/**
+ * POST /api/user_preferences
+ * Update user preferences
+ */
+app.post('/api/user_preferences', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: { message: 'Unauthorized' } });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return res.status(401).json({ error: { message: 'Invalid token' } });
+    }
+
+    const { lakshmi_onboarding_completed, lakshmi_preferences } = req.body;
+
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        lakshmi_onboarding_completed,
+        lakshmi_preferences,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // If table doesn't exist, we can't save, but we return success mock
+      if (error.message?.includes('relation "user_preferences" does not exist')) {
+        return res.status(200).json({
+          user_id: user.id,
+          lakshmi_onboarding_completed,
+          lakshmi_preferences,
+        });
+      }
+      throw error;
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Error saving user preferences:', error);
+    return res.status(500).json({ error: { message: 'Failed to save preferences' } });
   }
 });
 

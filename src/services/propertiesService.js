@@ -362,7 +362,21 @@ export const getViewedProperties = async (userId, limit = 20, offset = 0) => {
         property_id,
         viewed_at,
         view_count,
-        properties (*)
+        properties (
+          id,
+          title,
+          address_line_1,
+          city,
+          postcode,
+          price,
+          property_type,
+          listing_type,
+          image_urls,
+          status,
+          bedrooms,
+          bathrooms,
+          created_at
+        )
       `)
       .eq('user_id', userId)
       .order('viewed_at', { ascending: false })

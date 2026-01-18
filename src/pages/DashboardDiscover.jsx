@@ -8,6 +8,8 @@ import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
 import MapView from '../components/Dashboard/MapView';
 import * as postcodeService from '../services/postcodeService';
 
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
+
 const DashboardDiscover = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,6 +113,33 @@ const DashboardDiscover = () => {
         params.append('bathrooms', baths.toString());
       }
 
+      // Apply added to site filter
+      if (addedToSite && addedToSite !== 'anytime') {
+        const now = new Date();
+        let dateFrom = new Date();
+        
+        switch (addedToSite) {
+          case '24hours':
+            dateFrom.setDate(now.getDate() - 1);
+            break;
+          case '3days':
+            dateFrom.setDate(now.getDate() - 3);
+            break;
+          case '7days':
+            dateFrom.setDate(now.getDate() - 7);
+            break;
+          case '14days':
+            dateFrom.setDate(now.getDate() - 14);
+            break;
+          default:
+            dateFrom = null;
+        }
+        
+        if (dateFrom) {
+          params.append('created_after', dateFrom.toISOString());
+        }
+      }
+
       // Use the Vite proxy endpoint (in dev) or direct API (in prod)
       const apiUrl = `/api/properties?${params.toString()}`;
       
@@ -150,14 +179,14 @@ const DashboardDiscover = () => {
     fetchPropertiesFromAPI(activeTab, true);
   }, [activeTab, fetchPropertiesFromAPI]);
 
-  // Re-fetch when price range, beds, or baths change (with debounce)
+  // Re-fetch when price range, beds, baths, or addedToSite change (with debounce)
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchPropertiesFromAPI(activeTab, true);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [priceRange.min, priceRange.max, beds, baths]);
+  }, [priceRange.min, priceRange.max, beds, baths, addedToSite]);
 
   // Re-fetch when location changes (with debounce)
   useEffect(() => {
@@ -279,23 +308,8 @@ const DashboardDiscover = () => {
     }
     setSearchParams(newParams);
     
-    // Fetch with new filter
-    const tabFromUrl = searchParams.get('tab') || searchParams.get('type') || 'buy';
-    fetchPropertiesFromSupabase({
-      tab: tabFromUrl === 'rent' ? 'rent' : 'buy',
-      category: propertyCategory,
-      location: locationQuery,
-      currentPage: 1,
-      filter: selectedFilter,
-      search: searchQuery,
-      minPrice: priceRange.min,
-      maxPrice: priceRange.max,
-      bedsFilter: beds,
-      bathsFilter: baths,
-      addedFilter: value
-    });
-    setPage(1);
-  }, [searchParams, setSearchParams, propertyCategory, locationQuery, selectedFilter, searchQuery, priceRange, beds, baths, fetchPropertiesFromSupabase]);
+    // Fetching is handled by useEffect on addedToSite change
+  }, [searchParams, setSearchParams]);
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
