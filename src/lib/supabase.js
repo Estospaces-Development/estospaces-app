@@ -46,12 +46,10 @@ if (isSupabaseConfigured) {
     });
     
     if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
         console.log('✅ Supabase client initialized');
     }
 } else if (import.meta.env.DEV) {
     // Only show warnings in development mode
-    // eslint-disable-next-line no-console
     console.warn('⚠️ Supabase credentials not found. See SUPABASE_SETUP.md for setup instructions');
 }
 
