@@ -594,6 +594,23 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 - **Auth Improvements**: Added timeout protection for session checks and profile fetches
 - **Improved Session Persistence**: Enhanced Supabase client with explicit localStorage storage configuration
 
+
+### Real-Time Features (Late January 2026)
+
+- **End-to-End Lifecycle Tracking**:
+  - **Unified Widget**: "Track Your Journey" widget on dashboard for granular progress tracking
+  - **Dual Modes**: Toggle between "Applications" (Buy/Rent) and "My Listings" (Sell)
+  - **Visual Timeline**: Step-by-step progress visualization (e.g., Verification -> Site Visit -> Offer)
+  - **Real-Time Polling**: Auto-updates status every 10 seconds
+  - **Smart Fallback**: Displays educational empty states or mock data for demonstration
+
+- **10-Minute Nearest Broker Response**:
+  - **Emergency Request**: New "Request Broker Help" widget for urgent assistance
+  - **Geolocation Integration**: Automatically detects user location to find nearest agents
+  - **Countdown Timer**: 10-minute guarantee countdown visual
+  - **Status States**: Real-time tracking of request status (Pending -> Searching -> Broker Found)
+  - **Mock Simulation**: Fully functional demo mode for testing the flow without live agents
+
 ### Notifications System (January 2026)
 
 - **Notifications Table**: Created `notifications` table in Supabase with RLS policies

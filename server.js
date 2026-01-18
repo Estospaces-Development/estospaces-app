@@ -109,7 +109,7 @@ app.get('/api/properties', async (req, res) => {
     const minBathrooms = req.query.min_bathrooms || req.query.bathrooms ? parseInt(req.query.min_bathrooms || req.query.bathrooms) : null;
     const createdAfter = req.query.created_after;
     const searchQuery = req.query.q;
-    
+
     // Calculate pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -217,7 +217,7 @@ app.get('/api/properties', async (req, res) => {
     // Handle errors
     if (error) {
       console.error('❌ Supabase Error:', error);
-      
+
       // Check for table not found
       if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
         return res.status(500).json({
@@ -427,7 +427,7 @@ app.get('/api/properties/all-sections', async (req, res) => {
       )
         .order('views', { ascending: false })
         .limit(limit),
-      
+
       // Trending (recent with high views)
       applyTypeFilter(
         supabase
@@ -438,7 +438,7 @@ app.get('/api/properties/all-sections', async (req, res) => {
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('views', { ascending: false })
         .limit(limit),
-      
+
       // Recently Added
       applyTypeFilter(
         supabase
@@ -448,7 +448,7 @@ app.get('/api/properties/all-sections', async (req, res) => {
       )
         .order('created_at', { ascending: false })
         .limit(limit),
-      
+
       // High Demand
       applyTypeFilter(
         supabase
@@ -459,7 +459,7 @@ app.get('/api/properties/all-sections', async (req, res) => {
         .order('inquiries', { ascending: false })
         .order('favorites', { ascending: false })
         .limit(limit),
-      
+
       // Featured
       applyTypeFilter(
         supabase
@@ -470,7 +470,7 @@ app.get('/api/properties/all-sections', async (req, res) => {
         .eq('featured', true)
         .order('created_at', { ascending: false })
         .limit(limit),
-      
+
       // Discovery (mixed)
       applyTypeFilter(
         supabase
@@ -560,7 +560,7 @@ app.get('/api/properties/global', async (req, res) => {
 
     // Try Zoopla API first (server-side only)
     const zooplaApiKey = process.env.ZOOPLA_API_KEY || process.env.VITE_ZOOPLA_API_KEY;
-    
+
     if (zooplaApiKey) {
       try {
         zooplaResults = await fetchFromZoopla({
@@ -773,13 +773,13 @@ async function fetchFromZoopla({
       const transformed = listings.map(transformZooplaProperty).filter(Boolean);
       results.properties.push(...transformed);
       results.totalResults += data.result_count || 0;
-      } catch (error) {
-        // Log error server-side only
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`Error fetching ${status} properties from Zoopla:`, error.message);
-        }
-        // Continue with other listing types
+    } catch (error) {
+      // Log error server-side only
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Error fetching ${status} properties from Zoopla:`, error.message);
       }
+      // Continue with other listing types
+    }
   }
 
   return results;
@@ -871,9 +871,9 @@ app.post('/api/appointments/book', async (req, res) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
         ? supabase
         : createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY || supabaseKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } },
-            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-          });
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        });
 
     const { data: insertedApps, error: appError } = await db
       .from('applied_properties')
@@ -1017,6 +1017,276 @@ app.post('/api/user_preferences', async (req, res) => {
   }
 });
 
+// ===== BROKER REQUEST ENDPOINTS =====
+
+// Create a new broker request
+app.post('/api/broker-requests', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const {
+      latitude,
+      longitude,
+      locationText,
+      postcode,
+      message,
+      requestType = 'nearest_broker',
+      priority = 'normal'
+    } = req.body;
+
+    // Validate required fields
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        error: { message: 'Latitude and longitude are required' }
+      });
+    }
+
+    // Check if user has an active pending request
+    const { data: existingRequest, error: checkError } = await supabase
+      .from('broker_requests')
+      .select('id, status, requested_at')
+      .eq('user_id', user.id)
+      .in('status', ['pending', 'searching', 'assigned'])
+      .is('expired_at', null)
+      .single();
+
+    if (existingRequest && !checkError) {
+      return res.status(409).json({
+        error: { message: 'You already have an active broker request' }
+      });
+    }
+
+    // Create new broker request
+    const { data, error } = await supabase
+      .from('broker_requests')
+      .insert([{
+        user_id: user.id,
+        user_latitude: latitude,
+        user_longitude: longitude,
+        user_location_text: locationText,
+        user_postcode: postcode,
+        user_message: message,
+        request_type: requestType,
+        priority: priority,
+        status: 'pending',
+        requested_at: new Date().toISOString(),
+        expired_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        estimated_response_time_seconds: 600 // 10 minutes
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating broker request:', error);
+      return res.status(500).json({
+        error: { message: 'Failed to create broker request' }
+      });
+    }
+
+    // Start the broker search process (this could be a background job)
+    // For now, we'll simulate the search process
+    setTimeout(async () => {
+      await simulateBrokerSearch(data.id);
+    }, 2000);
+
+    return res.status(201).json({
+      data,
+      message: 'Broker request created successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in broker request creation:', error);
+    return res.status(500).json({
+      error: { message: 'Internal server error' }
+    });
+  }
+});
+
+// Get user's broker requests
+app.get('/api/broker-requests', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const { status, limit = 10, offset = 0 } = req.query;
+
+    let query = supabase
+      .from('broker_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('requested_at', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Error fetching broker requests:', error);
+      return res.status(500).json({
+        error: { message: 'Failed to fetch broker requests' }
+      });
+    }
+
+    return res.status(200).json({
+      data,
+      pagination: {
+        total: count,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in broker requests fetch:', error);
+    return res.status(500).json({
+      error: { message: 'Internal server error' }
+    });
+  }
+});
+
+// Get active broker request for user
+app.get('/api/broker-requests/active', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+
+    const { data, error } = await supabase
+      .from('broker_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('status', ['pending', 'searching', 'assigned'])
+      .is('expired_at', null)
+      .order('requested_at', { ascending: false })
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error fetching active broker request:', error);
+      return res.status(500).json({
+        error: { message: 'Failed to fetch active broker request' }
+      });
+    }
+
+    return res.status(200).json({
+      data: data || null
+    });
+
+  } catch (error) {
+    console.error('Error in active broker request fetch:', error);
+    return res.status(500).json({
+      error: { message: 'Internal server error' }
+    });
+  }
+});
+
+// Cancel broker request
+app.put('/api/broker-requests/:id/cancel', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+
+    // Verify the request belongs to the user and is cancellable
+    const { data: request, error: fetchError } = await supabase
+      .from('broker_requests')
+      .select('id, status, user_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !request) {
+      return res.status(404).json({
+        error: { message: 'Broker request not found' }
+      });
+    }
+
+    if (request.user_id !== user.id) {
+      return res.status(403).json({
+        error: { message: 'Not authorized to cancel this request' }
+      });
+    }
+
+    if (!['pending', 'searching', 'assigned'].includes(request.status)) {
+      return res.status(400).json({
+        error: { message: 'Cannot cancel request in current status' }
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('broker_requests')
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error cancelling broker request:', error);
+      return res.status(500).json({
+        error: { message: 'Failed to cancel broker request' }
+      });
+    }
+
+    return res.status(200).json({
+      data,
+      message: 'Broker request cancelled successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in broker request cancellation:', error);
+    return res.status(500).json({
+      error: { message: 'Internal server error' }
+    });
+  }
+});
+
+// Helper function to simulate broker search
+async function simulateBrokerSearch(requestId) {
+  try {
+    // Update status to searching
+    await supabase
+      .from('broker_requests')
+      .update({
+        status: 'searching',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    // Simulate finding a broker after 3-5 seconds
+    setTimeout(async () => {
+      // Find nearest available broker (this would be a real query in production)
+      const mockBroker = {
+        id: '2471f35b-7766-49ab-bf69-48a5fd01c909', // Mock broker ID
+        name: 'Sarah Johnson',
+        agency: 'Prime Realty Group',
+        phone: '+1 (555) 123-4567',
+        email: 'sarah@primerealty.com',
+        latitude: 51.5074,
+        longitude: -0.1278,
+        distance_km: 1.2
+      };
+
+      await supabase
+        .from('broker_requests')
+        .update({
+          status: 'assigned',
+          assigned_broker_id: mockBroker.id,
+          broker_name: mockBroker.name,
+          broker_agency: mockBroker.agency,
+          broker_phone: mockBroker.phone,
+          broker_email: mockBroker.email,
+          broker_latitude: mockBroker.latitude,
+          broker_longitude: mockBroker.longitude,
+          broker_distance_km: mockBroker.distance_km,
+          assigned_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+    }, 3000 + Math.random() * 2000); // 3-5 seconds delay
+
+  } catch (error) {
+    console.error('Error in broker search simulation:', error);
+  }
+}
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err);
@@ -1058,8 +1328,248 @@ process.on('SIGINT', () => {
   });
 });
 
+// Broker Request API
+app.post('/api/request-broker', async (req, res) => {
+  try {
+    const { userId, latitude, longitude, address } = req.body;
+
+    if (!userId || !latitude || !longitude) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // 1. Create the request in the database
+    const { data: request, error } = await supabase
+      .from('broker_requests')
+      .insert({
+        user_id: userId,
+        user_latitude: latitude,
+        user_longitude: longitude,
+        user_address: address,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes from now
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Fallback for demo if table doesn't exist
+      if (error.code === '42P01') { // undefined_table
+        console.warn(' Broker requests table missing, using mock response');
+        return res.status(200).json({
+          data: {
+            id: 'mock-request-' + Date.now(),
+            status: 'pending',
+            expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+            mock: true
+          },
+          message: 'Broker request simulation started (Table missing)'
+        });
+      }
+      throw error;
+    }
+
+    // 2. Find nearest brokers (Simulated for this MVP)
+    // In a real app, we would query geospatial data here
+    // For now, we'll simulate a process where we search for brokers
+
+    // Simulate finding a broker after a short delay (for the demo effect)
+    // We don't block the response, just return pending
+
+    // Optional: Log this request for analytics
+    console.log(`[BrokerRequest] New request from ${userId} at ${latitude}, ${longitude}`);
+
+    res.status(201).json({
+      data: request,
+      message: 'Searching for nearest broker...'
+    });
+
+  } catch (error) {
+    console.error('❌ Error requesting broker:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/broker-request/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Handle mock requests
+    if (id.startsWith('mock-request-')) {
+      // Simulate status changes based on time
+      const timestamp = parseInt(id.split('-')[2]);
+      const elapsed = Date.now() - timestamp;
+
+      let status = 'pending';
+      let broker = null;
+
+      if (elapsed > 5000) { // After 5 seconds, broker found
+        status = 'accepted';
+        broker = {
+          name: 'Sarah Jenkins',
+          phone: '+44 7700 900077',
+          rating: 4.9,
+          distance: '0.8 miles'
+        };
+      }
+
+      return res.json({
+        data: {
+          id,
+          status,
+          broker,
+          created_at: new Date(timestamp).toISOString(),
+        }
+      });
+    }
+
+    const { data: request, error } = await supabase
+      .from('broker_requests')
+      .select(`
+        *,
+        broker:profiles!broker_id(full_name, phone, avatar_url)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    res.json({ data: request });
+
+  } catch (error) {
+    console.error('❌ Error fetching broker request:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Application Monitoring API
+app.get('/api/user/applications', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const { data, error } = await supabase
+      .from('applied_properties')
+      .select(`
+        id,
+        status,
+        stage,
+        timeline,
+        created_at,
+        updated_at,
+        property_id,
+        properties:property_id (
+          id,
+          title,
+          address_line_1,
+          city,
+          image_urls,
+          price
+        ),
+        manager:properties(agent_id)
+      `)
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Enhance data with derived fields
+    const enhancedData = data.map(app => ({
+      ...app,
+      currentStage: app.stage || 'Application Submitted',
+      lastUpdate: app.updated_at,
+      property: app.properties,
+      // Calculate progress percentage based on stage
+      progress: getProgressForStage(app.stage || 'Application Submitted')
+    }));
+
+    res.json({ data: enhancedData });
+  } catch (error) {
+    console.error('❌ Error fetching applications:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/user/application/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('applied_properties')
+      .select(`
+        *,
+        properties:property_id (*)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    res.json({ data });
+  } catch (error) {
+    console.error('❌ Error fetching application details:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function getProgressForStage(stage) {
+  const stages = [
+    'Application Submitted',
+    'Verification',
+    'Broker Assigned',
+    'Site Visit Scheduled',
+    'Offer/Negotiation',
+    'Finalization',
+    'Completion'
+  ];
+  const index = stages.indexOf(stage);
+  if (index === -1) return 10;
+  return Math.round(((index + 1) / stages.length) * 100);
+}
+
+// User Listings API (Seller Tracking)
+app.get('/api/user/listings', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('agent_id', userId) // Assuming agent_id tracks the lister
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Enhance data with derived fields for tracking
+    const enhancedData = data.map(property => ({
+      ...property,
+      currentStage: property.stage || 'Draft',
+      lastUpdate: property.updated_at,
+      progress: getProgressForListingStage(property.stage || 'Draft')
+    }));
+
+    res.json({ data: enhancedData });
+  } catch (error) {
+    console.error('❌ Error fetching user listings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function getProgressForListingStage(stage) {
+  const stages = [
+    'Draft',
+    'Under Review',
+    'Published',
+    'Verification',
+    'Sold'
+  ];
+  const index = stages.indexOf(stage);
+  if (index === -1) return 10;
+  return Math.round(((index + 1) / stages.length) * 100);
+}
+
 // Start server
-const server = app.listen(PORT, () => {
+app.listen(port, () => {
   console.log(`🚀 Property API Server running on http://localhost:${PORT}`);
   console.log(`📡 API Endpoint: http://localhost:${PORT}/api/properties`);
   console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
