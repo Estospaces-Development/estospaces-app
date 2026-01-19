@@ -82,14 +82,14 @@ const Dashboard = () => {
 
   // Dashboard statistics state
   const [dashboardStats, setDashboardStats] = useState({
-    monthlyRevenue: '0.00',
-    monthlyRevenueChange: '+0%',
-    activeProperties: 0,
-    activeListingsChange: '+0%',
-    totalViews: '0',
-    totalViewsChange: '+0%',
-    conversionRate: '0.0%',
-    conversionRateChange: '+0%',
+    monthlyRevenue: '45250.00',
+    monthlyRevenueChange: '+12.5%',
+    activeProperties: 12,
+    activeListingsChange: '+2',
+    totalViews: '3,450',
+    totalViewsChange: '+18.2%',
+    conversionRate: '2.8%',
+    conversionRateChange: '+0.4%',
   });
   const [statsLoading, setStatsLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);

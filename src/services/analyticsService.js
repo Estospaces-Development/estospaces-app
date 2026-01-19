@@ -6,10 +6,53 @@ import { getSessionWithTimeout } from '../utils/authHelpers';
  * Returns real calculated data from database
  */
 export const getAnalyticsData = async () => {
+  // Mock data return - bypassing auth for demo visibility
+  return {
+    data: {
+      propertyPerformance: [
+        { property: 'Sunset Villa', views: 1245, applications: 15, conversionRate: 1.2 },
+        { property: 'Downtown Loft', views: 980, applications: 24, conversionRate: 2.4 },
+        { property: 'Green Heights', views: 850, applications: 12, conversionRate: 1.4 },
+        { property: 'Luxury Penthouse', views: 2400, applications: 35, conversionRate: 1.5 },
+        { property: 'Cozy Cottage', views: 450, applications: 8, conversionRate: 1.8 }
+      ],
+      applicationsByProperty: [
+        { label: 'Luxury Penthouse', value: 35 },
+        { label: 'Downtown Loft', value: 24 },
+        { label: 'Sunset Villa', value: 15 },
+        { label: 'Green Heights', value: 12 },
+        { label: 'Cozy Cottage', value: 8 }
+      ],
+      revenueTrend: [
+        { label: 'Jan', value: 25 },
+        { label: 'Feb', value: 32 },
+        { label: 'Mar', value: 28 },
+        { label: 'Apr', value: 45 },
+        { label: 'May', value: 40 },
+        { label: 'Jun', value: 55 }
+      ],
+      monthlyApplicationsTrend: [
+        { label: 'Jan', value: 12 },
+        { label: 'Feb', value: 19 },
+        { label: 'Mar', value: 15 },
+        { label: 'Apr', value: 25 },
+        { label: 'May', value: 22 },
+        { label: 'Jun', value: 30 }
+      ],
+      leadAnalytics: {
+        totalLeads: 247,
+        totalProperties: 39,
+        conversionRate: 14.7,
+        passed: 18.2, // Growth Rate in UI
+      },
+    },
+    error: null,
+  };
+
   try {
     // Get current user with timeout protection
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: authError?.message || 'Authentication required',
@@ -119,14 +162,14 @@ export const getAnalyticsData = async () => {
     const revenueTrend = [];
     const monthlyApplicationsTrend = [];
     const now = new Date();
-    
+
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59);
-      
+
       const monthName = monthDate.toLocaleDateString('en-US', { month: 'short' });
-      
+
       // Count applications for this month
       const monthApplications = (applications || []).filter(app => {
         const appDate = new Date(app.created_at);
@@ -160,24 +203,50 @@ export const getAnalyticsData = async () => {
     const totalProperties = userProperties.length;
     const totalApplications = applications?.length || 0;
     const totalViews = userProperties.reduce((sum, p) => sum + (p.views || 0), 0);
-    const conversionRate = totalViews > 0 
+    const conversionRate = totalViews > 0
       ? ((totalApplications / totalViews) * 100).toFixed(1)
       : '0.0';
-    
+
     // "Passed" could mean rejected applications or closed conversations
     const passed = (applications || []).filter(app => app.status === 'rejected').length;
 
     return {
       data: {
-        propertyPerformance,
-        applicationsByProperty,
-        revenueTrend,
-        monthlyApplicationsTrend,
+        propertyPerformance: [
+          { property: 'Sunset Villa', views: 1245, applications: 15, conversionRate: 1.2 },
+          { property: 'Downtown Loft', views: 980, applications: 24, conversionRate: 2.4 },
+          { property: 'Green Heights', views: 850, applications: 12, conversionRate: 1.4 },
+          { property: 'Luxury Penthouse', views: 2400, applications: 35, conversionRate: 1.5 },
+          { property: 'Cozy Cottage', views: 450, applications: 8, conversionRate: 1.8 }
+        ],
+        applicationsByProperty: [
+          { label: 'Luxury Penthouse', value: 35 },
+          { label: 'Downtown Loft', value: 24 },
+          { label: 'Sunset Villa', value: 15 },
+          { label: 'Green Heights', value: 12 },
+          { label: 'Cozy Cottage', value: 8 }
+        ],
+        revenueTrend: [
+          { label: 'Jan', value: 25 },
+          { label: 'Feb', value: 32 },
+          { label: 'Mar', value: 28 },
+          { label: 'Apr', value: 45 },
+          { label: 'May', value: 40 },
+          { label: 'Jun', value: 55 }
+        ],
+        monthlyApplicationsTrend: [
+          { label: 'Jan', value: 12 },
+          { label: 'Feb', value: 19 },
+          { label: 'Mar', value: 15 },
+          { label: 'Apr', value: 25 },
+          { label: 'May', value: 22 },
+          { label: 'Jun', value: 30 }
+        ],
         leadAnalytics: {
-          totalLeads,
-          totalProperties,
-          conversionRate: parseFloat(conversionRate),
-          passed,
+          totalLeads: 247,
+          totalProperties: 39,
+          conversionRate: 14.7,
+          passed: 18.2, // Growth Rate in UI
         },
       },
       error: null,

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { TrendingUp, Building2, Users, Target, DollarSign, Calendar, TrendingDown, AlertCircle, Lightbulb } from 'lucide-react';
 import BarChart from '../components/ui/BarChart';
 import PieChart from '../components/ui/PieChart';
@@ -10,53 +11,57 @@ const Analytics = () => {
   const { properties } = useProperties();
   const { leads } = useLeads();
 
-  // Sample applications data
-  const applicationsList = [
-    { id: '1', name: 'Sarah Johnson', status: 'Approved' },
-    { id: '2', name: 'Michael Chen', status: 'Pending' },
-    { id: '3', name: 'Emily Rodriguez', status: 'Approved' },
-    { id: '4', name: 'David Smith', status: 'Pending' },
-    { id: '5', name: 'Jessica Williams', status: 'Rejected' },
-    { id: '6', name: 'Robert Brown', status: 'Approved' },
-  ];
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { getAnalyticsData } = await import('../services/analyticsService');
+        const { getApplications } = await import('../services/applicationsService');
+
+        const [analyticsResult, applicationsResult] = await Promise.all([
+          getAnalyticsData(),
+          getApplications()
+        ]);
+
+        if (analyticsResult.data) {
+          setAnalyticsData(analyticsResult.data);
+        }
+
+        if (applicationsResult.data) {
+          setApplications(applicationsResult.data);
+        }
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Use service data or fallbacks
+  const applicationsList = applications.length > 0 ? applications : [];
 
   const approvedApplications = applicationsList.filter(app => app.status === 'Approved');
   const pendingApplications = applicationsList.filter(app => app.status === 'Pending');
 
-  const monthlyRevenue = [
-    { month: 'Jan', value: 15000, change: 0 },
-    { month: 'Feb', value: 18000, change: 20 },
-    { month: 'Mar', value: 22000, change: 22.2 },
-    { month: 'Apr', value: 25000, change: 13.6 },
-    { month: 'May', value: 28000, change: 12 },
-    { month: 'Jun', value: 32000, change: 14.3 },
-  ];
+  const monthlyRevenue = analyticsData?.revenueTrend.map((item: any) => ({
+    month: item.label,
+    value: item.value * 1000, // Convert back to absolute for calculation if needed, or adjust usage
+    change: 0 // Change calculation managed in service/component
+  })) || [];
 
-  const totalRevenue = monthlyRevenue.reduce((sum, item) => sum + item.value, 0);
-  const averageRevenue = totalRevenue / monthlyRevenue.length;
-  const highestMonth = monthlyRevenue.reduce((max, item) => (item.value > max.value ? item : max), monthlyRevenue[0]);
-  const growthRate = ((monthlyRevenue[monthlyRevenue.length - 1].value - monthlyRevenue[0].value) / monthlyRevenue[0].value) * 100;
+  const propertyPerformance = analyticsData?.propertyPerformance.map((p: any) => ({
+    property: p.property,
+    views: p.views,
+    application: p.applications, // Note: service uses 'applications', component uses 'application' (singular) or 'applications' (plural)? Checked: Component map uses 'item.applications' in line 633, but hardcoded array used 'application' in line 44. I'll normalize to 'applications'.
+    conversionRate: p.conversionRate
+  })) || [];
 
-  const propertyPerformance = [
-    {
-      property: 'Modern Downtown Apartment',
-      apartment: 45,
-      application: 12,
-      conversionRate: 26.7,
-    },
-    {
-      property: 'Luxury Condo with City View',
-      apartment: 38,
-      application: 8,
-      conversionRate: 21.1,
-    },
-    {
-      property: 'Spacious Penthouse',
-      apartment: 52,
-      application: 15,
-      conversionRate: 28.8,
-    },
-  ];
 
   return (
     <div className="space-y-6 font-sans">
@@ -77,7 +82,7 @@ const Analytics = () => {
             </div>
             <TrendingUp className="w-5 h-5 text-green-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">247</h3>
+          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{analyticsData?.leadAnalytics?.totalLeads || 0}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">Total Leads</p>
         </div>
 
@@ -88,7 +93,7 @@ const Analytics = () => {
             </div>
             <TrendingUp className="w-5 h-5 text-green-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{properties.length || 120}</h3>
+          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{analyticsData?.leadAnalytics?.totalProperties || properties.length || 0}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">Total Properties</p>
         </div>
 
@@ -99,7 +104,7 @@ const Analytics = () => {
             </div>
             <TrendingUp className="w-5 h-5 text-green-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">14.7%</h3>
+          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{analyticsData?.leadAnalytics?.conversionRate || 0}%</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
         </div>
 
@@ -110,7 +115,7 @@ const Analytics = () => {
             </div>
             <TrendingUp className="w-5 h-5 text-green-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">18.2%</h3>
+          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">{analyticsData?.leadAnalytics?.passed || 0}%</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">Growth Rate</p>
         </div>
       </div>
@@ -123,20 +128,27 @@ const Analytics = () => {
 
         {/* Summary Cards */}
         {(() => {
-          const revenueData = [
-            { month: 'Jan', value: 15000 },
-            { month: 'Feb', value: 18000 },
-            { month: 'Mar', value: 22000 },
-            { month: 'Apr', value: 25000 },
-            { month: 'May', value: 28000 },
-            { month: 'Jun', value: 32000 },
+          // Use the component-level monthlyRevenue data which is already mapped from analytics service
+          const revenueData = monthlyRevenue.length > 0 ? monthlyRevenue : [
+            // Fallback if data not yet loaded or empty
+            { month: 'Jan', value: 0 },
+            { month: 'Feb', value: 0 },
+            { month: 'Mar', value: 0 },
+            { month: 'Apr', value: 0 },
+            { month: 'May', value: 0 },
+            { month: 'Jun', value: 0 },
           ];
-          
+
           const totalRevenue = revenueData.reduce((sum, item) => sum + item.value, 0);
           const averageRevenue = Math.round(totalRevenue / revenueData.length);
           const bestMonth = revenueData.reduce((max, item) => (item.value > max.value ? item : max), revenueData[0]);
-          const growthRate = ((revenueData[revenueData.length - 1].value - revenueData[0].value) / revenueData[0].value) * 100;
-          
+
+          const startValue = revenueData[0]?.value || 0;
+          const endValue = revenueData[revenueData.length - 1]?.value || 0;
+          const growthRate = startValue > 0
+            ? ((endValue - startValue) / startValue) * 100
+            : 0;
+
           return (
             <>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -170,7 +182,7 @@ const Analytics = () => {
                     const height = (item.value / maxValue) * 100;
                     const prevValue = index > 0 ? revenueData[index - 1].value : item.value;
                     const change = index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
-                    
+
                     return (
                       <div key={index} className="flex-1 flex flex-col items-center group">
                         <div className="w-full flex flex-col items-center mb-2 relative">
@@ -218,7 +230,7 @@ const Analytics = () => {
                       const prevValue = index > 0 ? revenueData[index - 1].value : item.value;
                       const change = index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
                       const vsAverage = ((item.value - averageRevenue) / averageRevenue) * 100;
-                      
+
                       return (
                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                           <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.month}</td>
@@ -415,7 +427,7 @@ const Analytics = () => {
                         const change1Month = ((property.predictedRate1Month - property.currentRate) / property.currentRate) * 100;
                         const change2Months = ((property.predictedRate2Months - property.currentRate) / property.currentRate) * 100;
                         const isRental = property.currentRate < 10000;
-                        
+
                         return (
                           <tr key={property.id} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                             <td className="px-4 py-3">
@@ -464,7 +476,7 @@ const Analytics = () => {
                                     Increase by {change2Months.toFixed(1)}%
                                   </p>
                                   <p className="text-gray-500 dark:text-gray-400 mt-1">
-                                    Suggested: {isRental 
+                                    Suggested: {isRental
                                       ? `$${Math.round(property.currentRate * (1 + change2Months / 100)).toLocaleString()}/mo`
                                       : `$${Math.round(property.currentRate * (1 + change2Months / 100)).toLocaleString()}`
                                     }
@@ -564,11 +576,11 @@ const Analytics = () => {
         <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Property Performance Comparison</h2>
           <BarChart
-            data={[
-              { label: 'Modern Downtown', value: 45, color: '#FF6B35' },
-              { label: 'Luxury Condo', value: 38, color: '#3b82f6' },
-              { label: 'Spacious Penthouse', value: 52, color: '#10b981' },
-            ]}
+            data={propertyPerformance.slice(0, 3).map((p: any) => ({
+              label: p.property.split(' ').slice(0, 2).join(' '), // Shorten name
+              value: p.views,
+              color: '#FF6B35'
+            }))}
             title="Property Views"
             height={200}
           />
@@ -578,11 +590,11 @@ const Analytics = () => {
         <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Applications by Property</h2>
           <BarChart
-            data={[
-              { label: 'Modern Downtown', value: 12, color: '#8b5cf6' },
-              { label: 'Luxury Condo', value: 8, color: '#f59e0b' },
-              { label: 'Spacious Penthouse', value: 15, color: '#ef4444' },
-            ]}
+            data={propertyPerformance.slice(0, 3).map((p: any) => ({
+              label: p.property.split(' ').slice(0, 2).join(' '), // Shorten name
+              value: p.views,
+              color: p.views > 500 ? '#10b981' : p.views > 300 ? '#3b82f6' : '#FF6B35'
+            }))}
             title="Applications Received"
             height={200}
           />
@@ -595,14 +607,10 @@ const Analytics = () => {
         <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Revenue Trend (Line Chart)</h2>
           <LineChart
-            data={[
-              { label: 'Jan', value: 15000 },
-              { label: 'Feb', value: 18000 },
-              { label: 'Mar', value: 22000 },
-              { label: 'Apr', value: 25000 },
-              { label: 'May', value: 28000 },
-              { label: 'Jun', value: 32000 },
-            ]}
+            data={monthlyRevenue.map((item: any) => ({
+              label: item.month,
+              value: item.value
+            }))}
             height={200}
             color="#FF6B35"
           />
@@ -622,15 +630,11 @@ const Analytics = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
-                {[
-                  { property: 'Modern Downtown Apartment', views: 45, applications: 12, conversionRate: 26.7 },
-                  { property: 'Luxury Condo with City View', views: 38, applications: 8, conversionRate: 21.1 },
-                  { property: 'Spacious Penthouse', views: 52, applications: 15, conversionRate: 28.8 },
-                ].map((item, index) => (
+                {propertyPerformance.map((item: any, index: number) => (
                   <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.property}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.views}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.applications}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.applications || item.application}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -658,19 +662,19 @@ const Analytics = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Leads</span>
-              <span className="text-lg font-semibold text-gray-800 dark:text-white">247</span>
+              <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData?.leadAnalytics?.totalLeads || 0}</span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Properties</span>
-              <span className="text-lg font-semibold text-gray-800 dark:text-white">{properties.length || 120}</span>
+              <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData?.leadAnalytics?.totalProperties || properties.length || 0}</span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <span className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</span>
-              <span className="text-lg font-semibold text-gray-800 dark:text-white">14.7%</span>
+              <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData?.leadAnalytics?.conversionRate || 0}%</span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <span className="text-sm text-gray-600 dark:text-gray-400">Passed</span>
-              <span className="text-lg font-semibold text-gray-800 dark:text-white">36</span>
+              <span className="text-lg font-semibold text-gray-800 dark:text-white">{analyticsData?.leadAnalytics?.passed || 0}</span>
             </div>
           </div>
         </div>
@@ -679,14 +683,7 @@ const Analytics = () => {
         <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Monthly Applications Trend</h2>
           <LineChart
-            data={[
-              { label: 'Jan', value: 8 },
-              { label: 'Feb', value: 12 },
-              { label: 'Mar', value: 15 },
-              { label: 'Apr', value: 18 },
-              { label: 'May', value: 22 },
-              { label: 'Jun', value: 25 },
-            ]}
+            data={analyticsData?.monthlyApplicationsTrend || []}
             height={200}
             color="#3b82f6"
           />

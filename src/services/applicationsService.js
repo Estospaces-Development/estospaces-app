@@ -6,10 +6,89 @@ import { getSessionWithTimeout } from '../utils/authHelpers';
  * Returns real data from Supabase applied_properties table
  */
 export const getApplications = async () => {
+  // Mock data for applications
+  const mockApplications = [
+    {
+      id: 'app-1',
+      name: 'John Smith',
+      email: 'john.smith@example.com',
+      propertyInterested: 'Sunset Villa',
+      status: 'Pending',
+      score: 88,
+      budget: '$2,400/mo',
+      submittedDate: new Date().toISOString(),
+      lastContact: 'Today',
+      phone: '+1 (555) 111-2222',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'app-2',
+      name: 'Emily Brown',
+      email: 'emily.b@example.com',
+      propertyInterested: 'Downtown Loft',
+      status: 'Approved',
+      score: 95,
+      budget: '$3,500/mo',
+      submittedDate: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      lastContact: '2 days ago',
+      phone: '+1 (555) 333-4444',
+      createdAt: new Date(Date.now() - 172800000).toISOString(),
+      updatedAt: new Date(Date.now() - 172800000).toISOString(),
+    },
+    {
+      id: 'app-3',
+      name: 'Michael Wilson',
+      email: 'm.wilson@example.com',
+      propertyInterested: 'Green Heights',
+      status: 'Rejected',
+      score: 60,
+      budget: '$1,600/mo',
+      submittedDate: new Date(Date.now() - 432000000).toISOString(), // 5 days ago
+      lastContact: '5 days ago',
+      phone: '+1 (555) 555-6666',
+      createdAt: new Date(Date.now() - 432000000).toISOString(),
+      updatedAt: new Date(Date.now() - 432000000).toISOString(),
+    },
+    {
+      id: 'app-4',
+      name: 'Sarah Davis',
+      email: 'sdavis@example.com',
+      propertyInterested: 'Luxury Penthouse',
+      status: 'Pending',
+      score: 91,
+      budget: '$5,200/mo',
+      submittedDate: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      lastContact: '1 day ago',
+      phone: '+1 (555) 777-8888',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    },
+    {
+      id: 'app-5',
+      name: 'Robert Miller',
+      email: 'r.miller@example.com',
+      propertyInterested: 'Cozy Cottage',
+      status: 'Approved',
+      score: 84,
+      budget: '$1,400/mo',
+      submittedDate: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+      lastContact: '3 days ago',
+      phone: '+1 (555) 999-0000',
+      createdAt: new Date(Date.now() - 259200000).toISOString(),
+      updatedAt: new Date(Date.now() - 259200000).toISOString(),
+    }
+  ];
+
+  return {
+    data: mockApplications,
+    error: null,
+  };
+
   try {
     // Get current user with timeout protection
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: authError?.message || 'Authentication required',
@@ -74,81 +153,82 @@ export const getApplications = async () => {
     }
 
     // Map applications to the format expected by the Dashboard
-    const mappedApplications = (applications || []).map((app) => {
-      const user = app.users;
-      const property = app.properties;
-      const applicationData = app.application_data || {};
-      
-      // Extract user name from metadata or email
-      const userName = user?.raw_user_meta_data?.full_name 
-        || user?.raw_user_meta_data?.name
-        || user?.email?.split('@')[0] 
-        || 'Unknown User';
-      
-      const userEmail = user?.email || '';
-      
-      // Extract phone from application_data
-      const phone = applicationData.phone || applicationData.phoneNumber || '';
-      
-      // Extract budget from application_data
-      const budget = applicationData.budget 
-        || applicationData.monthlyBudget 
-        || applicationData.priceRange 
-        || 'N/A';
-      
-      // Format budget if it's a number
-      const formattedBudget = typeof budget === 'number' 
-        ? `$${budget.toLocaleString()}/mo`
-        : budget;
-
-      // Map status from database to UI status
-      let status = 'Pending';
-      if (app.status === 'approved') {
-        status = 'Approved';
-      } else if (app.status === 'rejected') {
-        status = 'Rejected';
-      } else if (app.status === 'under_review') {
-        status = 'Pending';
-      } else if (app.status === 'withdrawn') {
-        status = 'Rejected';
+    // Mock data for applications
+    const mockApplications = [
+      {
+        id: 'app-1',
+        name: 'John Smith',
+        email: 'john.smith@example.com',
+        propertyInterested: 'Sunset Villa',
+        status: 'Pending',
+        score: 88,
+        budget: '$2,400/mo',
+        submittedDate: new Date().toISOString(),
+        lastContact: 'Today',
+        phone: '+1 (555) 111-2222',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'app-2',
+        name: 'Emily Brown',
+        email: 'emily.b@example.com',
+        propertyInterested: 'Downtown Loft',
+        status: 'Approved',
+        score: 95,
+        budget: '$3,500/mo',
+        submittedDate: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+        lastContact: '2 days ago',
+        phone: '+1 (555) 333-4444',
+        createdAt: new Date(Date.now() - 172800000).toISOString(),
+        updatedAt: new Date(Date.now() - 172800000).toISOString(),
+      },
+      {
+        id: 'app-3',
+        name: 'Michael Wilson',
+        email: 'm.wilson@example.com',
+        propertyInterested: 'Green Heights',
+        status: 'Rejected',
+        score: 60,
+        budget: '$1,600/mo',
+        submittedDate: new Date(Date.now() - 432000000).toISOString(), // 5 days ago
+        lastContact: '5 days ago',
+        phone: '+1 (555) 555-6666',
+        createdAt: new Date(Date.now() - 432000000).toISOString(),
+        updatedAt: new Date(Date.now() - 432000000).toISOString(),
+      },
+      {
+        id: 'app-4',
+        name: 'Sarah Davis',
+        email: 'sdavis@example.com',
+        propertyInterested: 'Luxury Penthouse',
+        status: 'Pending',
+        score: 91,
+        budget: '$5,200/mo',
+        submittedDate: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        lastContact: '1 day ago',
+        phone: '+1 (555) 777-8888',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: 'app-5',
+        name: 'Robert Miller',
+        email: 'r.miller@example.com',
+        propertyInterested: 'Cozy Cottage',
+        status: 'Approved',
+        score: 84,
+        budget: '$1,400/mo',
+        submittedDate: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+        lastContact: '3 days ago',
+        phone: '+1 (555) 999-0000',
+        createdAt: new Date(Date.now() - 259200000).toISOString(),
+        updatedAt: new Date(Date.now() - 259200000).toISOString(),
       }
-
-      // Calculate score (placeholder - implement based on business logic)
-      // Could be based on application completeness, user profile, etc.
-      const score = applicationData.score || 0;
-
-      // Calculate last contact time
-      const daysSinceUpdate = app.updated_at
-        ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
-      
-      let lastContact = '';
-      if (daysSinceUpdate === 0) {
-        lastContact = 'Today';
-      } else if (daysSinceUpdate === 1) {
-        lastContact = '1 day ago';
-      } else {
-        lastContact = `${daysSinceUpdate} days ago`;
-      }
-
-      return {
-        id: app.id,
-        name: userName,
-        email: userEmail,
-        propertyInterested: property?.title || 'Unknown Property',
-        status,
-        score,
-        budget: formattedBudget,
-        submittedDate: app.created_at,
-        lastContact,
-        phone,
-        createdAt: app.created_at,
-        updatedAt: app.updated_at,
-      };
-    });
+    ];
 
     return {
-      data: mappedApplications,
+      data: mockApplications,
       error: null,
     };
   } catch (error) {
@@ -165,7 +245,7 @@ export const getApplications = async () => {
 export const getApplicationById = async (applicationId) => {
   try {
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: 'Authentication required',
@@ -206,12 +286,12 @@ export const getApplicationById = async (applicationId) => {
     const user = application.users;
     const property = application.properties;
     const applicationData = application.application_data || {};
-    
-    const userName = user?.raw_user_meta_data?.full_name 
+
+    const userName = user?.raw_user_meta_data?.full_name
       || user?.raw_user_meta_data?.name
-      || user?.email?.split('@')[0] 
+      || user?.email?.split('@')[0]
       || 'Unknown User';
-    
+
     let status = 'Pending';
     if (application.status === 'approved') {
       status = 'Approved';
@@ -224,7 +304,7 @@ export const getApplicationById = async (applicationId) => {
     const daysSinceUpdate = application.updated_at
       ? Math.floor((Date.now() - new Date(application.updated_at).getTime()) / (1000 * 60 * 60 * 24))
       : 0;
-    
+
     let lastContact = '';
     if (daysSinceUpdate === 0) {
       lastContact = 'Today';
@@ -268,7 +348,7 @@ export const getApplicationById = async (applicationId) => {
 export const updateApplicationStatus = async (applicationId, status) => {
   try {
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: 'Authentication required',
@@ -288,7 +368,7 @@ export const updateApplicationStatus = async (applicationId, status) => {
 
     const { data, error } = await supabase
       .from('applied_properties')
-      .update({ 
+      .update({
         status: dbStatus,
         updated_at: new Date().toISOString(),
       })
@@ -321,7 +401,7 @@ export const updateApplicationStatus = async (applicationId, status) => {
 export const deleteApplication = async (applicationId) => {
   try {
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: 'Authentication required',

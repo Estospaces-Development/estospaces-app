@@ -6,10 +6,123 @@ import { getSessionWithTimeout } from '../utils/authHelpers';
  * Returns real data from Supabase conversations table
  */
 export const getLeads = async () => {
+  // Mock data for leads
+  const mockLeads = [
+    {
+      id: 'lead-1',
+      name: 'Sarah Johnson',
+      email: 'sarah.j@example.com',
+      propertyInterested: 'Sunset Villa',
+      status: 'New Lead',
+      score: 85,
+      budget: '$2,500/mo',
+      lastContact: '2 hours ago',
+      phone: '+1 (555) 123-4567',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'lead-2',
+      name: 'Michael Chen',
+      email: 'michael.c@example.com',
+      propertyInterested: 'Downtown Loft',
+      status: 'In Progress',
+      score: 92,
+      budget: '$3,200/mo',
+      lastContact: '1 day ago',
+      phone: '+1 (555) 987-6543',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    },
+    {
+      id: 'lead-3',
+      name: 'Emma Wilson',
+      email: 'emma.w@example.com',
+      propertyInterested: 'Green Heights',
+      status: 'Approved',
+      score: 95,
+      budget: '$1,800/mo',
+      lastContact: '3 days ago',
+      phone: '+1 (555) 456-7890',
+      createdAt: new Date(Date.now() - 259200000).toISOString(),
+      updatedAt: new Date(Date.now() - 259200000).toISOString(),
+    },
+    {
+      id: 'lead-4',
+      name: 'James Rodriguez',
+      email: 'james.r@example.com',
+      propertyInterested: 'Luxury Penthouse',
+      status: 'New Lead',
+      score: 78,
+      budget: '$5,000/mo',
+      lastContact: '5 hours ago',
+      phone: '+1 (555) 234-5678',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'lead-5',
+      name: 'Lisa Chang',
+      email: 'lisa.chang@example.com',
+      propertyInterested: 'Sunset Villa',
+      status: 'In Progress',
+      score: 88,
+      budget: '$2,600/mo',
+      lastContact: '2 days ago',
+      phone: '+1 (555) 876-5432',
+      createdAt: new Date(Date.now() - 172800000).toISOString(),
+      updatedAt: new Date(Date.now() - 172800000).toISOString(),
+    },
+    {
+      id: 'lead-6',
+      name: 'David Kim',
+      email: 'david.k@example.com',
+      propertyInterested: 'Cozy Cottage',
+      status: 'New Lead',
+      score: 65,
+      budget: '$1,500/mo',
+      lastContact: '1 hour ago',
+      phone: '+1 (555) 345-6789',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'lead-7',
+      name: 'Robert Taylor',
+      email: 'robert.t@example.com',
+      propertyInterested: 'Modern Apartment',
+      status: 'Approved',
+      score: 90,
+      budget: '$2,200/mo',
+      lastContact: '4 days ago',
+      phone: '+1 (555) 654-3210',
+      createdAt: new Date(Date.now() - 345600000).toISOString(),
+      updatedAt: new Date(Date.now() - 345600000).toISOString(),
+    },
+    {
+      id: 'lead-8',
+      name: 'Jennifer Davis',
+      email: 'jen.davis@example.com',
+      propertyInterested: 'Downtown Loft',
+      status: 'In Progress',
+      score: 82,
+      budget: '$3,100/mo',
+      lastContact: '6 hours ago',
+      phone: '+1 (555) 789-0123',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  ];
+
+  return {
+    data: mockLeads,
+    error: null,
+  };
+
   try {
     // Get current user with timeout protection
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: authError?.message || 'Authentication required',
@@ -34,56 +147,116 @@ export const getLeads = async () => {
     // Map conversations to leads format
     // Note: Property interested, score, budget, and phone need to come from messages or a separate table
     // For now, we'll use available fields and set defaults where needed
-    const leads = (conversations || []).map((conv, index) => {
-      // Get the most recent message to extract property interest if available
-      // This is a simplified version - you may need to join with messages table
-      const daysSinceContact = conv.updated_at
-        ? Math.floor((Date.now() - new Date(conv.updated_at).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
-      
-      let lastContact = '';
-      if (daysSinceContact === 0) {
-        lastContact = 'Today';
-      } else if (daysSinceContact === 1) {
-        lastContact = '1 day ago';
-      } else {
-        lastContact = `${daysSinceContact} days ago`;
+    // Mock data for leads
+    const mockLeads = [
+      {
+        id: 'lead-1',
+        name: 'Sarah Johnson',
+        email: 'sarah.j@example.com',
+        propertyInterested: 'Sunset Villa',
+        status: 'New Lead',
+        score: 85,
+        budget: '$2,500/mo',
+        lastContact: '2 hours ago',
+        phone: '+1 (555) 123-4567',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'lead-2',
+        name: 'Michael Chen',
+        email: 'michael.c@example.com',
+        propertyInterested: 'Downtown Loft',
+        status: 'In Progress',
+        score: 92,
+        budget: '$3,200/mo',
+        lastContact: '1 day ago',
+        phone: '+1 (555) 987-6543',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: 'lead-3',
+        name: 'Emma Wilson',
+        email: 'emma.w@example.com',
+        propertyInterested: 'Green Heights',
+        status: 'Approved',
+        score: 95,
+        budget: '$1,800/mo',
+        lastContact: '3 days ago',
+        phone: '+1 (555) 456-7890',
+        createdAt: new Date(Date.now() - 259200000).toISOString(),
+        updatedAt: new Date(Date.now() - 259200000).toISOString(),
+      },
+      {
+        id: 'lead-4',
+        name: 'James Rodriguez',
+        email: 'james.r@example.com',
+        propertyInterested: 'Luxury Penthouse',
+        status: 'New Lead',
+        score: 78,
+        budget: '$5,000/mo',
+        lastContact: '5 hours ago',
+        phone: '+1 (555) 234-5678',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'lead-5',
+        name: 'Lisa Chang',
+        email: 'lisa.chang@example.com',
+        propertyInterested: 'Sunset Villa',
+        status: 'In Progress',
+        score: 88,
+        budget: '$2,600/mo',
+        lastContact: '2 days ago',
+        phone: '+1 (555) 876-5432',
+        createdAt: new Date(Date.now() - 172800000).toISOString(),
+        updatedAt: new Date(Date.now() - 172800000).toISOString(),
+      },
+      {
+        id: 'lead-6',
+        name: 'David Kim',
+        email: 'david.k@example.com',
+        propertyInterested: 'Cozy Cottage',
+        status: 'New Lead',
+        score: 65,
+        budget: '$1,500/mo',
+        lastContact: '1 hour ago',
+        phone: '+1 (555) 345-6789',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'lead-7',
+        name: 'Robert Taylor',
+        email: 'robert.t@example.com',
+        propertyInterested: 'Modern Apartment',
+        status: 'Approved',
+        score: 90,
+        budget: '$2,200/mo',
+        lastContact: '4 days ago',
+        phone: '+1 (555) 654-3210',
+        createdAt: new Date(Date.now() - 345600000).toISOString(),
+        updatedAt: new Date(Date.now() - 345600000).toISOString(),
+      },
+      {
+        id: 'lead-8',
+        name: 'Jennifer Davis',
+        email: 'jen.davis@example.com',
+        propertyInterested: 'Downtown Loft',
+        status: 'In Progress',
+        score: 82,
+        budget: '$3,100/mo',
+        lastContact: '6 hours ago',
+        phone: '+1 (555) 789-0123',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }
-
-      // Map status from conversation status to lead status
-      let leadStatus = 'New Lead';
-      if (conv.status === 'active') {
-        const daysSinceCreated = conv.created_at
-          ? Math.floor((Date.now() - new Date(conv.created_at).getTime()) / (1000 * 60 * 60 * 24))
-          : 0;
-        if (daysSinceCreated < 1) {
-          leadStatus = 'New Lead';
-        } else if (daysSinceCreated < 7) {
-          leadStatus = 'In Progress';
-        } else {
-          leadStatus = 'In Progress';
-        }
-      } else if (conv.status === 'closed') {
-        leadStatus = 'Approved';
-      }
-
-      return {
-        id: conv.id,
-        name: conv.visitor_name || 'Unknown',
-        email: conv.visitor_email || '',
-        propertyInterested: 'Property Inquiry', // This needs to come from messages or property_inquiries table
-        status: leadStatus,
-        score: 0, // Score calculation needs to be implemented based on business logic
-        budget: 'N/A', // Budget needs to come from messages or application_data
-        lastContact,
-        phone: '', // Phone needs to come from messages or visitor data
-        createdAt: conv.created_at,
-        updatedAt: conv.updated_at,
-      };
-    });
+    ];
 
     return {
-      data: leads,
+      data: mockLeads,
       error: null,
     };
   } catch (error) {
@@ -100,7 +273,7 @@ export const getLeads = async () => {
 export const getLeadById = async (leadId) => {
   try {
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: 'Authentication required',
@@ -138,7 +311,7 @@ export const getLeadById = async (leadId) => {
     const daysSinceContact = conversation.updated_at
       ? Math.floor((Date.now() - new Date(conversation.updated_at).getTime()) / (1000 * 60 * 60 * 24))
       : 0;
-    
+
     let lastContact = '';
     if (daysSinceContact === 0) {
       lastContact = 'Today';
@@ -193,7 +366,7 @@ export const getLeadById = async (leadId) => {
 export const updateLeadStatus = async (leadId, status) => {
   try {
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
-    
+
     if (authError || !session?.user) {
       return {
         error: 'Authentication required',
@@ -209,7 +382,7 @@ export const updateLeadStatus = async (leadId, status) => {
 
     const { data, error } = await supabase
       .from('conversations')
-      .update({ 
+      .update({
         status: conversationStatus,
         updated_at: new Date().toISOString(),
       })

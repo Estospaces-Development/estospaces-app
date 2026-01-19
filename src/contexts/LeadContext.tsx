@@ -35,105 +35,36 @@ export const useLeads = () => {
 export const LeadProvider = ({ children }: { children: ReactNode }) => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
-  // Load leads from localStorage on mount
+  // Load leads from service
   useEffect(() => {
-    const stored = localStorage.getItem('leads');
-    if (stored) {
+    const fetchLeads = async () => {
       try {
-        setLeads(JSON.parse(stored));
+        const { getLeads } = await import('../services/leadsService');
+        const result = await getLeads();
+        if (result.data) {
+          // Transform service data to match Context Lead interface if needed
+          // The mock data in leadsService already matches well but let's be safe
+          const serviceLeads = result.data.map((l: any) => ({
+            id: l.id,
+            name: l.name,
+            email: l.email,
+            phone: l.phone,
+            propertyInterested: l.propertyInterested,
+            status: l.status,
+            score: l.score,
+            budget: l.budget,
+            lastContact: l.lastContact,
+            createdAt: l.createdAt,
+            updatedAt: l.updatedAt
+          }));
+          setLeads(serviceLeads);
+        }
       } catch (error) {
-        console.error('Error loading leads:', error);
-        // Initialize with default leads if parsing fails
-        const defaultLeads: Lead[] = [
-          {
-            id: '1',
-            name: 'Sarah Johnson',
-            email: 'sarah.johnson@email.com',
-            phone: '+1 (555) 123-4567',
-            propertyInterested: 'Modern Downtown Apartment',
-            status: 'New Lead',
-            score: 85,
-            budget: '$2,500/mo',
-            lastContact: '2 days ago',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            name: 'Michel Chen',
-            email: 'michel.chen@email.com',
-            phone: '+1 (555) 234-5678',
-            propertyInterested: 'Luxury Condo with City View',
-            status: 'In Progress',
-            score: 92,
-            budget: '$3,200/mo',
-            lastContact: '1 day ago',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: '3',
-            name: 'Emily Rodriguez',
-            email: 'emily.rodriguez@email.com',
-            phone: '+1 (555) 345-6789',
-            propertyInterested: 'Spacious Penthouse',
-            status: 'Approved',
-            score: 78,
-            budget: '$4,500/mo',
-            lastContact: '3 days ago',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ];
-        setLeads(defaultLeads);
-        localStorage.setItem('leads', JSON.stringify(defaultLeads));
+        console.error('Error fetching leads:', error);
       }
-    } else {
-      // Initialize with default leads if no stored data
-      const defaultLeads: Lead[] = [
-        {
-          id: '1',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@email.com',
-          phone: '+1 (555) 123-4567',
-          propertyInterested: 'Modern Downtown Apartment',
-          status: 'New Lead',
-          score: 85,
-          budget: '$2,500/mo',
-          lastContact: '2 days ago',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          name: 'Michel Chen',
-          email: 'michel.chen@email.com',
-          phone: '+1 (555) 234-5678',
-          propertyInterested: 'Luxury Condo with City View',
-          status: 'In Progress',
-          score: 92,
-          budget: '$3,200/mo',
-          lastContact: '1 day ago',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          name: 'Emily Rodriguez',
-          email: 'emily.rodriguez@email.com',
-          phone: '+1 (555) 345-6789',
-          propertyInterested: 'Spacious Penthouse',
-          status: 'Approved',
-          score: 78,
-          budget: '$4,500/mo',
-          lastContact: '3 days ago',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ];
-      setLeads(defaultLeads);
-      localStorage.setItem('leads', JSON.stringify(defaultLeads));
-    }
+    };
+
+    fetchLeads();
   }, []);
 
   // Save leads to localStorage whenever they change
