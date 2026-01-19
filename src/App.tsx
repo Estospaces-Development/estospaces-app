@@ -18,6 +18,12 @@ import AdminProtectedRoute from './components/Admin/AdminProtectedRoute';
 // Manager Dashboard Pages
 import Dashboard from './pages/Dashboard';
 import ManagerVerificationSection from './components/Dashboard/ManagerVerificationSection';
+import BrokerPropertyDetail from './pages/BrokerPropertyDetail';
+import AllBrokerRequests from './pages/AllBrokerRequests';
+import ClientHistory from './pages/ClientHistory';
+import FastTrackDashboard from './pages/manager/FastTrackDashboard';
+import MonitoringDashboard from './pages/manager/MonitoringDashboard';
+import BrokersCommunity from './pages/manager/BrokersCommunity';
 
 // Admin Pages
 import AdminVerificationDashboard from './pages/AdminVerificationDashboard';
@@ -78,367 +84,427 @@ function App() {
                     <Router>
                       <LocationProvider>
                         <PropertyFilterProvider>
-                        <Routes>
-                      {/* Landing Page */}
-                      <Route path="/" element={<Home />} />
+                          <Routes>
+                            {/* Landing Page */}
+                            <Route path="/" element={<Home />} />
 
-                      {/* Auth Routes */}
-                      <Route path="/auth/login" element={<Login />} />
-                      <Route path="/auth/sign-in-email" element={<EmailLogin />} />
-                      <Route path="/auth/signup" element={<Signup />} />
-                      <Route path="/auth/reset-password" element={<ResetPassword />} />
-                      <Route path="/auth/callback" element={<AuthCallback />} />
+                            {/* Auth Routes */}
+                            <Route path="/auth/login" element={<Login />} />
+                            <Route path="/auth/sign-in-email" element={<EmailLogin />} />
+                            <Route path="/auth/signup" element={<Signup />} />
+                            <Route path="/auth/reset-password" element={<ResetPassword />} />
+                            <Route path="/auth/callback" element={<AuthCallback />} />
 
-                      {/* Public Property Search */}
-                      <Route path="/properties/search" element={<PropertySearch />} />
-                      <Route path="/property/:id" element={<PropertyDetail />} />
+                            {/* Public Property Search */}
+                            <Route path="/properties/search" element={<PropertySearch />} />
+                            <Route path="/property/:id" element={<PropertyDetail />} />
 
-                      {/* Public Pages */}
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/cookies" element={<CookiePolicy />} />
-                      <Route path="/terms" element={<TermsConditions />} />
-                      <Route path="/contact" element={<ContactUs />} />
-                      <Route path="/faq" element={<FAQ />} />
+                            {/* Public Pages */}
+                            <Route path="/privacy" element={<PrivacyPolicy />} />
+                            <Route path="/cookies" element={<CookiePolicy />} />
+                            <Route path="/terms" element={<TermsConditions />} />
+                            <Route path="/contact" element={<ContactUs />} />
+                            <Route path="/faq" element={<FAQ />} />
 
-                      {/* Manager Dashboard Routes - Protected */}
-                      <Route
-                        path="/manager/dashboard"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Dashboard />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/properties"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <PropertiesList />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/properties/add"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <AddProperty />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/properties/edit/:id"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <AddProperty />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/properties/:id"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <PropertyView />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/leads"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <LeadsClients />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/application"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Application />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/appointment"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Appointment />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/messages"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Messages />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/analytics"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Analytics />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/billing"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Billing />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/profile"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Profile />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/help"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <HelpSupport />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/manager/dashboard/verification"
-                        element={
-                          <ManagerProtectedRoute>
-                            <ManagerVerificationProvider>
-                              <MainLayout>
-                                <ManagerVerificationSection />
-                              </MainLayout>
-                            </ManagerVerificationProvider>
-                          </ManagerProtectedRoute>
-                        }
-                      />
+                            {/* Manager Dashboard Routes - Protected */}
+                            <Route
+                              path="/manager/dashboard"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Dashboard />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/fast-track"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <FastTrackDashboard />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/monitoring"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <MonitoringDashboard />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/brokers-community"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <BrokersCommunity />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/properties"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <PropertiesList />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/properties/add"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <AddProperty />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/properties/edit/:id"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <AddProperty />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/properties/:id"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <PropertyView />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/leads"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <LeadsClients />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/application"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Application />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/appointment"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Appointment />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/messages"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Messages />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/analytics"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Analytics />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/billing"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Billing />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/profile"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Profile />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/help"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <HelpSupport />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/verification"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <ManagerVerificationProvider>
+                                    <MainLayout>
+                                      <ManagerVerificationSection />
+                                    </MainLayout>
+                                  </ManagerVerificationProvider>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/broker-property/:id"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <BrokerPropertyDetail />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/broker-requests"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <AllBrokerRequests />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/client-history/:id"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <ClientHistory />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
 
-                      {/* Admin Routes */}
-                      <Route path="/admin/login" element={<AdminLogin />} />
-                      
-                      <Route
-                        path="/admin/verifications"
-                        element={
-                          <AdminProtectedRoute>
-                            <AdminVerificationDashboard />
-                          </AdminProtectedRoute>
-                        }
-                      />
-                      
-                      <Route
-                        path="/admin/chat"
-                        element={
-                          <AdminProtectedRoute>
-                            <AdminChatDashboard />
-                          </AdminProtectedRoute>
-                        }
-                      />
-                      
-                      <Route
-                        path="/admin/analytics"
-                        element={
-                          <AdminProtectedRoute>
-                            <UserAnalytics />
-                          </AdminProtectedRoute>
-                        }
-                      />
+                            {/* Admin Routes */}
+                            <Route path="/admin/login" element={<AdminLogin />} />
 
-                      {/* Catch-all for /manager/dashboard/* wildcard routes */}
-                      <Route
-                        path="/manager/dashboard/*"
-                        element={
-                          <ManagerProtectedRoute>
-                            <MainLayout>
-                              <Dashboard />
-                            </MainLayout>
-                          </ManagerProtectedRoute>
-                        }
-                      />
+                            <Route
+                              path="/admin/verifications"
+                              element={
+                                <AdminProtectedRoute>
+                                  <AdminVerificationDashboard />
+                                </AdminProtectedRoute>
+                              }
+                            />
 
-                      {/* User Dashboard Routes - Protected */}
-                      <Route
-                        path="/user/dashboard"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardLocationBased />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/discover"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardDiscover />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/saved"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardSaved />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/property/:id"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <PropertyDetail />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/applications"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardApplications />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/viewings"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardViewings />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/messages"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardMessages />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/payments"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardPayments />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/contracts"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardContracts />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/reviews"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardReviews />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/settings"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardSettings />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/help"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardHelp />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/notifications"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardNotifications />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/user/dashboard/profile"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardProfile />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
+                            <Route
+                              path="/admin/chat"
+                              element={
+                                <AdminProtectedRoute>
+                                  <AdminChatDashboard />
+                                </AdminProtectedRoute>
+                              }
+                            />
 
-                      {/* Catch-all for /user/dashboard/* wildcard routes */}
-                      <Route
-                        path="/user/dashboard/*"
-                        element={
-                          <UserProtectedRoute>
-                            <DashboardLayout>
-                              <DashboardLocationBased />
-                            </DashboardLayout>
-                          </UserProtectedRoute>
-                        }
-                      />
+                            <Route
+                              path="/admin/analytics"
+                              element={
+                                <AdminProtectedRoute>
+                                  <UserAnalytics />
+                                </AdminProtectedRoute>
+                              }
+                            />
+
+                            {/* Catch-all for /manager/dashboard/* wildcard routes */}
+                            <Route
+                              path="/manager/dashboard/*"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <Dashboard />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+
+                            {/* User Dashboard Routes - Protected */}
+                            <Route
+                              path="/user/dashboard"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardLocationBased />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/discover"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardDiscover />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/saved"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardSaved />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/property/:id"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <PropertyDetail />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/applications"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardApplications />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/viewings"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardViewings />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/messages"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardMessages />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/payments"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardPayments />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/contracts"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardContracts />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/reviews"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardReviews />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/settings"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardSettings />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/help"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardHelp />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/notifications"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardNotifications />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/user/dashboard/profile"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardProfile />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+
+                            {/* Catch-all for /user/dashboard/* wildcard routes */}
+                            <Route
+                              path="/user/dashboard/*"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardLocationBased />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
                           </Routes>
                         </PropertyFilterProvider>
                       </LocationProvider>

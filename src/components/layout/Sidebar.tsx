@@ -18,7 +18,9 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import * as managerVerificationService from '../../services/managerVerificationService';
@@ -33,11 +35,11 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, getDisplayName, signOut } = useAuth();
-  
+
   // Get user display name and email
   const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'Property Manager');
   const userEmail = user?.email || profile?.email || '';
-  
+
   // Manager verification status
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
   const [verificationLoading, setVerificationLoading] = useState(true);
@@ -50,7 +52,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         setVerificationLoading(false);
         return;
       }
-      
+
       try {
         const result = await managerVerificationService.getManagerProfile(user.id);
         if (result.data) {
@@ -62,7 +64,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         setVerificationLoading(false);
       }
     };
-    
+
     fetchVerificationStatus();
   }, [user?.id]);
 
@@ -95,6 +97,9 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/manager/dashboard' },
+    { icon: Zap, label: 'Fast Track 24h', path: '/manager/dashboard/fast-track' },
+    { icon: Activity, label: 'Monitoring', path: '/manager/dashboard/monitoring' },
+    { icon: Users, label: 'Brokers Community', path: '/manager/dashboard/brokers-community' },
     { icon: Building2, label: 'Properties', path: '/manager/dashboard/properties' },
     { icon: Users, label: 'Leads & Clients', path: '/manager/dashboard/leads' },
     { icon: FileText, label: 'Applications', path: '/manager/dashboard/application' },
@@ -164,8 +169,8 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                   <Link
                     to={item.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
                       }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
@@ -188,8 +193,8 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                   <Link
                     to={item.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
                       }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
@@ -221,7 +226,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 // Inline verification status badge for sidebar
 const VerificationStatusBadgeInline = ({ status }: { status: VerificationStatus | null }) => {
   const navigate = useNavigate();
-  
+
   const getConfig = () => {
     switch (status) {
       case 'submitted':
@@ -255,10 +260,10 @@ const VerificationStatusBadgeInline = ({ status }: { status: VerificationStatus 
         };
     }
   };
-  
+
   const config = getConfig();
   const Icon = config.icon;
-  
+
   return (
     <button
       onClick={() => navigate('/manager/dashboard/verification')}

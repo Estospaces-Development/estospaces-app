@@ -9,7 +9,7 @@ import { PropertiesProvider } from '../../contexts/PropertiesContext';
 
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
-  
+
   // Only show Lakshmi Assistant on the main dashboard page
   const isMainDashboard = location.pathname === '/user/dashboard' || location.pathname === '/user/dashboard/';
 
@@ -17,10 +17,10 @@ const DashboardLayout = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     const hadDarkClass = root.classList.contains('dark');
-    
+
     // Remove dark class to force light theme
     root.classList.remove('dark');
-    
+
     // Cleanup: restore dark class if it was present before (when navigating away)
     return () => {
       const savedTheme = localStorage.getItem('estospaces-theme');

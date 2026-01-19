@@ -47,6 +47,8 @@ import * as propertiesService from '../services/propertiesService';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import { notifyViewingBooked } from '../services/notificationsService';
 import ShareModal from '../components/Dashboard/ShareModal';
+import VirtualTourViewer from '../components/virtual-tour/VirtualTourViewer';
+import { defaultVirtualTour } from '../mocks/virtualTourMock';
 
 const PropertyDetail = () => {
   const { id } = useParams();
@@ -71,6 +73,7 @@ const PropertyDetail = () => {
   const [viewingSuccess, setViewingSuccess] = useState(false);
   const [viewingError, setViewingError] = useState(null);
   const { user } = useAuth();
+  const [showVirtualTour, setShowVirtualTour] = useState(false);
 
   // Fetch real property data
   useEffect(() => {
@@ -86,7 +89,7 @@ const PropertyDetail = () => {
 
       try {
         const result = await propertyDataService.getPropertyById(id, currentUser?.id);
-        
+
         if (result.error) {
           setError(result.error.message || 'Failed to load property');
           setLoading(false);
@@ -147,14 +150,14 @@ const PropertyDetail = () => {
   }
 
   // Transform property data
-  const images = property.image_urls 
+  const images = property.image_urls
     ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]'))
     : [];
   const hasMultipleImages = images.length > 1;
   const isSaved = isPropertySaved(property.id);
-  
+
   // Get property features
-  const propertyFeatures = property.property_features 
+  const propertyFeatures = property.property_features
     ? (Array.isArray(property.property_features) ? property.property_features : JSON.parse(property.property_features || '[]'))
     : [];
 
@@ -169,7 +172,7 @@ const PropertyDetail = () => {
       med: price,
       high: price * 1.15,
     };
-    
+
     return {
       monthlyRent: monthlyRent.toFixed(0),
       annualRent: annualRent.toFixed(0),
@@ -279,7 +282,7 @@ const PropertyDetail = () => {
         if (property.image_urls) {
           const images = Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]');
           propertyImage = images[0] || null;
-          
+
           // Sanity check: if image URL is too long (likely base64), truncate or ignore it to prevent payload issues
           if (propertyImage && propertyImage.length > 2000) {
             console.warn('Property image URL too long, skipping image in application data');
@@ -345,7 +348,7 @@ const PropertyDetail = () => {
       }
 
       setViewingSuccess(true);
-      
+
       // Send notification for viewing booked
       try {
         const formattedDate = new Date(viewingDate).toLocaleDateString('en-GB', {
@@ -365,7 +368,7 @@ const PropertyDetail = () => {
       } catch (notifyErr) {
         console.log('⚠️ Could not send notification:', notifyErr);
       }
-      
+
       setTimeout(() => {
         setShowViewingModal(false);
         setViewingSuccess(false);
@@ -406,11 +409,10 @@ const PropertyDetail = () => {
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-orange-500">{property.title || 'Property'}</h1>
               <button
                 onClick={handleSave}
-                className={`p-2 rounded-full transition-all ${
-                  isSaved
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`p-2 rounded-full transition-all ${isSaved
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
                 title={isSaved ? 'Remove from saved' : 'Save property'}
               >
                 <Heart size={20} className={isSaved ? 'fill-current' : ''} />
@@ -453,7 +455,7 @@ const PropertyDetail = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={() => setShowViewingModal(true)}
               className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-lg hover:shadow-xl"
             >
@@ -508,7 +510,7 @@ const PropertyDetail = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Image Thumbnails */}
             {images.length > 1 && (
               <div className="p-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
@@ -517,11 +519,10 @@ const PropertyDetail = () => {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                        index === currentImageIndex
-                          ? 'border-orange-500 ring-2 ring-orange-500/30'
-                          : 'border-transparent hover:border-gray-300'
-                      }`}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                        ? 'border-orange-500 ring-2 ring-orange-500/30'
+                        : 'border-transparent hover:border-gray-300'
+                        }`}
                     >
                       <img
                         src={img}
@@ -609,7 +610,7 @@ const PropertyDetail = () => {
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Amenities</h4>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(property.amenities).map(([key, value]) => value && (
-                    <span 
+                    <span
                       key={key}
                       className="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium flex items-center gap-1"
                     >
@@ -631,14 +632,14 @@ const PropertyDetail = () => {
             <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
               {property.description || 'No description available for this property.'}
             </p>
-            
+
             {/* Real Property Features */}
             {propertyFeatures.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-3">Property Features</h3>
                 <div className="flex flex-wrap gap-2">
                   {propertyFeatures.map((feature, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium flex items-center gap-1"
                     >
@@ -678,6 +679,53 @@ const PropertyDetail = () => {
               )}
             </div>
           </div>
+
+          {/* 360° Virtual Tour Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 mb-4">360° Virtual Tour</h2>
+            {defaultVirtualTour ? (
+              <>
+                <div className="mb-4">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    Experience this property in an immersive 360° virtual tour. Navigate through different rooms and get a real feel for the space.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{defaultVirtualTour.scenes.length}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Rooms</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">360°</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">View</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">HD</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Quality</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowVirtualTour(true)}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  View 360° Virtual Tour
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400">Virtual tour not available for this property</p>
+              </div>
+            )}
+          </div>
+
 
           {/* Financial Metrics */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -769,8 +817,8 @@ const PropertyDetail = () => {
               <div className="flex items-start gap-4 mb-6">
                 <div className="relative">
                   <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                    {(property.contact_name || property.agent_name) 
-                      ? (property.contact_name || property.agent_name).charAt(0).toUpperCase() 
+                    {(property.contact_name || property.agent_name)
+                      ? (property.contact_name || property.agent_name).charAt(0).toUpperCase()
                       : <User size={28} />}
                   </div>
                   {property.verified && (
@@ -797,15 +845,15 @@ const PropertyDetail = () => {
                       {property.company || property.agent_company}
                     </p>
                   )}
-                  
+
                   {/* Agent Rating */}
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Star 
-                          key={star} 
-                          size={16} 
-                          className={star <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} 
+                        <Star
+                          key={star}
+                          size={16}
+                          className={star <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
                         />
                       ))}
                     </div>
@@ -861,7 +909,7 @@ const PropertyDetail = () => {
                     </div>
                   </a>
                 )}
-                
+
                 {/* Response Time Badge */}
                 <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
                   <Clock size={16} className="text-green-600 dark:text-green-400" />
@@ -936,8 +984,8 @@ const PropertyDetail = () => {
                         {property.address_line_1 || property.city}
                       </p>
                       <p className="text-orange-600 dark:text-orange-400 font-semibold">
-                        {property.listing_type === 'rent' 
-                          ? `${formatPrice(property.price)}/month` 
+                        {property.listing_type === 'rent'
+                          ? `${formatPrice(property.price)}/month`
                           : formatPrice(property.price)}
                       </p>
                     </div>
@@ -946,10 +994,10 @@ const PropertyDetail = () => {
                   {/* Application Info */}
                   <div className="space-y-4 mb-6">
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      By submitting this application, you're expressing interest in this property. 
+                      By submitting this application, you're expressing interest in this property.
                       The agent will review your profile and contact you to discuss next steps.
                     </p>
-                    
+
                     <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
                       <h4 className="font-medium text-orange-800 dark:text-orange-300 text-sm mb-2">
                         What happens next?
@@ -1038,7 +1086,7 @@ const PropertyDetail = () => {
                   <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                     The appointment is submitted. We will notify you once the agent approves your appointment.
                   </p>
-                  
+
                   <button
                     onClick={() => {
                       setShowViewingModal(false);
@@ -1075,8 +1123,8 @@ const PropertyDetail = () => {
                         {property.address_line_1 || property.city || 'UK'}
                       </p>
                       <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                        {property.listing_type === 'rent' 
-                          ? `${formatPrice(property.price)}/month` 
+                        {property.listing_type === 'rent'
+                          ? `${formatPrice(property.price)}/month`
                           : formatPrice(property.price)}
                       </p>
                     </div>
@@ -1094,11 +1142,10 @@ const PropertyDetail = () => {
                           key={time}
                           type="button"
                           onClick={() => setViewingTime(time)}
-                          className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                            viewingTime === time
-                              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
+                          className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${viewingTime === time
+                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
                         >
                           {time}
                         </button>
@@ -1223,6 +1270,14 @@ const PropertyDetail = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Virtual Tour Modal */}
+      {showVirtualTour && defaultVirtualTour && (
+        <VirtualTourViewer
+          tour={defaultVirtualTour}
+          onClose={() => setShowVirtualTour(false)}
+        />
       )}
     </div>
   );

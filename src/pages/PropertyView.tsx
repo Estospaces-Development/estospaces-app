@@ -12,6 +12,10 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SharePropertyModal from '../components/ui/SharePropertyModal';
 import Toast from '../components/ui/Toast';
+import VirtualTourManagerPanel from '../components/manager/VirtualTourManagerPanel';
+import StreetViewPanel from '../components/manager/StreetViewPanel';
+import { defaultVirtualTour } from '../mocks/virtualTourMock';
+import { getLocationByPropertyId } from '../mocks/locationMock';
 
 const PropertyView = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,10 +27,11 @@ const PropertyView = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  
+  const [activeTab, setActiveTab] = useState<'details' | 'virtual-tour' | 'location'>('details');
+
   // Check if property is favorited using the context
   const isFavorited = id ? isPropertySaved(id) : false;
-  
+
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
     message: '',
@@ -190,7 +195,7 @@ const PropertyView = () => {
           <button
             onClick={async () => {
               console.log('Favorite button clicked', { id, property: !!property });
-              
+
               if (!property || !id) {
                 console.error('Property or ID not found', { property: !!property, id });
                 setToast({
@@ -200,13 +205,13 @@ const PropertyView = () => {
                 });
                 return;
               }
-              
+
               try {
                 console.log('Calling toggleProperty with ID:', id);
                 // Pass only the property ID instead of the full property object
                 const result = await toggleProperty(id);
                 console.log('toggleProperty result:', result);
-                
+
                 if (result?.success) {
                   setToast({
                     message: isFavorited ? 'Removed from favorites' : 'Added to favorites',
@@ -277,514 +282,571 @@ const PropertyView = () => {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 dark:border-gray-800 mb-6">
+        <button
+          onClick={() => setActiveTab('details')}
+          className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeTab === 'details'
+            ? 'text-orange-600 dark:text-orange-400'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+        >
+          Property Details
+          {activeTab === 'details' && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600 dark:bg-orange-400"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('virtual-tour')}
+          className={`px-6 py-3 font-medium text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'virtual-tour'
+            ? 'text-orange-600 dark:text-orange-400'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+        >
+          Virtual Tour
+          {defaultVirtualTour?.status === 'approved' && (
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          )}
+          {activeTab === 'virtual-tour' && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600 dark:bg-orange-400"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('location')}
+          className={`px-6 py-3 font-medium text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'location'
+            ? 'text-orange-600 dark:text-orange-400'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+        >
+          Location & Street View
+          {id && getLocationByPropertyId(id)?.verificationStatus === 'verified' && (
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          )}
+          {activeTab === 'location' && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600 dark:bg-orange-400"></div>
+          )}
+        </button>
+      </div>
+
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Images & Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Image Gallery */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-            {images.length > 0 ? (
-              <div className="relative">
-                <div
-                  className="aspect-video bg-gray-100 dark:bg-gray-800 cursor-pointer"
-                  onClick={() => setShowImageModal(true)}
-                >
-                  <img
-                    src={images[currentImageIndex]}
-                    alt={`${property.title} - Image ${currentImageIndex + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Navigation Arrows */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-900/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white dark:hover:bg-gray-900 transition-colors"
-                    >
-                      <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-900/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white dark:hover:bg-gray-900 transition-colors"
-                    >
-                      <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                    </button>
-                  </>
-                )}
-
-                {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(property.status)}`}>
-                    {formatStatus(property.status)}
-                  </span>
-                  {property.featured && (
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full text-sm font-medium flex items-center gap-1">
-                      <Star className="w-4 h-4" /> Featured
-                    </span>
-                  )}
-                  {property.verified && (
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full text-sm font-medium flex items-center gap-1">
-                      <Verified className="w-4 h-4" /> Verified
-                    </span>
-                  )}
-                </div>
-
-                {/* Image Counter */}
-                <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 text-white rounded-full text-sm">
-                  {currentImageIndex + 1} / {images.length}
-                </div>
-              </div>
-            ) : (
-              <div className="aspect-video bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 flex items-center justify-center">
-                <Home className="w-24 h-24 text-gray-300" />
-              </div>
-            )}
-
-            {/* Thumbnail Strip */}
-            {images.length > 1 && (
-              <div className="p-4 flex gap-2 overflow-x-auto custom-scrollbar">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                      ? 'border-primary shadow-lg'
-                      : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
+      {activeTab === 'details' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Images & Details */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Image Gallery */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              {images.length > 0 ? (
+                <div className="relative">
+                  <div
+                    className="aspect-video bg-gray-100 dark:bg-gray-800 cursor-pointer"
+                    onClick={() => setShowImageModal(true)}
                   >
                     <img
-                      src={image}
-                      alt={`Thumbnail ${index + 1}`}
+                      src={images[currentImageIndex]}
+                      alt={`${property.title} - Image ${currentImageIndex + 1}`}
                       className="w-full h-full object-cover"
                     />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Videos Section */}
-          {videos.length > 0 && (
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                  <Video className="w-5 h-5 text-primary" />
-                  Property Videos ({videos.length})
-                </h2>
-              </div>
-              <div className="p-6 space-y-4">
-                {videos.map((videoUrl, index) => (
-                  <div key={index} className="relative">
-                    <video
-                      src={videoUrl}
-                      controls
-                      className="w-full rounded-lg"
-                      style={{ maxHeight: '600px' }}
-                      preload="metadata"
-                    >
-                      Your browser does not support the video tag.
-                    </video>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Property Details */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-            {/* Title & Price */}
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                  {property.title}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-primary" />
-                  {property.location?.addressLine1 || property.address}, {property.location?.city || property.city}, {property.location?.state || property.state}
-                  {property.location?.country && `, ${property.location.country}`}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-primary">
-                  {property.price?.amount
-                    ? formatPrice(property.price)
-                    : property.priceString || 'Price on Request'}
-                </p>
-                {property.listingType === 'rent' && (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">per month</p>
-                )}
-                {property.price?.negotiable && (
-                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                    Price Negotiable
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Key Specs */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 border-y border-gray-200 dark:border-gray-700">
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <Bed className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {property.rooms?.bedrooms || property.bedrooms || 0}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Bedrooms</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <Bath className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {property.rooms?.bathrooms || property.bathrooms || 0}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <Maximize className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {formatArea(
-                    property.dimensions?.totalArea || property.area || 0,
-                    property.dimensions?.areaUnit || 'sqft'
-                  )}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Area</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <Car className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {property.rooms?.parkingSpaces || 0}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Parking</p>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="py-6">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Description</h2>
-              <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">
-                {property.description || 'No description available.'}
-              </p>
-            </div>
-
-            {/* Property Details Grid */}
-            <div className="py-6 border-t border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Property Details</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Property Type</p>
-                  <p className="font-medium text-gray-800 dark:text-white capitalize">
-                    {property.propertyType?.replace('_', ' ') || 'N/A'}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Listing Type</p>
-                  <p className="font-medium text-gray-800 dark:text-white capitalize">
-                    {property.listingType?.replace('_', ' ') || 'N/A'}
-                  </p>
-                </div>
-                {property.yearBuilt && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
-                    <p className="font-medium text-gray-800 dark:text-white">{property.yearBuilt}</p>
-                  </div>
-                )}
-                {property.furnishing && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Furnishing</p>
-                    <p className="font-medium text-gray-800 dark:text-white capitalize">
-                      {property.furnishing.replace('_', ' ')}
-                    </p>
-                  </div>
-                )}
-                {property.condition && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Condition</p>
-                    <p className="font-medium text-gray-800 dark:text-white capitalize">
-                      {property.condition.replace('_', ' ')}
-                    </p>
-                  </div>
-                )}
-                {property.facing && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Facing</p>
-                    <p className="font-medium text-gray-800 dark:text-white capitalize">
-                      {property.facing.replace('_', ' ')}
-                    </p>
-                  </div>
-                )}
-                {property.dimensions?.floorNumber !== undefined && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Floor</p>
-                    <p className="font-medium text-gray-800 dark:text-white">
-                      {property.dimensions.floorNumber} of {property.dimensions.totalFloors}
-                    </p>
-                  </div>
-                )}
-                {property.propertyId && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Property ID</p>
-                    <p className="font-medium text-gray-800 dark:text-white">{property.propertyId}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Amenities */}
-            {property.amenities && (
-              <div className="py-6 border-t border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Amenities & Features</h2>
-
-                {Object.entries(property.amenities).map(([category, items]) => {
-                  if (!items || items.length === 0) return null;
-                  return (
-                    <div key={category} className="mb-4">
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 capitalize">
-                        {category.replace('_', ' ')}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {items.map((item: string, index: number) => (
-                          <span
-                            key={index}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            {item.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Legacy features support */}
-                {property.features && property.features.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {property.features.map((feature, index) => (
-                      <span
-                        key={index}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm"
+                  {/* Navigation Arrows */}
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-900/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white dark:hover:bg-gray-900 transition-colors"
                       >
-                        <CheckCircle className="w-4 h-4" />
-                        {feature}
+                        <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                      </button>
+                      <button
+                        onClick={() => setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-900/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white dark:hover:bg-gray-900 transition-colors"
+                      >
+                        <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Badges */}
+                  <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(property.status)}`}>
+                      {formatStatus(property.status)}
+                    </span>
+                    {property.featured && (
+                      <span className="px-3 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full text-sm font-medium flex items-center gap-1">
+                        <Star className="w-4 h-4" /> Featured
                       </span>
-                    ))}
+                    )}
+                    {property.verified && (
+                      <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full text-sm font-medium flex items-center gap-1">
+                        <Verified className="w-4 h-4" /> Verified
+                      </span>
+                    )}
                   </div>
-                )}
+
+                  {/* Image Counter */}
+                  <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 text-white rounded-full text-sm">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                </div>
+              ) : (
+                <div className="aspect-video bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 flex items-center justify-center">
+                  <Home className="w-24 h-24 text-gray-300" />
+                </div>
+              )}
+
+              {/* Thumbnail Strip */}
+              {images.length > 1 && (
+                <div className="p-4 flex gap-2 overflow-x-auto custom-scrollbar">
+                  {images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                        ? 'border-primary shadow-lg'
+                        : 'border-transparent opacity-70 hover:opacity-100'
+                        }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Videos Section */}
+            {videos.length > 0 && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    <Video className="w-5 h-5 text-primary" />
+                    Property Videos ({videos.length})
+                  </h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  {videos.map((videoUrl, index) => (
+                    <div key={index} className="relative">
+                      <video
+                        src={videoUrl}
+                        controls
+                        className="w-full rounded-lg"
+                        style={{ maxHeight: '600px' }}
+                        preload="metadata"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Virtual Tour */}
-            {(property.virtualTourUrl || property.media?.virtualTourUrl) && (
+            {/* Property Details */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              {/* Title & Price */}
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">
+                    {property.title}
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    {property.location?.addressLine1 || property.address}, {property.location?.city || property.city}, {property.location?.state || property.state}
+                    {property.location?.country && `, ${property.location.country}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-primary">
+                    {property.price?.amount
+                      ? formatPrice(property.price)
+                      : property.priceString || 'Price on Request'}
+                  </p>
+                  {property.listingType === 'rent' && (
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">per month</p>
+                  )}
+                  {property.price?.negotiable && (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                      Price Negotiable
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Key Specs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 border-y border-gray-200 dark:border-gray-700">
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Bed className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                    {property.rooms?.bedrooms || property.bedrooms || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Bedrooms</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Bath className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                    {property.rooms?.bathrooms || property.bathrooms || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Maximize className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                    {formatArea(
+                      property.dimensions?.totalArea || property.area || 0,
+                      property.dimensions?.areaUnit || 'sqft'
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Area</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Car className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                    {property.rooms?.parkingSpaces || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Parking</p>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="py-6">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Description</h2>
+                <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">
+                  {property.description || 'No description available.'}
+                </p>
+              </div>
+
+              {/* Property Details Grid */}
               <div className="py-6 border-t border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Virtual Tour</h2>
-                <a
-                  href={property.virtualTourUrl || property.media?.virtualTourUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  <Globe className="w-5 h-5" />
-                  View Virtual Tour
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Actions Card - For manager viewing their own property */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-primary" />
-              Quick Actions
-            </h3>
-
-            <div className="space-y-3">
-              {/* Publish Property Button - Show only when status is draft or draft flag is true */}
-              {(property.status === 'draft' || property.draft === true) && (
-                <button
-                  onClick={handlePublish}
-                  disabled={publishing}
-                  className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  <Send className="w-5 h-5" />
-                  {publishing ? 'Publishing...' : 'Publish Property'}
-                </button>
-              )}
-
-              <button
-                onClick={() => navigate(`/manager/dashboard/properties/edit/${id}`)}
-                className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                <Edit className="w-5 h-5" />
-                Edit Property
-              </button>
-
-              <button
-                onClick={handleDuplicate}
-                className="w-full py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                <Copy className="w-5 h-5" />
-                Duplicate Listing
-              </button>
-
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="w-full py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                <Share2 className="w-5 h-5" />
-                Share Property
-              </button>
-
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-full py-3 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-5 h-5" />
-                Delete Property
-              </button>
-            </div>
-          </div>
-
-          {/* Property Status Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              Listing Status
-            </h3>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Current Status</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(property.status)}`}>
-                  {formatStatus(property.status)}
-                </span>
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Property Details</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Property Type</p>
+                    <p className="font-medium text-gray-800 dark:text-white capitalize">
+                      {property.propertyType?.replace('_', ' ') || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Listing Type</p>
+                    <p className="font-medium text-gray-800 dark:text-white capitalize">
+                      {property.listingType?.replace('_', ' ') || 'N/A'}
+                    </p>
+                  </div>
+                  {property.yearBuilt && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
+                      <p className="font-medium text-gray-800 dark:text-white">{property.yearBuilt}</p>
+                    </div>
+                  )}
+                  {property.furnishing && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Furnishing</p>
+                      <p className="font-medium text-gray-800 dark:text-white capitalize">
+                        {property.furnishing.replace('_', ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {property.condition && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Condition</p>
+                      <p className="font-medium text-gray-800 dark:text-white capitalize">
+                        {property.condition.replace('_', ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {property.facing && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Facing</p>
+                      <p className="font-medium text-gray-800 dark:text-white capitalize">
+                        {property.facing.replace('_', ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {property.dimensions?.floorNumber !== undefined && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Floor</p>
+                      <p className="font-medium text-gray-800 dark:text-white">
+                        {property.dimensions.floorNumber} of {property.dimensions.totalFloors}
+                      </p>
+                    </div>
+                  )}
+                  {property.propertyId && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Property ID</p>
+                      <p className="font-medium text-gray-800 dark:text-white">{property.propertyId}</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Listing Type</span>
-                <span className="text-gray-800 dark:text-white font-medium capitalize">
-                  For {property.listingType}
-                </span>
-              </div>
+              {/* Amenities */}
+              {property.amenities && (
+                <div className="py-6 border-t border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Amenities & Features</h2>
 
-              {property.createdAt && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Listed On</span>
-                  <span className="text-gray-800 dark:text-white font-medium">
-                    {new Date(property.createdAt).toLocaleDateString()}
-                  </span>
+                  {Object.entries(property.amenities).map(([category, items]) => {
+                    if (!items || items.length === 0) return null;
+                    return (
+                      <div key={category} className="mb-4">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 capitalize">
+                          {category.replace('_', ' ')}
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {items.map((item: string, index: number) => (
+                            <span
+                              key={index}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              {item.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Legacy features support */}
+                  {property.features && property.features.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {property.features.map((feature, index) => (
+                        <span
+                          key={index}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {property.updatedAt && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Last Updated</span>
-                  <span className="text-gray-800 dark:text-white font-medium">
-                    {new Date(property.updatedAt).toLocaleDateString()}
-                  </span>
+              {/* Virtual Tour */}
+              {(property.virtualTourUrl || property.media?.virtualTourUrl) && (
+                <div className="py-6 border-t border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Virtual Tour</h2>
+                  <a
+                    href={property.virtualTourUrl || property.media?.virtualTourUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <Globe className="w-5 h-5" />
+                    View Virtual Tour
+                  </a>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Analytics Card */}
-          {property.analytics && (
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Actions Card - For manager viewing their own property */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Property Analytics
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Eye className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.views || 0}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Views</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <MessageCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.inquiries || 0}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Inquiries</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Heart className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.favorites || 0}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Favorites</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Share2 className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.shares || 0}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Shares</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Additional Info Card */}
-          {(property.availableFrom || property.financial?.deposit || property.inclusions || property.exclusions) && (
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Additional Information
+                <Settings className="w-5 h-5 text-primary" />
+                Quick Actions
               </h3>
 
               <div className="space-y-3">
-                {property.availableFrom && (
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                      <Clock className="w-4 h-4" /> Available From
-                    </span>
-                    <span className="font-medium text-gray-800 dark:text-white">
-                      {new Date(property.availableFrom).toLocaleDateString()}
+                {/* Publish Property Button - Show only when status is draft or draft flag is true */}
+                {(property.status === 'draft' || property.draft === true) && (
+                  <button
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  >
+                    <Send className="w-5 h-5" />
+                    {publishing ? 'Publishing...' : 'Publish Property'}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => navigate(`/manager/dashboard/properties/edit/${id}`)}
+                  className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <Edit className="w-5 h-5" />
+                  Edit Property
+                </button>
+
+                <button
+                  onClick={handleDuplicate}
+                  className="w-full py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-5 h-5" />
+                  Duplicate Listing
+                </button>
+
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="w-full py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-5 h-5" />
+                  Share Property
+                </button>
+
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full py-3 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Delete Property
+                </button>
+              </div>
+            </div>
+
+            {/* Property Status Card */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-primary" />
+                Listing Status
+              </h3>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Current Status</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(property.status)}`}>
+                    {formatStatus(property.status)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Listing Type</span>
+                  <span className="text-gray-800 dark:text-white font-medium capitalize">
+                    For {property.listingType}
+                  </span>
+                </div>
+
+                {property.createdAt && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Listed On</span>
+                    <span className="text-gray-800 dark:text-white font-medium">
+                      {new Date(property.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 )}
-                {property.financial?.deposit && property.financial.deposit > 0 && (
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                      <Shield className="w-4 h-4" /> Security Deposit
+
+                {property.updatedAt && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Last Updated</span>
+                    <span className="text-gray-800 dark:text-white font-medium">
+                      {new Date(property.updatedAt).toLocaleDateString()}
                     </span>
-                    <span className="font-medium text-gray-800 dark:text-white">
-                      {formatPrice({ amount: property.financial.deposit, currency: property.price?.currency || 'USD', negotiable: false })}
-                    </span>
-                  </div>
-                )}
-                {property.financial?.maintenanceCharges && property.financial.maintenanceCharges > 0 && (
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" /> Maintenance
-                    </span>
-                    <span className="font-medium text-gray-800 dark:text-white">
-                      {formatPrice({ amount: property.financial.maintenanceCharges, currency: property.price?.currency || 'USD', negotiable: false })}/mo
-                    </span>
-                  </div>
-                )}
-                {property.inclusions && (
-                  <div className="py-2 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">Inclusions</span>
-                    <p className="font-medium text-gray-800 dark:text-white mt-1">{property.inclusions}</p>
-                  </div>
-                )}
-                {property.exclusions && (
-                  <div className="py-2">
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">Exclusions</span>
-                    <p className="font-medium text-gray-800 dark:text-white mt-1">{property.exclusions}</p>
                   </div>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Metadata */}
-          <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p>Listed: {new Date(property.createdAt).toLocaleDateString()}</p>
-            <p>Last Updated: {new Date(property.updatedAt).toLocaleDateString()}</p>
-            {property.propertyId && <p>ID: {property.propertyId}</p>}
+            {/* Analytics Card */}
+            {property.analytics && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Property Analytics
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <Eye className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.views || 0}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Views</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <MessageCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.inquiries || 0}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Inquiries</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <Heart className="w-5 h-5 text-red-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.favorites || 0}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Favorites</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <Share2 className="w-5 h-5 text-purple-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-gray-800 dark:text-white">{property.analytics.shares || 0}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Shares</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Additional Info Card */}
+            {(property.availableFrom || property.financial?.deposit || property.inclusions || property.exclusions) && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Additional Information
+                </h3>
+
+                <div className="space-y-3">
+                  {property.availableFrom && (
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <Clock className="w-4 h-4" /> Available From
+                      </span>
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        {new Date(property.availableFrom).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {property.financial?.deposit && property.financial.deposit > 0 && (
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <Shield className="w-4 h-4" /> Security Deposit
+                      </span>
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        {formatPrice({ amount: property.financial.deposit, currency: property.price?.currency || 'USD', negotiable: false })}
+                      </span>
+                    </div>
+                  )}
+                  {property.financial?.maintenanceCharges && property.financial.maintenanceCharges > 0 && (
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" /> Maintenance
+                      </span>
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        {formatPrice({ amount: property.financial.maintenanceCharges, currency: property.price?.currency || 'USD', negotiable: false })}/mo
+                      </span>
+                    </div>
+                  )}
+                  {property.inclusions && (
+                    <div className="py-2 border-b border-gray-100 dark:border-gray-800">
+                      <span className="text-gray-500 dark:text-gray-400 text-sm">Inclusions</span>
+                      <p className="font-medium text-gray-800 dark:text-white mt-1">{property.inclusions}</p>
+                    </div>
+                  )}
+                  {property.exclusions && (
+                    <div className="py-2">
+                      <span className="text-gray-500 dark:text-gray-400 text-sm">Exclusions</span>
+                      <p className="font-medium text-gray-800 dark:text-white mt-1">{property.exclusions}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+              <p>Listed: {new Date(property.createdAt).toLocaleDateString()}</p>
+              <p>Last Updated: {new Date(property.updatedAt).toLocaleDateString()}</p>
+              {property.propertyId && <p>ID: {property.propertyId}</p>}
+            </div>
           </div>
         </div>
-      </div>
+      ) : activeTab === 'virtual-tour' ? (
+        <VirtualTourManagerPanel
+          propertyId={id || ''}
+          tour={defaultVirtualTour}
+          onApprove={() => console.log('Tour approved')}
+          onMarkReady={() => console.log('Tour active')}
+        />
+      ) : (
+        <StreetViewPanel propertyId={id || ''} />
+      )}
 
       {/* Image Modal */}
       <AnimatePresence>
@@ -899,7 +961,7 @@ const PropertyView = () => {
         onClose={hideToast}
         duration={3000}
       />
-    </div>
+    </div >
   );
 };
 
