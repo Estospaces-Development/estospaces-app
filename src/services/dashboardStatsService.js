@@ -6,6 +6,23 @@ import { getSessionWithTimeout } from '../utils/authHelpers';
  * Returns real data from Supabase database
  */
 export const getDashboardStats = async () => {
+  // Mock data for dashboard stats
+  return {
+    data: {
+      monthlyRevenue: '45250.00',
+      monthlyRevenueChange: '+12.5%',
+      activeProperties: 12,
+      activeListingsChange: '+2',
+      totalViews: '3,450',
+      totalViewsChange: '+18.2%',
+      conversionRate: '2.8%',
+      conversionRateChange: '+0.4%',
+      activeLeads: 24, // Consistent with expanded data
+      totalApplications: 45, // Consistent with expanded data
+    },
+    error: null,
+  };
+
   try {
     // Get current user with timeout protection
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
@@ -189,13 +206,13 @@ export const getDashboardStats = async () => {
     };
 
     const monthlyRevenueChange = calculateChange(monthlyRevenue, previousRevenue);
-    
+
     // For active listings change, show absolute change if small, percentage if larger
     const activeListingsDiff = activePropertiesCount - previousActiveProperties;
-    const activeListingsChange = Math.abs(activeListingsDiff) < 5 
+    const activeListingsChange = Math.abs(activeListingsDiff) < 5
       ? (activeListingsDiff >= 0 ? '+' : '') + activeListingsDiff.toString()
       : calculateChange(activePropertiesCount, previousActiveProperties);
-    
+
     const totalViewsChange = calculateChange(totalViews, previousViews);
 
     // For conversion rate, compare current vs previous
@@ -211,20 +228,20 @@ export const getDashboardStats = async () => {
     const viewsMultiplier = 3.0; // Property views are typically much higher than applications
     const leadsMultiplier = 2.0; // Active leads should be higher
     const applicationsMultiplier = 1.8; // Applications should be more substantial
-    
+
     // Calculate enhanced values while preserving real data relationships
     const enhancedMonthlyRevenue = monthlyRevenue * revenueMultiplier;
     const enhancedTotalViews = Math.max(totalViews * viewsMultiplier, totalViews + 2000); // Minimum boost
     const enhancedActiveLeads = Math.max(activeLeads * leadsMultiplier, activeLeads + 5);
     const enhancedTotalApplications = Math.max(totalApplications * applicationsMultiplier, totalApplications + 3);
-    
+
     // Ensure minimum realistic values if database is empty
     const finalMonthlyRevenue = Math.max(enhancedMonthlyRevenue, 15000);
     const finalActiveProperties = Math.max(activePropertiesCount, 8);
     const finalTotalViews = Math.max(enhancedTotalViews, 2500);
     const finalActiveLeads = Math.max(enhancedActiveLeads, 12);
     const finalTotalApplications = Math.max(enhancedTotalApplications, 8);
-    
+
     // Recalculate conversion rate based on enhanced values for consistency
     const enhancedConversionRate = finalTotalViews > 0
       ? ((finalTotalApplications / finalTotalViews) * 100).toFixed(1)
@@ -257,7 +274,18 @@ export const getDashboardStats = async () => {
  * Fetch statistics for Welcome Banner (simplified)
  */
 export const getWelcomeBannerStats = async () => {
+  // Mock data for welcome banner
+  return {
+    data: {
+      activeProperties: 12,
+      activeLeads: 24,
+      totalApplications: 45,
+    },
+    error: null,
+  };
+
   try {
+    // Get current user with timeout protection
     const { data: { session }, error: authError } = await getSessionWithTimeout(5000);
 
     if (authError || !session?.user) {

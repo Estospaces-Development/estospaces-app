@@ -10,34 +10,34 @@ export const getAnalyticsData = async () => {
   return {
     data: {
       propertyPerformance: [
-        { property: 'Sunset Villa', views: 1245, applications: 15, conversionRate: 1.2 },
-        { property: 'Downtown Loft', views: 980, applications: 24, conversionRate: 2.4 },
-        { property: 'Green Heights', views: 850, applications: 12, conversionRate: 1.4 },
-        { property: 'Luxury Penthouse', views: 2400, applications: 35, conversionRate: 1.5 },
-        { property: 'Cozy Cottage', views: 450, applications: 8, conversionRate: 1.8 }
+        { property: 'Sunset Villa', views: 1245, applications: 25, conversionRate: 2.1 },
+        { property: 'Downtown Loft', views: 980, applications: 32, conversionRate: 3.3 },
+        { property: 'Green Heights', views: 850, applications: 18, conversionRate: 2.1 },
+        { property: 'Luxury Penthouse', views: 2400, applications: 45, conversionRate: 1.9 },
+        { property: 'Cozy Cottage', views: 450, applications: 12, conversionRate: 2.7 }
       ],
       applicationsByProperty: [
-        { label: 'Luxury Penthouse', value: 35 },
-        { label: 'Downtown Loft', value: 24 },
-        { label: 'Sunset Villa', value: 15 },
-        { label: 'Green Heights', value: 12 },
-        { label: 'Cozy Cottage', value: 8 }
+        { label: 'Luxury Penthouse', value: 45 },
+        { label: 'Downtown Loft', value: 32 },
+        { label: 'Sunset Villa', value: 25 },
+        { label: 'Green Heights', value: 18 },
+        { label: 'Cozy Cottage', value: 12 }
       ],
       revenueTrend: [
-        { label: 'Jan', value: 25 },
-        { label: 'Feb', value: 32 },
-        { label: 'Mar', value: 28 },
-        { label: 'Apr', value: 45 },
-        { label: 'May', value: 40 },
-        { label: 'Jun', value: 55 }
+        { label: 'Jan', value: 38 },
+        { label: 'Feb', value: 42 },
+        { label: 'Mar', value: 35 },
+        { label: 'Apr', value: 55 },
+        { label: 'May', value: 48 },
+        { label: 'Jun', value: 65 }
       ],
       monthlyApplicationsTrend: [
-        { label: 'Jan', value: 12 },
-        { label: 'Feb', value: 19 },
-        { label: 'Mar', value: 15 },
-        { label: 'Apr', value: 25 },
-        { label: 'May', value: 22 },
-        { label: 'Jun', value: 30 }
+        { label: 'Jan', value: 18 },
+        { label: 'Feb', value: 24 },
+        { label: 'Mar', value: 20 },
+        { label: 'Apr', value: 35 },
+        { label: 'May', value: 28 },
+        { label: 'Jun', value: 42 }
       ],
       leadAnalytics: {
         totalLeads: 247,
