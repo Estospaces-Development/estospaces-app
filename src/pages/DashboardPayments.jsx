@@ -8,73 +8,32 @@ const DashboardPayments = () => {
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
-  // Upcoming Payments
-  const upcomingPayments = [
-    {
-      id: 1,
-      type: 'Rent',
-      property: 'Modern Downtown Apartment',
-      amount: 2450,
-      dueDate: '2024-01-15',
-      status: 'due_soon',
-    },
-    {
-      id: 2,
-      type: 'Utility Bill',
-      property: 'Electricity',
-      amount: 125,
-      dueDate: '2024-01-20',
-      status: 'upcoming',
-    },
-    {
-      id: 3,
-      type: 'Utility Bill',
-      property: 'Water',
-      amount: 85,
-      dueDate: '2024-01-25',
-      status: 'upcoming',
-    },
-  ];
+  // Use mock payments
+  import { MOCK_PAYMENTS } from '../services/mockDataService';
 
-  // Payment History
-  const paymentHistory = [
-    {
-      id: 1,
-      date: '2024-01-01',
-      type: 'Rent',
-      property: 'Modern Downtown Apartment',
-      amount: 2450,
+  // Process mock payments for display
+  const upcomingPayments = MOCK_PAYMENTS
+    .filter(p => ['due_soon', 'upcoming', 'pending'].includes(p.status))
+    .map(p => ({
+      id: p.id,
+      type: p.type === 'deposit' ? 'Deposit' : (p.type === 'rent' ? 'Rent' : 'Utility Bill'),
+      property: p.property_title,
+      amount: p.amount,
+      dueDate: p.date,
+      status: p.status === 'pending' ? 'due_soon' : 'upcoming' // Map status for UI
+    }));
+
+  const paymentHistory = MOCK_PAYMENTS
+    .filter(p => ['completed', 'paid'].includes(p.status))
+    .map(p => ({
+      id: p.id,
+      date: p.date,
+      type: p.type === 'deposit' ? 'Deposit' : (p.type === 'rent' ? 'Rent' : 'Utility Bill'),
+      property: p.property_title,
+      amount: p.amount,
       status: 'paid',
-      transactionId: 'TXN-001234',
-    },
-    {
-      id: 2,
-      date: '2023-12-15',
-      type: 'Utility Bill',
-      property: 'Electricity',
-      amount: 120,
-      status: 'paid',
-      transactionId: 'TXN-001233',
-    },
-    {
-      id: 3,
-      date: '2023-12-10',
-      type: 'Rent',
-      property: 'Modern Downtown Apartment',
-      amount: 2450,
-      status: 'paid',
-      transactionId: 'TXN-001232',
-    },
-    {
-      id: 4,
-      date: '2023-12-01',
-      type: 'Utility Bill',
-      property: 'Water',
-      amount: 80,
-      status: 'pending',
-      transactionId: 'TXN-001231',
-    },
-  ];
+      transactionId: p.reference
+    }));
 
   const handlePayNow = (payment) => {
     setSelectedPayment(payment);

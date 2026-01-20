@@ -6,10 +6,19 @@ import { useAuth } from '../../contexts/AuthContext';
  * 
  * A simplified protected route that relies solely on AuthContext.
  * No duplicate session checks or auth listeners.
+ * 
+ * DEVELOPMENT MODE: Auth check is bypassed to allow testing without Supabase.
  */
 const UserProtectedRoute = ({ children }) => {
     const location = useLocation();
     const { isAuthenticated, loading, isSupabaseConfigured, authState } = useAuth();
+
+    // DEVELOPMENT BYPASS: Skip all auth checks and allow access
+    // Remove or comment out this block when you want to re-enable authentication
+    if (import.meta.env.DEV) {
+        console.log('🔓 UserProtectedRoute: Development bypass mode - allowing access');
+        return children;
+    }
 
     // If Supabase is not configured, redirect to login
     if (!isSupabaseConfigured) {

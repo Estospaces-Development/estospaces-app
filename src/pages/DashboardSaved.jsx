@@ -5,9 +5,15 @@ import PropertyCard from '../components/Dashboard/PropertyCard';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
+import { MOCK_SAVED_PROPERTIES } from '../services/mockDataService';
+
 const DashboardSaved = () => {
-  const { savedProperties, removeProperty } = useSavedProperties();
+  const { savedProperties: contextSavedProperties, removeProperty } = useSavedProperties();
   const navigate = useNavigate();
+
+  // Use mock properties if context is empty (or force use for this task)
+  // For the purpose of "making it work with mock data", we'll combine them or prioritize mock
+  const savedProperties = contextSavedProperties.length > 0 ? contextSavedProperties : MOCK_SAVED_PROPERTIES;
 
   const handleViewDetails = (property) => {
     navigate(`/user/dashboard/property/${property.id}`);

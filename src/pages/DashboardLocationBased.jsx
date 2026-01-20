@@ -17,6 +17,7 @@ import { useUserLocation } from '../contexts/LocationContext';
 import { useProperties } from '../contexts/PropertiesContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
+import { MOCK_PROPERTIES } from '../services/mockDataService';
 import BrokerRequestWidget from '../components/Dashboard/BrokerRequestWidget';
 import ApplicationTimelineWidget from '../components/Dashboard/ApplicationTimelineWidget';
 
@@ -103,8 +104,6 @@ const DashboardLocationBased = () => {
 
   // Fetch all discovery sections based on location
   const fetchAllDiscoverySections = useCallback(async (location, showLoading = true) => {
-    if (!location) return;
-
     if (showLoading) {
       setLoading(true);
       setLoadingDiscovery(true);
@@ -116,81 +115,23 @@ const DashboardLocationBased = () => {
     setError(null);
     setLocationMessage(null);
 
-    try {
-      // Fetch all sections in parallel for better performance
-      const [
-        discoveryResult,
-        mostViewedResult,
-        trendingResult,
-        recentlyAddedResult,
-        highDemandResult,
-      ] = await Promise.all([
-        propertyDataService.getPropertyDiscovery({ location, limit: 8, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getMostViewedProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getTrendingProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getRecentlyAddedProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getHighDemandProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-      ]);
+    // Simulate network delay
+    setTimeout(() => {
+      // Use Mock Data
+      const mockProps = MOCK_PROPERTIES;
 
-      // Update state for each section
-      setDiscoveryProperties(discoveryResult.properties || []);
-      setMostViewedProperties(mostViewedResult.properties || []);
-      setTrendingProperties(trendingResult.properties || []);
-      setRecentlyAddedProperties(recentlyAddedResult.properties || []);
-      setHighDemandProperties(highDemandResult.properties || []);
-
-      // Calculate total properties count
-      const totalCount =
-        (discoveryResult.properties?.length || 0) +
-        (mostViewedResult.properties?.length || 0) +
-        (trendingResult.properties?.length || 0) +
-        (recentlyAddedResult.properties?.length || 0) +
-        (highDemandResult.properties?.length || 0);
+      // Distribute mock properties across sections
+      setDiscoveryProperties(mockProps);
+      setMostViewedProperties(mockProps.slice(0, 4));
+      setTrendingProperties(mockProps.slice(2, 6));
+      setRecentlyAddedProperties(mockProps.slice(0, 3));
+      setHighDemandProperties(mockProps.slice(3, 7));
 
       setStats(prev => ({
         ...prev,
-        totalProperties: totalCount,
+        totalProperties: mockProps.length,
       }));
 
-      // If no properties found, try fallback
-      if (totalCount === 0) {
-        const fallbackResult = await propertyDataService.fetchPropertiesWithFallback({
-          location,
-          radius: 5,
-          maxRadius: 20,
-          listingStatus: 'both',
-          userId: currentUser?.id,
-        });
-
-        if (fallbackResult.properties && fallbackResult.properties.length > 0) {
-          // Distribute fallback properties across sections
-          const fallbackProps = fallbackResult.properties;
-          setDiscoveryProperties(fallbackProps.slice(0, 8));
-          setMostViewedProperties(fallbackProps.slice(0, 6));
-          setTrendingProperties(fallbackProps.slice(0, 6));
-          setRecentlyAddedProperties(fallbackProps.slice(0, 6));
-          setHighDemandProperties(fallbackProps.slice(0, 6));
-          setLocationMessage(fallbackResult.message || 'Showing similar properties near your search area.');
-          setStats(prev => ({
-            ...prev,
-            totalProperties: fallbackProps.length,
-          }));
-        } else {
-          setLocationMessage('No properties found in this area or nearby. Please try a different location.');
-        }
-      }
-    } catch (err) {
-      // Log error (production: use proper error tracking)
-      if (import.meta.env.DEV) {
-        console.error('Error fetching discovery sections:', err);
-      }
-      setError(err.message || 'Failed to load properties. Please check your connection and try again.');
-    } finally {
       if (showLoading) {
         setLoading(false);
         setLoadingDiscovery(false);
@@ -199,8 +140,8 @@ const DashboardLocationBased = () => {
         setLoadingRecentlyAdded(false);
         setLoadingHighDemand(false);
       }
-    }
-  }, [currentUser]);
+    }, 800);
+  }, []);
 
   // State for filter dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -712,76 +653,65 @@ const DashboardLocationBased = () => {
 
       {/* Quick Action CTAs - Property Tech Style (hidden when showing filtered results) */}
       {!showFilteredResults && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 10-Minute Broker Request Widget */}
+        <>
+          {/* PROMINENT: 10-Minute Broker Response - Full Width Banner */}
           <BrokerRequestWidget />
 
-          <button
-            onClick={() => {
-              setActiveTab('buy');
-              navigate('/user/dashboard/discover?tab=buy');
-            }}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-500/25">
-              <Building2 size={24} className="text-white" strokeWidth={1.5} />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Buy Property</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Find your dream home</p>
-            <span className="text-violet-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              Browse <ArrowRight size={14} />
-            </span>
-          </button>
+          {/* Quick Action Cards Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => {
+                setActiveTab('buy');
+                navigate('/user/dashboard/discover?tab=buy');
+              }}
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+            >
+              <div className="p-3.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-500/25">
+                <Building2 size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Buy Property</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Find your dream home</p>
+              <span className="text-violet-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Browse <ArrowRight size={14} />
+              </span>
+            </button>
 
-          <button
-            onClick={() => {
-              setActiveTab('rent');
-              navigate('/user/dashboard/discover?tab=rent');
-            }}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-cyan-500/25">
-              <Key size={24} className="text-white" strokeWidth={1.5} />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Rent Property</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Explore rentals</p>
-            <span className="text-cyan-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              Explore <ArrowRight size={14} />
-            </span>
-          </button>
+            <button
+              onClick={() => {
+                setActiveTab('rent');
+                navigate('/user/dashboard/discover?tab=rent');
+              }}
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+            >
+              <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-cyan-500/25">
+                <Key size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Rent Property</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Explore rentals</p>
+              <span className="text-cyan-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Explore <ArrowRight size={14} />
+              </span>
+            </button>
 
-          <button
-            onClick={() => navigate('/user/dashboard/saved')}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
-              <Bookmark size={24} className="text-white" strokeWidth={1.5} />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
-            <span className="text-rose-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              View All <ArrowRight size={14} />
-            </span>
-          </button>
+            <button
+              onClick={() => navigate('/user/dashboard/saved')}
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+            >
+              <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
+                <Bookmark size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
+              <span className="text-rose-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                View All <ArrowRight size={14} />
+              </span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => navigate('/user/dashboard/applications')}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/25">
-              <ClipboardList size={24} className="text-white" strokeWidth={1.5} />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Applications</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Track progress</p>
-            <span className="text-teal-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              Manage <ArrowRight size={14} />
-            </span>
-          </button>
-        </div>
+          {/* Real-Time Application Monitoring - Prominent Main Card */}
+          <ApplicationTimelineWidget />
+        </>
       )}
-
-      {/* Real-Time Application Monitoring */}
-      <ApplicationTimelineWidget />
 
       {/* Filtered Properties Results */}
       {showFilteredResults && (

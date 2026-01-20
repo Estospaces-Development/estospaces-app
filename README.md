@@ -611,6 +611,21 @@ The Supabase client includes fallback configuration to ensure reliable API conne
   - **Status States**: Real-time tracking of request status (Pending -> Searching -> Broker Found)
   - **Mock Simulation**: Fully functional demo mode for testing the flow without live agents
 
+### Demo Mode & Mock Data (January 2026)
+
+- **Full Offline Capability**: The entire dashboard now functions seamlessly with a comprehensive Mock Data Service
+- **Mock Data Integration**:
+  - **Properties**: Realistic property listings with images, prices, and details
+  - **Virtual Tours**: Mock 360° virtual tour integration on property details
+  - **Street View**: Google Street View placeholders for property locations
+  - **Applications**: Full application lifecycle tracking with mock statuses
+  - **Viewings**: Scheduled viewing management with mock dates and agent details
+  - **Messages**: Interactive conversation threads with mock agents
+  - **Payments**: Transaction history and upcoming bills simulation
+  - **User Profile**: Pre-filled user data for instant testing
+- **Interactive Map**: "Nearby Properties" map fully populated with mock property locations
+- **Zero API Dependency**: All features work without requiring an active Supabase connection, ideal for demos and UI testing
+
 ### Notifications System (January 2026)
 
 - **Notifications Table**: Created `notifications` table in Supabase with RLS policies

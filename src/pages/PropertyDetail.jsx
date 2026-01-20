@@ -75,7 +75,7 @@ const PropertyDetail = () => {
   const { user } = useAuth();
   const [showVirtualTour, setShowVirtualTour] = useState(false);
 
-  // Fetch real property data
+  // Fetch mock property data
   useEffect(() => {
     const fetchProperty = async () => {
       if (!id) {
@@ -88,30 +88,26 @@ const PropertyDetail = () => {
       setError(null);
 
       try {
-        const result = await propertyDataService.getPropertyById(id, currentUser?.id);
+        // Use Mock Data Service
+        // Import dynamically to avoid circular dependencies if any
+        const { getPropertyById } = await import('../services/mockDataService');
+        const mockProperty = getPropertyById(id);
 
-        if (result.error) {
-          setError(result.error.message || 'Failed to load property');
-          setLoading(false);
-          return;
-        }
-
-        if (result.data) {
-          setProperty(result.data);
-          // Track view is already handled in getPropertyById
+        if (mockProperty) {
+          setProperty(mockProperty);
         } else {
           setError('Property not found');
         }
       } catch (err) {
         console.error('Error fetching property:', err);
-        setError(err.message || 'Failed to load property');
+        setError('Failed to load property');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperty();
-  }, [id, currentUser]);
+  }, [id]);
 
   // Check if purchase action is requested
   useEffect(() => {
@@ -724,6 +720,29 @@ const PropertyDetail = () => {
                 <p className="text-gray-500 dark:text-gray-400">Virtual tour not available for this property</p>
               </div>
             )}
+          </div>
+
+          {/* Google Street View Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 mb-4">Neighborhood Street View</h2>
+            <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg overflow-hidden relative">
+              {property.street_view_lat && property.street_view_lng ? (
+                <iframe
+                  title="Street View"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  src={`https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d${property.street_view_lat}!2d${property.street_view_lng}!3f270!4f0!5f0.7820865974627469`}
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <MapPin size={40} className="mb-2 opacity-50" />
+                  <p>StreetView preview not available</p>
+                </div>
+              )}
+            </div>
           </div>
 
 

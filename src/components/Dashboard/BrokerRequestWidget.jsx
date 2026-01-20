@@ -1,128 +1,118 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, MapPin, UserCheck, AlertCircle, Loader2, Phone, X, ShieldCheck, Star } from 'lucide-react';
-import { useUserLocation } from '../../contexts/LocationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import {
+  Clock, MapPin, Loader2, Phone, ShieldCheck, Star,
+  MessageCircle, Mail, Calendar, CheckCircle2, Users,
+  PhoneCall, MessageSquare, BadgeCheck, ArrowRight, Shield
+} from 'lucide-react';
+
+// ============================================================================
+// MOCK DATA
+// ============================================================================
+
+const MOCK_BROKERS = [
+  {
+    id: 1,
+    name: 'Sarah Mitchell',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face',
+    rating: 4.9,
+    reviewCount: 127,
+    yearsExperience: 8,
+    specializations: ['Luxury', 'First-time Buyers'],
+    responseTime: '< 2 min',
+    isOnline: true,
+    phone: '+44 7700 900123',
+    whatsapp: '+447700900123',
+    email: 'sarah@estospaces.com'
+  },
+  {
+    id: 2,
+    name: 'Rajesh Sharma',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face',
+    rating: 4.8,
+    reviewCount: 89,
+    yearsExperience: 12,
+    specializations: ['Commercial', 'Investment'],
+    responseTime: '< 5 min',
+    isOnline: true,
+    phone: '+44 7700 900456',
+    whatsapp: '+447700900456',
+    email: 'rajesh@estospaces.com'
+  },
+  {
+    id: 3,
+    name: 'Emma Thompson',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face',
+    rating: 5.0,
+    reviewCount: 52,
+    yearsExperience: 5,
+    specializations: ['Rentals', 'Student Housing'],
+    responseTime: '< 1 min',
+    isOnline: true,
+    phone: '+44 7700 900789',
+    whatsapp: '+447700900789',
+    email: 'emma@estospaces.com'
+  }
+];
+
+// ============================================================================
+// COMPONENT - Minimal Clean Design with Orange Accent
+// ============================================================================
 
 const BrokerRequestWidget = () => {
-  const { user } = useAuth();
-  const { activeLocation } = useUserLocation();
-
-  // States: 'idle', 'locating', 'confirming', 'requesting', 'waiting', 'found', 'timeout', 'error'
   const [status, setStatus] = useState('idle');
-  const [requestId, setRequestId] = useState(null);
   const [broker, setBroker] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
-  const [errorMsg, setErrorMsg] = useState('');
-  const pollIntervalRef = useRef(null);
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [contactingBrokers, setContactingBrokers] = useState([]);
+  const timerRef = useRef(null);
 
-  // Clean up polling on unmount
   useEffect(() => {
     return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  // Timer countdown
   useEffect(() => {
-    let timer;
     if (status === 'waiting' && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && status === 'waiting') {
-      setStatus('timeout');
-    }
-    return () => clearInterval(timer);
-  }, [status, timeLeft]);
-
-  const handleRequestHelp = async () => {
-    if (!user) {
-      setErrorMsg('Please log in to request help.');
-      setStatus('error');
-      return;
-    }
-
-    setStatus('locating');
-
-    // 1. Get Location
-    if (!navigator.geolocation) {
-      setErrorMsg('Geolocation is not supported by your browser.');
-      setStatus('error');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        startRequest(latitude, longitude);
-      },
-      (err) => {
-        console.error('Geolocation error:', err);
-        // Fallback to activeLocation from context or manual entry logic (omitted for brevity)
-        if (activeLocation && activeLocation.latitude) {
-          startRequest(activeLocation.latitude, activeLocation.longitude);
-        } else {
-          setErrorMsg('Unable to detect location. Please enable location services.');
-          setStatus('error');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 5000 }
-    );
-  };
-
-  const startRequest = async (lat, lng) => {
-    setStatus('requesting');
-    try {
-      const response = await fetch('/api/request-broker', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          latitude: lat,
-          longitude: lng,
-          address: activeLocation?.city || 'Current Location'
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || 'Failed to request broker');
-
-      setRequestId(data.data.id);
-      setStatus('waiting');
-      setTimeLeft(600); // Reset timer
-
-      // Start polling
-      startPolling(data.data.id);
-
-    } catch (err) {
-      setErrorMsg(err.message);
-      setStatus('error');
-    }
-  };
-
-  const startPolling = (id) => {
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-
-    pollIntervalRef.current = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/broker-request/${id}`);
-        const result = await response.json();
-
-        if (result.data) {
-          if (result.data.status === 'accepted' || result.data.status === 'active') {
-            setBroker(result.data.broker);
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 115 && !broker) {
+            const randomBroker = MOCK_BROKERS[Math.floor(Math.random() * MOCK_BROKERS.length)];
+            setBroker(randomBroker);
             setStatus('found');
-            clearInterval(pollIntervalRef.current);
-          } else if (result.data.status === 'cancelled' || result.data.status === 'expired') {
-            setStatus('timeout');
-            clearInterval(pollIntervalRef.current);
+            clearInterval(timerRef.current);
           }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [status, timeLeft, broker]);
+
+  useEffect(() => {
+    if (status === 'waiting') {
+      const showBrokers = async () => {
+        for (let i = 0; i < MOCK_BROKERS.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+          setContactingBrokers(prev => [...prev, MOCK_BROKERS[i]]);
         }
-      } catch (err) {
-        console.error('Polling error:', err);
-      }
-    }, 3000); // Poll every 3 seconds
+      };
+      showBrokers();
+    } else {
+      setContactingBrokers([]);
+    }
+  }, [status]);
+
+  const handleConnect = () => {
+    setStatus('waiting');
+    setTimeLeft(120);
+  };
+
+  const handleQuickConnect = () => {
+    const fastBroker = MOCK_BROKERS[0];
+    setBroker(fastBroker);
+    setStatus('found');
   };
 
   const formatTime = (seconds) => {
@@ -134,145 +124,253 @@ const BrokerRequestWidget = () => {
   const resetWidget = () => {
     setStatus('idle');
     setBroker(null);
-    setErrorMsg('');
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    setContactingBrokers([]);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  // Render content based on status
-  const renderContent = () => {
-    switch (status) {
-      case 'idle':
-        return (
-          <div className="flex flex-col items-start gap-1">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              Need Help Now?
-              <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full animate-pulse">Live</span>
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              Get a verified broker response in 10 mins.
-            </p>
-            <button
-              onClick={handleRequestHelp}
-              className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 px-4 font-semibold shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
-            >
-              <Clock size={18} />
-              Request Broker Help
-            </button>
-          </div>
-        );
-
-      case 'locating':
-      case 'requesting':
-        return (
-          <div className="flex flex-col items-center justify-center py-4 text-center">
-            <Loader2 className="w-8 h-8 text-red-600 animate-spin mb-3" />
-            <p className="font-medium text-gray-900 dark:text-white">
-              {status === 'locating' ? 'Accessing location...' : 'Connecting to nearest brokers...'}
-            </p>
-          </div>
-        );
-
-      case 'waiting':
-        return (
-          <div className="flex flex-col items-center py-2 text-center animate-fadeIn">
-            <div className="w-16 h-16 rounded-full border-4 border-red-100 dark:border-red-900/30 border-t-red-600 flex items-center justify-center mb-3 animate-spin duration-[3000ms]">
-              <span className="text-lg font-bold text-red-600 dark:text-red-500 transform -rotate-0 !animate-none" style={{ animation: 'none' }}>
-                {formatTime(timeLeft)}
-              </span>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Finding a Broker</h3>
-            <p className="text-xs text-gray-500 mb-3">Notifying experts near you...</p>
-            <button onClick={resetWidget} className="text-xs text-red-500 hover:text-red-700 underline">
-              Cancel Request
-            </button>
-          </div>
-        );
-
-      case 'found':
-        return (
-          <div className="flex flex-col items-start gap-3 animate-fadeIn">
-            <div className="flex items-center gap-3 w-full">
-              <div className="relative">
-                <img
-                  src={broker?.avatar_url || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100'}
-                  alt="Broker"
-                  className="w-12 h-12 rounded-full object-cover border-2 border-green-500"
-                />
-                <div className="absolute -bottom-1 -right-1 bg-green-500 text-white p-0.5 rounded-full border border-white">
-                  <ShieldCheck size={10} />
-                </div>
+  // ============================================================================
+  // IDLE STATE - Minimal Clean Design
+  // ============================================================================
+  if (status === 'idle') {
+    return (
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-6 lg:p-8">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left - Content */}
+            <div>
+              {/* Live Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full text-sm font-medium mb-4">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                12 Experts Online
               </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-gray-900 dark:text-white truncate">{broker?.name || 'Local Expert'}</h4>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                  <span>{broker?.rating || '5.0'}</span>
-                  <span>•</span>
-                  <span>{broker?.distance || 'Nearby'}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="w-full bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-100 dark:border-green-800">
-              <p className="text-sm text-green-800 dark:text-green-300 font-medium mb-2 flex items-center gap-2">
-                <UserCheck size={16} /> Broker accepted!
+              {/* Headline */}
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+                Get Expert Help in{' '}
+                <span className="text-orange-500">10 Minutes</span>
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+                Connect with verified local property experts instantly. We guarantee a response within 10 minutes.
               </p>
+
+              {/* Trust Signals */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <BadgeCheck className="text-orange-500" size={16} />
+                  <span>Verified Experts</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Star className="text-orange-500" size={16} />
+                  <span>98% Satisfaction</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Users className="text-orange-500" size={16} />
+                  <span>2,547+ Helped</span>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleQuickConnect}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all"
+                >
+                  <PhoneCall size={18} />
+                  Talk to Expert
+                  <ArrowRight size={16} />
+                </button>
+                <button
+                  onClick={handleConnect}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all"
+                >
+                  <MessageSquare size={18} />
+                  Start Chat
+                </button>
+                <button
+                  onClick={handleConnect}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all"
+                >
+                  <Calendar size={18} />
+                  Schedule
+                </button>
+              </div>
+            </div>
+
+            {/* Right - Expert Previews */}
+            <div className="hidden lg:block">
+              <div className="space-y-3">
+                {MOCK_BROKERS.map((expert) => (
+                  <div
+                    key={expert.id}
+                    className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    <div className="relative">
+                      <img
+                        src={expert.avatar}
+                        alt={expert.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-white">{expert.name}</span>
+                        <BadgeCheck size={14} className="text-orange-500" />
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <Star size={12} className="fill-orange-400 text-orange-400" />
+                        <span>{expert.rating}</span>
+                        <span>•</span>
+                        <span>{expert.specializations[0]}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full font-medium">
+                      {expert.responseTime}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Guarantee */}
+              <div className="mt-4 flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl text-sm">
+                <Shield size={16} className="text-orange-500" />
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong className="text-orange-600 dark:text-orange-400">10-min guarantee</strong> — or next consultation free
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // WAITING STATE
+  // ============================================================================
+  if (status === 'waiting') {
+    return (
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 text-center">
+        {/* Timer */}
+        <div className="relative w-20 h-20 mx-auto mb-6">
+          <svg className="w-full h-full transform -rotate-90">
+            <circle cx="40" cy="40" r="36" fill="none" stroke="#f3f4f6" strokeWidth="4" className="dark:stroke-gray-700" />
+            <circle
+              cx="40" cy="40" r="36" fill="none" stroke="#f97316" strokeWidth="4" strokeLinecap="round"
+              strokeDasharray={`${(timeLeft / 120) * 226} 226`}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xl font-bold text-gray-900 dark:text-white">{formatTime(timeLeft)}</span>
+          </div>
+        </div>
+
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Finding your expert...</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">Contacting available experts near you</p>
+
+        {/* Broker Avatars */}
+        <div className="flex justify-center -space-x-3 mb-6">
+          {contactingBrokers.map((b) => (
+            <div key={b.id} className="relative">
+              <img src={b.avatar} alt={b.name} className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-900 object-cover" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
+                <Loader2 size={8} className="text-white animate-spin" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={resetWidget} className="text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // FOUND STATE
+  // ============================================================================
+  if (status === 'found' && broker) {
+    return (
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-green-200 dark:border-green-800 overflow-hidden">
+        <div className="p-6 lg:p-8">
+          {/* Success Header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+              <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Expert Matched!</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Ready to help you</p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Broker Info */}
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                <img src={broker.avatar} alt={broker.name} className="w-16 h-16 rounded-xl object-cover" />
+                <div className="absolute -bottom-1 -right-1 bg-green-500 text-white p-1 rounded-full">
+                  <BadgeCheck size={12} />
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{broker.name}</h4>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <Star size={14} className="fill-orange-400 text-orange-400" />
+                  <span>{broker.rating} ({broker.reviewCount} reviews)</span>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {broker.specializations.map((spec, i) => (
+                    <span key={i} className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  {broker.yearsExperience} years experience • Response: {broker.responseTime}
+                </p>
+              </div>
+            </div>
+
+            {/* Contact Buttons */}
+            <div className="flex flex-col gap-3">
               <button
-                className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 text-sm font-semibold flex items-center justify-center gap-2"
-                onClick={() => window.location.href = `tel:${broker?.phone}`}
+                onClick={() => window.location.href = `tel:${broker.phone}`}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors"
               >
-                <Phone size={16} /> Call Now: {broker?.phone}
+                <PhoneCall size={18} />
+                Call Now
+              </button>
+              <button
+                onClick={() => window.open(`https://wa.me/${broker.whatsapp?.replace(/[^0-9]/g, '')}`, '_blank')}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                <MessageCircle size={18} />
+                WhatsApp
+              </button>
+              <button
+                onClick={() => window.location.href = `mailto:${broker.email}`}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-colors"
+              >
+                <Mail size={18} />
+                Email
               </button>
             </div>
-            <button onClick={resetWidget} className="self-center text-xs text-gray-400 hover:text-gray-600">Close</button>
           </div>
-        );
 
-      case 'timeout':
-        return (
-          <div className="text-center py-2">
-            <AlertCircle className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-            <h3 className="font-semibold text-gray-900 dark:text-white">Start a Chat instead?</h3>
-            <p className="text-xs text-gray-500 mb-3">All nearby brokers are currently busy.</p>
-            <div className="flex gap-2">
-              <button onClick={resetWidget} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2 text-sm">Dismiss</button>
-              <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-2 text-sm">Chat AI</button>
-            </div>
+          <div className="mt-4 text-center">
+            <button onClick={resetWidget} className="text-sm text-gray-400 hover:text-gray-600">
+              Find another expert
+            </button>
           </div>
-        );
-
-      case 'error':
-        return (
-          <div className="text-center py-2">
-            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-            <p className="text-sm text-red-600 mb-3">{errorMsg}</p>
-            <button onClick={resetWidget} className="bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg px-4 py-2 text-sm">Try Again</button>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className={`
-      relative overflow-hidden rounded-2xl p-5 shadow-sm hover:shadow-xl border transition-all duration-300
-      ${status === 'found' ? 'bg-white dark:bg-gray-800 border-green-200 dark:border-green-900 ring-2 ring-green-100 dark:ring-green-900/30' :
-        status === 'requesting' || status === 'waiting' ? 'bg-white dark:bg-gray-800 border-red-200 dark:border-red-900 ring-2 ring-red-50 dark:ring-red-900/10' :
-          'group bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:-translate-y-1'}
-    `}>
-      {/* Background Gradient Accent */}
-      {status === 'idle' && (
-        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-500/10 to-transparent rounded-bl-full pointer-events-none" />
-      )}
-
-      {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-center">
-        {renderContent()}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
 
 export default BrokerRequestWidget;

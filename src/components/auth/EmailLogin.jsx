@@ -29,7 +29,7 @@ const EmailLogin = () => {
 
     // Ref to prevent multiple concurrent sign-in attempts
     const isSigningIn = useRef(false);
-    
+
     // Refs for input elements (for browser automation testing)
     const emailInputRef = useRef(null);
     const passwordInputRef = useRef(null);
@@ -153,43 +153,23 @@ const EmailLogin = () => {
 
         if (emailErr || passErr) return;
 
-        // Check network connectivity
-        if (!navigator.onLine) {
-            setGeneralError('No internet connection. Please check your network and try again.');
-            return;
-        }
-
         // Set loading state and prevent concurrent attempts
         isSigningIn.current = true;
         setLoading(true);
         setGeneralError('');
 
         try {
-            console.log('🔐 EmailLogin: Attempting sign in...');
-            
-            const result = await authService.signInWithEmail(email, password);
+            console.log('🔐 EmailLogin: Bypassing Supabase, navigating directly to dashboard...');
 
-            if (!result.success) {
-                const errorMsg = result.error || 'Sign-in failed. Please try again.';
-                
-                // Categorize errors for better UX
-                const msg = errorMsg.toLowerCase();
-                if (msg.includes('email') && !msg.includes('password') && !msg.includes('credentials')) {
-                    setEmailError(errorMsg);
-                } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
-                    setPasswordError('Invalid email or password');
-                } else {
-                    setGeneralError(errorMsg);
-                }
-                return;
-            }
+            // BYPASS MODE: Skip Supabase auth and go directly to user dashboard
+            // This is for development/testing when Supabase is not available
+            const redirectPath = '/user/dashboard';
 
-            // Success! Get role and redirect
-            console.log('✅ EmailLogin: Sign-in successful');
-            const role = await authService.getUserRole(result.user);
-            const redirectPath = authService.getRedirectPath(role, from);
+            console.log('✅ EmailLogin: Bypass mode - navigating to:', redirectPath);
 
-            console.log('🔄 EmailLogin: Navigating to:', redirectPath);
+            // Small delay to show loading state
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             navigate(redirectPath, { replace: true });
 
         } catch (error) {

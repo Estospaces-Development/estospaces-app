@@ -99,6 +99,10 @@ function App() {
                             <Route path="/properties/search" element={<PropertySearch />} />
                             <Route path="/property/:id" element={<PropertyDetail />} />
 
+                            {/* Dashboard redirect - redirects /dashboard to /user/dashboard */}
+                            <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+                            <Route path="/dashboard/*" element={<Navigate to="/user/dashboard" replace />} />
+
                             {/* Public Pages */}
                             <Route path="/privacy" element={<PrivacyPolicy />} />
                             <Route path="/cookies" element={<CookiePolicy />} />

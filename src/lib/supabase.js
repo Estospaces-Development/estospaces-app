@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') {
         'supabase.auth.token',
         'sb-auth-token',
     ];
-    
+
     for (const oldKey of oldKeys) {
         try {
             if (localStorage.getItem(oldKey)) {
@@ -33,18 +33,21 @@ if (typeof window !== 'undefined') {
 let supabase = null;
 
 if (isSupabaseConfigured) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    // Use proxy in development to avoid CORS issues
+    const isDev = import.meta.env.DEV;
+    const clientUrl = isDev ? 'http://localhost:5173/supabase' : supabaseUrl;
+
+    // In development with proxy, we need to pass the URL explicitly
+    supabase = createClient(clientUrl, supabaseAnonKey, {
         auth: {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: true,
             // Use PKCE flow for better security and reliability with OAuth
             flowType: 'pkce',
-            // Use default storage (localStorage) and default key format
-            // This ensures consistency with Supabase v2.x default behavior
         },
     });
-    
+
     if (import.meta.env.DEV) {
         console.log('✅ Supabase client initialized');
     }
@@ -62,22 +65,22 @@ export const testSupabaseConnection = async () => {
         console.error('❌ Supabase client not initialized');
         return { connected: false, error: 'Client not initialized' };
     }
-    
+
     try {
         console.log('🔌 Testing Supabase connection...');
         const startTime = Date.now();
-        
+
         // Simple auth session check (should be fast)
         const { data, error } = await supabase.auth.getSession();
-        
+
         const duration = Date.now() - startTime;
         console.log(`⏱️ Connection test took ${duration}ms`);
-        
+
         if (error) {
             console.error('❌ Connection test failed:', error);
             return { connected: false, error: error.message, duration };
         }
-        
+
         console.log('✅ Supabase connection successful');
         return { connected: true, hasSession: !!data.session, duration };
     } catch (err) {
