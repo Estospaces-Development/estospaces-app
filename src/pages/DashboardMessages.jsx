@@ -9,12 +9,12 @@ import ConversationListSkeleton from '../components/Dashboard/Messaging/Conversa
 import ConversationThreadSkeleton from '../components/Dashboard/Messaging/ConversationThreadSkeleton';
 import NearestBrokerWidget from '../components/Dashboard/NearestBrokerWidget';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
+import { MOCK_MESSAGES } from '../services/mockDataService';
 
 const DashboardMessages = () => {
   const navigate = useNavigate();
   // Use mock data locally to bypass context for now
   // In a real scenario, useMessages would be updated to use the mock service
-  import { MOCK_MESSAGES } from '../services/mockDataService';
 
   const conversations = MOCK_MESSAGES;
   const isLoading = false;

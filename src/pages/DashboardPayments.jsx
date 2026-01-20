@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CreditCard, Calendar, CheckCircle, Clock, AlertCircle, Receipt, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
+import { MOCK_PAYMENTS } from '../services/mockDataService';
 
 const DashboardPayments = () => {
   const navigate = useNavigate();
@@ -9,7 +10,6 @@ const DashboardPayments = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
 
   // Use mock payments
-  import { MOCK_PAYMENTS } from '../services/mockDataService';
 
   // Process mock payments for display
   const upcomingPayments = MOCK_PAYMENTS
