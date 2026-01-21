@@ -1,7 +1,13 @@
 /**
  * Mock Data Service
  * Provides mock data for all dashboard features without Supabase API calls
+ *
+ * UPDATED: Uses dynamic dates via date-fns to ensure the demo always looks "live"
  */
+
+import { subDays, subHours, subMinutes, addDays, format } from 'date-fns';
+
+const NOW = new Date();
 
 // ============================================================================
 // MOCK PROPERTIES - For Buy/Rent tabs
@@ -29,7 +35,7 @@ export const MOCK_PROPERTIES = [
         latitude: 51.5074,
         longitude: -0.1878,
         view_count: 245,
-        created_at: '2024-01-15T10:00:00Z',
+        created_at: subDays(NOW, 2).toISOString(),
         features: ['Garden', 'Parking', 'Period Features', 'Recently Renovated'],
         virtual_tour_url: 'https://my.matterport.com/show/?m=SxQL3iGyvQk',
         street_view_lat: 51.5074,
@@ -57,7 +63,7 @@ export const MOCK_PROPERTIES = [
         latitude: 51.5054,
         longitude: -0.0235,
         view_count: 178,
-        created_at: '2024-01-18T14:30:00Z',
+        created_at: subHours(NOW, 4).toISOString(), // Listed 4 hours ago (Fresh!)
         features: ['River Views', 'Concierge', 'Gym', 'Parking'],
         virtual_tour_url: 'https://my.matterport.com/show/?m=iJvNfP28yz8',
         street_view_lat: 51.5054,
@@ -85,7 +91,7 @@ export const MOCK_PROPERTIES = [
         latitude: 51.8330,
         longitude: -1.8433,
         view_count: 312,
-        created_at: '2024-01-10T09:00:00Z',
+        created_at: subDays(NOW, 5).toISOString(),
         features: ['Garden', 'Fireplace', 'Period Features', 'Countryside'],
         virtual_tour_url: 'https://my.matterport.com/show/?m=Zh14WDtkjdB',
         street_view_lat: 51.8330,
@@ -112,7 +118,7 @@ export const MOCK_PROPERTIES = [
         latitude: 53.4808,
         longitude: -2.2426,
         view_count: 89,
-        created_at: '2024-01-20T11:00:00Z',
+        created_at: subDays(NOW, 1).toISOString(),
         features: ['Bills Included', 'Rooftop Access', 'Furnished'],
         virtual_tour_url: 'https://my.matterport.com/show/?m=SxQL3iGyvQk',
         street_view_lat: 53.4808,
@@ -139,7 +145,7 @@ export const MOCK_PROPERTIES = [
         latitude: 52.4862,
         longitude: -1.8904,
         view_count: 156,
-        created_at: '2024-01-12T16:00:00Z',
+        created_at: subDays(NOW, 3).toISOString(),
         features: ['Garden', 'Parking', 'Pet Friendly', 'Near Schools'],
         virtual_tour_url: null,
         street_view_lat: 52.4862,
@@ -166,7 +172,7 @@ export const MOCK_PROPERTIES = [
         latitude: 51.5055,
         longitude: -0.0754,
         view_count: 423,
-        created_at: '2024-01-05T08:00:00Z',
+        created_at: subDays(NOW, 7).toISOString(),
         features: ['Terrace', 'Smart Home', 'Wine Cellar', 'Panoramic Views'],
         virtual_tour_url: 'https://my.matterport.com/show/?m=iJvNfP28yz8',
         street_view_lat: 51.5055,
@@ -193,7 +199,7 @@ export const MOCK_PROPERTIES = [
         latitude: 51.5219,
         longitude: -0.0719,
         view_count: 234,
-        created_at: '2024-01-16T13:00:00Z',
+        created_at: subDays(NOW, 4).toISOString(),
         features: ['Exposed Brick', 'High Ceilings', 'Open Plan'],
         virtual_tour_url: 'https://my.matterport.com/show/?m=Zh14WDtkjdB',
         street_view_lat: 51.5219,
@@ -220,7 +226,7 @@ export const MOCK_PROPERTIES = [
         latitude: 55.9533,
         longitude: -3.1883,
         view_count: 198,
-        created_at: '2024-01-08T10:00:00Z',
+        created_at: subDays(NOW, 10).toISOString(),
         features: ['Castle Views', 'Period Features', 'City Centre'],
         virtual_tour_url: null,
         street_view_lat: 55.9533,
@@ -241,11 +247,11 @@ export const MOCK_APPLICATIONS = [
         status: 'in_progress',
         current_stage: 'Document Verification',
         progress: 40,
-        created_at: '2024-01-18T10:00:00Z',
-        updated_at: '2024-01-20T14:00:00Z',
+        created_at: subDays(NOW, 2).toISOString(),
+        updated_at: subHours(NOW, 2).toISOString(),
         timeline: [
-            { stage: 'Application Submitted', date: '2024-01-18', status: 'completed' },
-            { stage: 'Document Verification', date: '2024-01-20', status: 'current' },
+            { stage: 'Application Submitted', date: format(subDays(NOW, 2), 'yyyy-MM-dd'), status: 'completed' },
+            { stage: 'Document Verification', date: format(NOW, 'yyyy-MM-dd'), status: 'current' },
             { stage: 'Property Inspection', date: null, status: 'pending' },
             { stage: 'Final Approval', date: null, status: 'pending' }
         ]
@@ -257,12 +263,12 @@ export const MOCK_APPLICATIONS = [
         status: 'approved',
         current_stage: 'Viewing Scheduled',
         progress: 75,
-        created_at: '2024-01-15T09:00:00Z',
-        updated_at: '2024-01-19T16:00:00Z',
+        created_at: subDays(NOW, 5).toISOString(),
+        updated_at: subDays(NOW, 1).toISOString(),
         timeline: [
-            { stage: 'Application Submitted', date: '2024-01-15', status: 'completed' },
-            { stage: 'Reference Check', date: '2024-01-16', status: 'completed' },
-            { stage: 'Viewing Scheduled', date: '2024-01-19', status: 'current' },
+            { stage: 'Application Submitted', date: format(subDays(NOW, 5), 'yyyy-MM-dd'), status: 'completed' },
+            { stage: 'Reference Check', date: format(subDays(NOW, 4), 'yyyy-MM-dd'), status: 'completed' },
+            { stage: 'Viewing Scheduled', date: format(subDays(NOW, 1), 'yyyy-MM-dd'), status: 'current' },
             { stage: 'Contract Signing', date: null, status: 'pending' }
         ]
     }
@@ -277,7 +283,7 @@ export const MOCK_VIEWINGS = [
         id: 'view-001',
         property_id: 'prop-002',
         property: MOCK_PROPERTIES[1],
-        scheduled_date: '2024-01-25',
+        scheduled_date: format(addDays(NOW, 2), 'yyyy-MM-dd'),
         scheduled_time: '10:00',
         status: 'confirmed',
         agent: {
@@ -291,7 +297,7 @@ export const MOCK_VIEWINGS = [
         id: 'view-002',
         property_id: 'prop-003',
         property: MOCK_PROPERTIES[2],
-        scheduled_date: '2024-01-27',
+        scheduled_date: format(addDays(NOW, 5), 'yyyy-MM-dd'),
         scheduled_time: '14:30',
         status: 'pending',
         agent: {
@@ -305,7 +311,7 @@ export const MOCK_VIEWINGS = [
         id: 'view-003',
         property_id: 'prop-006',
         property: MOCK_PROPERTIES[5],
-        scheduled_date: '2024-01-22',
+        scheduled_date: format(subDays(NOW, 3), 'yyyy-MM-dd'),
         scheduled_time: '11:00',
         status: 'completed',
         agent: {
@@ -334,8 +340,8 @@ export const MOCK_SAVED_PROPERTIES = [
 
 export const MOCK_USER_PROFILE = {
     id: 'user-001',
-    email: 'john.smith@example.com',
-    full_name: 'John Smith',
+    email: 'alex.mercer@example.com',
+    full_name: 'Alex Mercer',
     phone: '+44 7700 123456',
     avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
     address: '123 High Street',
@@ -352,7 +358,7 @@ export const MOCK_USER_PROFILE = {
         sms: false,
         push: true
     },
-    created_at: '2023-06-15T10:00:00Z'
+    created_at: subDays(NOW, 30).toISOString()
 };
 
 // ============================================================================
@@ -370,7 +376,7 @@ export const MOCK_MESSAGES = [
         property_id: 'prop-002',
         property_title: 'Modern 2-Bedroom Apartment',
         preview: 'Thank you for your interest in the property. I would love to arrange a viewing at your convenience.',
-        timestamp: '2024-01-20T09:30:00Z',
+        timestamp: subHours(NOW, 2).toISOString(),
         unread: true
     },
     {
@@ -383,7 +389,7 @@ export const MOCK_MESSAGES = [
         property_id: null,
         property_title: null,
         preview: 'Your application for 42 Kensington Gardens has been received. We will review and respond within 24 hours.',
-        timestamp: '2024-01-19T14:00:00Z',
+        timestamp: subDays(NOW, 2).toISOString(),
         unread: false
     },
     {
@@ -396,7 +402,7 @@ export const MOCK_MESSAGES = [
         property_id: 'prop-003',
         property_title: 'Charming 3-Bedroom Cottage',
         preview: 'The seller has accepted your offer! Congratulations! Let\'s discuss the next steps.',
-        timestamp: '2024-01-18T16:45:00Z',
+        timestamp: subDays(NOW, 5).toISOString(),
         unread: false
     }
 ];
@@ -413,7 +419,7 @@ export const MOCK_PAYMENTS = [
         status: 'completed',
         property_id: 'prop-004',
         property_title: 'Luxury Studio Flat',
-        date: '2024-01-15T10:00:00Z',
+        date: subDays(NOW, 15).toISOString(),
         reference: 'DEP-2024-001'
     },
     {
@@ -423,7 +429,7 @@ export const MOCK_PAYMENTS = [
         status: 'pending',
         property_id: 'prop-004',
         property_title: 'Luxury Studio Flat',
-        date: '2024-02-01T00:00:00Z',
+        date: addDays(NOW, 5).toISOString(),
         reference: 'RENT-2024-001'
     },
     {
@@ -433,7 +439,7 @@ export const MOCK_PAYMENTS = [
         status: 'completed',
         property_id: 'prop-002',
         property_title: 'Modern 2-Bedroom Apartment',
-        date: '2024-01-10T14:00:00Z',
+        date: subDays(NOW, 20).toISOString(),
         reference: 'FEE-2024-001'
     }
 ];
@@ -450,8 +456,8 @@ export const MOCK_REVIEWS = [
         rating: 5,
         title: 'Absolutely stunning cottage!',
         content: 'The photos don\'t do it justice. The cottage is even more beautiful in person. Sarah was incredibly helpful throughout the viewing.',
-        author: 'John Smith',
-        date: '2024-01-15T10:00:00Z'
+        author: 'Alex Mercer',
+        date: subDays(NOW, 5).toISOString()
     },
     {
         id: 'rev-002',
@@ -460,8 +466,8 @@ export const MOCK_REVIEWS = [
         rating: 4,
         title: 'Great apartment, minor issues',
         content: 'Lovely apartment with amazing views. The only downside is the noise from the nearby construction. Otherwise perfect.',
-        author: 'John Smith',
-        date: '2024-01-08T14:00:00Z'
+        author: 'Alex Mercer',
+        date: subDays(NOW, 12).toISOString()
     }
 ];
 

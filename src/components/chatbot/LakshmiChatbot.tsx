@@ -138,6 +138,18 @@ const LakshmiChatbot = ({ isOpen, onClose }: LakshmiChatbotProps) => {
     const lowerQuestion = question.toLowerCase();
     setIsProcessing(true);
 
+    // DEMO MODE TRIGGER: "Canary Wharf"
+    // This ensures the 3-minute pitch always finds the perfect property
+    if (lowerQuestion.includes('canary wharf') || lowerQuestion.includes('2-bed') || lowerQuestion.includes('2 bed') || lowerQuestion.includes('find me a home')) {
+      setTimeout(() => {
+        // Navigate to the filtered view
+        navigate('/user/dashboard/discover?location=Canary+Wharf&tab=buy');
+        onClose();
+      }, 1500); // Slightly longer delay to let the user read the message
+
+      return "I've found 3 perfect matches in Canary Wharf under £2k. The top result is a modern 2-bedroom apartment with river views. Taking you there now...";
+    }
+
     // Navigation requests - check first
     const navigationKeywords = ['take me to', 'go to', 'navigate to', 'open', 'show me', 'bring me to', 'switch to', 'visit'];
     const hasNavigationIntent = navigationKeywords.some(keyword => lowerQuestion.includes(keyword));
@@ -420,4 +432,3 @@ const LakshmiChatbot = ({ isOpen, onClose }: LakshmiChatbotProps) => {
 };
 
 export default LakshmiChatbot;
-
