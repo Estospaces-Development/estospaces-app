@@ -13,9 +13,18 @@ const UserProtectedRoute = ({ children }) => {
     const location = useLocation();
     const { isAuthenticated, loading, isSupabaseConfigured, authState } = useAuth();
 
-    // DEVELOPMENT BYPASS: Skip all auth checks and allow access
-    // Remove or comment out this block when you want to re-enable authentication
+    // DEVELOPMENT BYPASS: Check for mock user in localStorage
     if (import.meta.env.DEV) {
+        try {
+            const mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
+            if (mockUser && mockUser.isAuthenticated && mockUser.role === 'user') {
+                console.log('🔓 UserProtectedRoute: Development bypass mode - allowing user access');
+                return children;
+            }
+        } catch (e) {
+            // Ignore JSON parse errors
+        }
+        // Still allow general dev bypass for backwards compatibility
         console.log('🔓 UserProtectedRoute: Development bypass mode - allowing access');
         return children;
     }

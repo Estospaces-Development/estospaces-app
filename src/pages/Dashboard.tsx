@@ -870,10 +870,10 @@ const Dashboard = () => {
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">All Status</option>
-                  <option value="Available">Available</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Sold">Sold</option>
-                  <option value="Rented">Rented</option>
+                  <option value="available">Available</option>
+                  <option value="pending">Pending</option>
+                  <option value="sold">Sold</option>
+                  <option value="rented">Rented</option>
                 </select>
                 <div className="relative">
                   <button

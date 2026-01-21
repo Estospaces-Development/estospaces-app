@@ -159,18 +159,69 @@ const EmailLogin = () => {
         setGeneralError('');
 
         try {
-            console.log('🔐 EmailLogin: Bypassing Supabase, navigating directly to dashboard...');
+            console.log('🔐 EmailLogin: Checking mock credentials...');
 
-            // BYPASS MODE: Skip Supabase auth and go directly to user dashboard
-            // This is for development/testing when Supabase is not available
-            const redirectPath = '/user/dashboard';
+            // Mock credentials for development/testing
+            const MOCK_USERS = {
+                'manager@gmail.com': {
+                    password: 'Estospaces@123',
+                    role: 'manager',
+                    redirectPath: '/manager/dashboard',
+                    name: 'Manager User'
+                },
+                'manager@estospaces.com': {
+                    password: 'Estospaces@123',
+                    role: 'manager',
+                    redirectPath: '/manager/dashboard',
+                    name: 'Manager User'
+                },
+                'user@gmail.com': {
+                    password: 'Estospaces@123',
+                    role: 'user',
+                    redirectPath: '/user/dashboard',
+                    name: 'Regular User'
+                },
+                'user@estospaces.com': {
+                    password: 'Estospaces@123',
+                    role: 'user',
+                    redirectPath: '/user/dashboard',
+                    name: 'Regular User'
+                }
+            };
 
-            console.log('✅ EmailLogin: Bypass mode - navigating to:', redirectPath);
+            // Check if email exists in mock users
+            const mockUser = MOCK_USERS[email.toLowerCase()];
+
+            if (!mockUser) {
+                setGeneralError('Invalid email. Use manager@gmail.com or user@gmail.com for demo.');
+                isSigningIn.current = false;
+                setLoading(false);
+                return;
+            }
+
+            // Validate password
+            if (password !== mockUser.password) {
+                setGeneralError('Invalid password. Use Estospaces@123 for demo.');
+                isSigningIn.current = false;
+                setLoading(false);
+                return;
+            }
+
+            console.log(`✅ EmailLogin: Mock login successful as ${mockUser.role}`);
+
+            // Store mock user info in localStorage for session simulation
+            localStorage.setItem('mockUser', JSON.stringify({
+                email: email.toLowerCase(),
+                role: mockUser.role,
+                name: mockUser.name,
+                isAuthenticated: true
+            }));
 
             // Small delay to show loading state
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            navigate(redirectPath, { replace: true });
+            console.log('✅ EmailLogin: Navigating to:', mockUser.redirectPath);
+            navigate(mockUser.redirectPath, { replace: true });
 
         } catch (error) {
             console.error('❌ EmailLogin: Unexpected error:', error);

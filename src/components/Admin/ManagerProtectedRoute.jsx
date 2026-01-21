@@ -7,10 +7,25 @@ import { useAuth } from '../../contexts/AuthContext';
  * A simplified protected route that relies solely on AuthContext.
  * No duplicate session checks or auth listeners.
  * Checks if user has 'manager' role.
+ * 
+ * DEVELOPMENT MODE: Auth check can be bypassed using mock user in localStorage.
  */
 const ManagerProtectedRoute = ({ children }) => {
     const { authState, isAuthenticated, loading, getRole } = useAuth();
     const location = useLocation();
+
+    // DEVELOPMENT BYPASS: Check for mock user in localStorage
+    if (import.meta.env.DEV) {
+        try {
+            const mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
+            if (mockUser && mockUser.isAuthenticated && mockUser.role === 'manager') {
+                console.log('🔓 ManagerProtectedRoute: Development bypass mode - allowing manager access');
+                return children;
+            }
+        } catch (e) {
+            // Ignore JSON parse errors
+        }
+    }
 
     // Show loading spinner while checking auth
     if (loading || authState === 'loading') {

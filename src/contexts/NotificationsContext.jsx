@@ -84,11 +84,75 @@ export const NotificationsProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.read).length);
+
+        // In development, if no real notifications, add some mocks
+        if (import.meta.env.DEV && data.length === 0) {
+          const mocks = [
+            {
+              id: 'mock-1',
+              title: 'New Lead: Alex Mercer',
+              message: 'Alex Mercer inquired about "Stunning 4-Bedroom Victorian House".',
+              created_at: new Date(Date.now() - 3600000).toISOString(),
+              read: false,
+              type: 'message_received'
+            },
+            {
+              id: 'mock-2',
+              title: 'Document Verified',
+              message: 'Your proof of identity has been successfully verified.',
+              created_at: new Date(Date.now() - 86400000).toISOString(),
+              read: true,
+              type: 'document_verified'
+            },
+            {
+              id: 'mock-3',
+              title: 'System Update',
+              message: 'Maintenance scheduled for tonight at 2:00 AM UTC.',
+              created_at: new Date(Date.now() - 172800000).toISOString(),
+              read: false,
+              type: 'system'
+            }
+          ];
+          setNotifications(mocks);
+          setUnreadCount(mocks.filter(n => !n.read).length);
+        } else {
+          setNotifications(data);
+          setUnreadCount(data.filter(n => !n.read).length);
+        }
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
+      // Fallback for development if fetch fails (e.g. no supabase)
+      if (import.meta.env.DEV) {
+        const mocks = [
+          {
+            id: 'mock-1',
+            title: 'New Lead: Alex Mercer',
+            message: 'Alex Mercer inquired about "Stunning 4-Bedroom Victorian House".',
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            read: false,
+            type: 'message_received'
+          },
+          {
+            id: 'mock-2',
+            title: 'Document Verified',
+            message: 'Your proof of identity has been successfully verified.',
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            read: true,
+            type: 'document_verified'
+          },
+          {
+            id: 'mock-3',
+            title: 'System Update',
+            message: 'Maintenance scheduled for tonight at 2:00 AM UTC.',
+            created_at: new Date(Date.now() - 172800000).toISOString(),
+            read: false,
+            type: 'system'
+          }
+        ];
+        setNotifications(mocks);
+        setUnreadCount(mocks.filter(n => !n.read).length);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { MOCK_PROPERTIES } from '../services/mockDataService';
+import { useAuth } from './AuthContext';
 
 // Type definitions
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR' | 'AED' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'SGD';
@@ -315,7 +317,7 @@ const currencyFormatters: Record<CurrencyCode, Intl.NumberFormat> = {
 const dbRowToProperty = (row: any): Property => {
   // Parse image URLs - handle different formats
   let imageUrls: string[] = [];
-  
+
   // Check various possible image field names in the database
   if (row.image_urls) {
     // If image_urls is already an array
@@ -369,9 +371,9 @@ const dbRowToProperty = (row: any): Property => {
   } else if (row.thumbnail_url) {
     imageUrls = [row.thumbnail_url];
   }
-  
+
   // Note: Properties without images are normal and expected
-  
+
   // Extract videos from database row
   let videoUrls: string[] = [];
   if (row.video_urls) {
@@ -402,7 +404,7 @@ const dbRowToProperty = (row: any): Property => {
       }
     }
   }
-  
+
   return {
     id: row.id,
     title: row.title || '',
@@ -616,6 +618,7 @@ const propertyToDbRow = (p: Partial<Property>): any => {
 };
 
 export const PropertyProvider = ({ children }: { children: ReactNode }) => {
+  const { getRole, isAuthenticated } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [filters, setFiltersState] = useState<PropertyFilters>({});
@@ -626,8 +629,35 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
   // Fetch properties from Supabase
   const fetchProperties = useCallback(async () => {
+    const isDev = import.meta.env.DEV;
+    const role = getRole();
+    const isManagerRole = role === 'manager' || role === 'admin';
+    const isManagerPath = typeof window !== 'undefined' && window.location.pathname.includes('/manager');
+
+    // Check mock login from localStorage
+    let isMockManager = false;
+    try {
+      const mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
+      if (mockUser?.isAuthenticated && mockUser?.role === 'manager') {
+        isMockManager = true;
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    const isManager = isManagerRole || isMockManager || isManagerPath;
+
+    // In development mode, if we are in a manager context, use mock data
+    if (isDev && isManager) {
+      console.log('🧪 PropertyContext: Using mock properties for manager in development');
+      const mapped = MOCK_PROPERTIES.map(dbRowToProperty);
+      setProperties(mapped);
+      setLoading(false);
+      return;
+    }
+
     if (!supabase) {
-      setError('Supabase client not initialized');
+      console.warn('PropertyContext: Supabase client not initialized');
       setLoading(false);
       return;
     }
@@ -659,7 +689,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }, [sort]);
+  }, [sort, getRole]);
 
   useEffect(() => {
     fetchProperties();
@@ -719,11 +749,11 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   // Apply client-side sorting to filtered results
   const sortedAndFiltered = useMemo(() => {
     const result = [...filtered];
-    
+
     result.sort((a, b) => {
       let aValue: any;
       let bValue: any;
-      
+
       switch (sort.field) {
         case 'price':
           aValue = a.price?.amount || 0;
@@ -756,12 +786,12 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         default:
           return 0;
       }
-      
+
       if (aValue < bValue) return sort.order === 'asc' ? -1 : 1;
       if (aValue > bValue) return sort.order === 'asc' ? 1 : -1;
       return 0;
     });
-    
+
     return result;
   }, [filtered, sort]);
 
@@ -830,7 +860,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
           contentType: file.type || 'video/mp4',
           cacheControl: '3600',
         });
-        
+
         if (!videoError) {
           const { data: { publicUrl: videoUrl } } = (supabase as SupabaseClient).storage.from('property-videos').getPublicUrl(fileName);
           publicUrl = videoUrl;
@@ -839,14 +869,14 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
           console.log('[DEBUG] ✅ Video uploaded to property-videos bucket', { url: publicUrl?.substring(0, 50) + '...' });
         } else {
           console.warn('[DEBUG] ⚠️ property-videos bucket failed:', videoError.message);
-          
+
           // Try property-images as fallback (even though it may reject video mime types)
           console.log('[DEBUG] Attempting upload to property-images bucket (fallback)...');
           const { error: imageError } = await (supabase as SupabaseClient).storage.from('property-images').upload(fileName, file, {
             contentType: file.type || 'video/mp4',
             cacheControl: '3600',
           });
-          
+
           if (!imageError) {
             const { data: { publicUrl: imageUrl } } = (supabase as SupabaseClient).storage.from('property-images').getPublicUrl(fileName);
             publicUrl = imageUrl;
@@ -861,7 +891,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
         // If both buckets failed, use base64 as fallback (for small videos only)
         if (!uploadSucceeded) {
           console.warn('[DEBUG] Both storage buckets failed, attempting base64 fallback for video:', file.name, { sizeMB: (file.size / 1024 / 1024).toFixed(2) });
-          
+
           if (file.size > 10 * 1024 * 1024) { // 10MB limit for base64
             throw new Error(
               `Video "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB) for base64 storage. ` +
@@ -869,7 +899,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
               'See QUICK_VIDEO_BUCKET_SETUP.md for instructions.'
             );
           }
-          
+
           try {
             // Convert to base64 as fallback
             publicUrl = await new Promise<string>((resolve, reject) => {
@@ -955,7 +985,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
 
       const dbData = propertyToDbRow(propertyData);
       dbData.agent_id = user.id;
-      
+
       // Remove any undefined fields and ensure country_code is not included (column doesn't exist)
       Object.keys(dbData).forEach(key => {
         if (dbData[key] === undefined || key === 'country_code') {
@@ -968,27 +998,27 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       let data: any = null;
       const maxRetries = 3;
       const retryDelay = 1000; // 1 second
-      
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         const result = await (supabase as SupabaseClient).from('properties').insert(dbData).select().single();
         insertError = result.error;
         data = result.data;
-        
+
         if (!insertError) {
           break; // Success, exit retry loop
         }
-        
+
         // If error is about schema cache and we have retries left, wait and retry
         if (insertError?.code === 'PGRST204' && insertError?.message?.includes('schema cache') && attempt < maxRetries - 1) {
           console.warn(`[DEBUG] Schema cache not refreshed yet, retrying insert in ${retryDelay}ms... (Attempt ${attempt + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1))); // Exponential backoff
           continue;
         }
-        
+
         // For other errors or last attempt, break and throw
         break;
       }
-      
+
       if (insertError) throw insertError;
 
       const newProperty = dbRowToProperty(data);
@@ -1017,23 +1047,23 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     try {
       const dbData = propertyToDbRow(propertyData);
       dbData.updated_at = new Date().toISOString();
-      
+
       // Remove any undefined fields and ensure country_code is not included (column doesn't exist)
       Object.keys(dbData).forEach(key => {
         if (dbData[key] === undefined || key === 'country_code') {
           delete dbData[key];
         }
       });
-      
+
       // Ensure required fields are present (use defaults if not provided)
       if (!dbData.hasOwnProperty('status') || dbData.status === null || dbData.status === undefined || dbData.status === '') {
         dbData.status = propertyData.status || 'online';
       }
-      
+
       if (!dbData.hasOwnProperty('listing_type') || dbData.listing_type === null || dbData.listing_type === undefined || dbData.listing_type === '') {
         dbData.listing_type = propertyData.listingType || 'sale';
       }
-      
+
       // Ensure numeric required fields are set
       if (dbData.bedrooms === null || dbData.bedrooms === undefined || isNaN(dbData.bedrooms)) {
         dbData.bedrooms = propertyData.bedrooms ?? propertyData.rooms?.bedrooms ?? 0;
@@ -1053,7 +1083,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       let data: any = null;
       const maxRetries = 3;
       const retryDelay = 1000; // 1 second
-      
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         const result = await (supabase as SupabaseClient)
           .from('properties')
@@ -1061,25 +1091,25 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
           .eq('id', id)
           .select()
           .single();
-        
+
         updateError = result.error;
         data = result.data;
-        
+
         if (!updateError) {
           break; // Success, exit retry loop
         }
-        
+
         // If error is about schema cache and we have retries left, wait and retry
         if (updateError?.code === 'PGRST204' && updateError?.message?.includes('schema cache') && attempt < maxRetries - 1) {
           console.warn(`[DEBUG] Schema cache not refreshed yet, retrying in ${retryDelay}ms... (Attempt ${attempt + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1))); // Exponential backoff
           continue;
         }
-        
+
         // For other errors or last attempt, break and throw
         break;
       }
-        
+
       if (updateError) {
         console.error('Supabase update error:', updateError);
         throw updateError;
@@ -1095,7 +1125,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
     } catch (err: any) {
       console.error('Error updating property:', err);
       let errorMsg = 'Failed to update property';
-      
+
       // Extract meaningful error message
       if (err?.message) {
         errorMsg = err.message;
@@ -1106,7 +1136,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
       } else if (err?.details) {
         errorMsg = err.details;
       }
-      
+
       setError(errorMsg);
       // Create a new error with the formatted message to ensure it's properly thrown
       const errorToThrow = new Error(errorMsg);
@@ -1253,7 +1283,7 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   const exportProperties = (format: 'csv' | 'json' | 'pdf', ids?: string[]) => {
     // If specific IDs are provided, export those (respecting current sort)
     // Otherwise, export ALL filtered and sorted properties (not just current page)
-    const toExport = ids 
+    const toExport = ids
       ? sortedAndFiltered.filter(p => ids.includes(p.id))
       : sortedAndFiltered;
 

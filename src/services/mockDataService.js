@@ -40,7 +40,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: 'https://my.matterport.com/show/?m=SxQL3iGyvQk',
         street_view_lat: 51.5074,
         street_view_lng: -0.1878,
-        has_virtual_tour: true
+        has_virtual_tour: true,
+        status: 'available'
     },
     {
         id: 'prop-002',
@@ -68,7 +69,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: 'https://my.matterport.com/show/?m=iJvNfP28yz8',
         street_view_lat: 51.5054,
         street_view_lng: -0.0235,
-        has_virtual_tour: true
+        has_virtual_tour: true,
+        status: 'pending'
     },
     {
         id: 'prop-003',
@@ -84,9 +86,9 @@ export const MOCK_PROPERTIES = [
         area: 1600,
         description: 'Beautiful stone cottage in the heart of the Cotswolds with exposed beams, inglenook fireplace, and landscaped gardens.',
         image_urls: [
-            'https://images.unsplash.com/photo-1499696010180-ea84dfb20984?w=800',
-            'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800',
-            'https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800'
+            'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
+            'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800',
+            'https://images.unsplash.com/photo-1572120366674-06853cb5b325?w=800'
         ],
         latitude: 51.8330,
         longitude: -1.8433,
@@ -96,7 +98,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: 'https://my.matterport.com/show/?m=Zh14WDtkjdB',
         street_view_lat: 51.8330,
         street_view_lng: -1.8433,
-        has_virtual_tour: true
+        has_virtual_tour: true,
+        status: 'available'
     },
     {
         id: 'prop-004',
@@ -123,7 +126,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: 'https://my.matterport.com/show/?m=SxQL3iGyvQk',
         street_view_lat: 53.4808,
         street_view_lng: -2.2426,
-        has_virtual_tour: true
+        has_virtual_tour: true,
+        status: 'available'
     },
     {
         id: 'prop-005',
@@ -139,8 +143,8 @@ export const MOCK_PROPERTIES = [
         area: 1400,
         description: 'Perfect family home with large garden, driveway parking, and close to excellent schools. Pet-friendly.',
         image_urls: [
-            'https://images.unsplash.com/photo-1580587771525-78b9dba3b91d?w=800',
-            'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800'
+            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800',
+            'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
         ],
         latitude: 52.4862,
         longitude: -1.8904,
@@ -150,7 +154,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: null,
         street_view_lat: 52.4862,
         street_view_lng: -1.8904,
-        has_virtual_tour: false
+        has_virtual_tour: false,
+        status: 'rented'
     },
     {
         id: 'prop-006',
@@ -177,7 +182,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: 'https://my.matterport.com/show/?m=iJvNfP28yz8',
         street_view_lat: 51.5055,
         street_view_lng: -0.0754,
-        has_virtual_tour: true
+        has_virtual_tour: true,
+        status: 'available'
     },
     {
         id: 'prop-007',
@@ -204,7 +210,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: 'https://my.matterport.com/show/?m=Zh14WDtkjdB',
         street_view_lat: 51.5219,
         street_view_lng: -0.0719,
-        has_virtual_tour: true
+        has_virtual_tour: true,
+        status: 'available'
     },
     {
         id: 'prop-008',
@@ -231,7 +238,8 @@ export const MOCK_PROPERTIES = [
         virtual_tour_url: null,
         street_view_lat: 55.9533,
         street_view_lng: -3.1883,
-        has_virtual_tour: false
+        has_virtual_tour: false,
+        status: 'sold'
     }
 ];
 
