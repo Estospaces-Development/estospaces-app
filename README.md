@@ -595,6 +595,12 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 - **Improved Session Persistence**: Enhanced Supabase client with explicit localStorage storage configuration
 
 
+### Property Location & Visualization (January 2026)
+- **Satellite & Street View Toggle**:
+  - Integrated a new **Satellite View** mode in the property detail page using hybrid satellite imagery (satellite + labels).
+  - Added a responsive toggle to switch between **Satellite Map** and **Interactive Street View**.
+  - Enhanced the "Property Location" section with mode-specific descriptions and fullscreen shortcuts.
+
 ### Real-Time Features (Late January 2026)
 
 - **End-to-End Lifecycle Tracking**:

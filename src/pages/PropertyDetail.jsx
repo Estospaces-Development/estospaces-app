@@ -74,6 +74,7 @@ const PropertyDetail = () => {
   const [viewingError, setViewingError] = useState(null);
   const { user } = useAuth();
   const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const [viewMode, setViewMode] = useState('map'); // 'map' or 'street'
 
   // Fetch mock property data
   useEffect(() => {
@@ -722,27 +723,148 @@ const PropertyDetail = () => {
             )}
           </div>
 
-          {/* Google Street View Section */}
+          {/* Property Location Section (formerly Google Street View) */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 mb-4">Neighborhood Street View</h2>
-            <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg overflow-hidden relative">
-              {property.street_view_lat && property.street_view_lng ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 flex items-center gap-2">
+                <MapPin size={22} className="text-orange-500" />
+                Property Location
+              </h2>
+
+              {/* View Toggle */}
+              <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg inline-flex">
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'map'
+                      ? 'bg-white dark:bg-gray-600 text-orange-600 dark:text-orange-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                >
+                  Satellite Map
+                </button>
+                <button
+                  onClick={() => setViewMode('street')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'street'
+                      ? 'bg-white dark:bg-gray-600 text-orange-600 dark:text-orange-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                >
+                  Street View
+                </button>
+              </div>
+            </div>
+
+            {/* View Description */}
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              {viewMode === 'map'
+                ? 'View the property location and surrounding area from above.'
+                : 'Explore the neighborhood from street level. Use controls to navigate.'}
+            </p>
+
+            {/* Map/Street View Container */}
+            <div className="w-full h-72 md:h-96 bg-gray-900 rounded-xl overflow-hidden relative group">
+              {viewMode === 'map' ? (
+                /* Satellite Map */
+                <iframe
+                  title="Satellite Map"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  // Using Google Maps embed with 't=h' for hybrid (satellite + labels) view
+                  src={`https://maps.google.com/maps?q=${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189}&t=h&z=19&output=embed`}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="absolute inset-0"
+                ></iframe>
+              ) : (
+                /* Street View iframe */
                 <iframe
                   title="Street View"
                   width="100%"
                   height="100%"
                   frameBorder="0"
                   style={{ border: 0 }}
-                  src={`https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d${property.street_view_lat}!2d${property.street_view_lng}!3f270!4f0!5f0.7820865974627469`}
+                  src={`https://www.google.com/maps/embed?pb=!4v1640000000000!6m8!1m7!1sCAoSLEFGMVFpcE4xX0RyME9Mb0NLV2VFa0hGRjJJMU9rX3lhRkZJT21lZTlYZ2JL!2m2!1d${property.street_view_lat || 51.501364}!2d${property.street_view_lng || -0.14189}!3f90!4f10!5f0.7820865974627469`}
                   allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="absolute inset-0"
                 ></iframe>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <MapPin size={40} className="mb-2 opacity-50" />
-                  <p>StreetView preview not available</p>
+              )}
+
+              {/* Overlay Controls (only show relevant controls based on mode) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+
+              {/* Navigation Controls (Street View only) */}
+              {viewMode === 'street' && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button className="p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110">
+                    <ChevronLeft size={18} className="text-gray-700" />
+                  </button>
+                  <div className="px-4 py-2 bg-white/90 rounded-full shadow-lg">
+                    <span className="text-sm font-medium text-gray-700">Drag to explore</span>
+                  </div>
+                  <button className="p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110">
+                    <ChevronRight size={18} className="text-gray-700" />
+                  </button>
                 </div>
               )}
+
+              {/* Open Fullscreen Button */}
+              <a
+                href={viewMode === 'map'
+                  ? `https://www.google.com/maps/search/?api=1&query=${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189}`
+                  : `https://www.google.com/maps/@${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189},3a,75y,210h,90t/data=!3m6!1e1!3m4!1s!2e0!7i16384!8i8192`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-4 right-4 p-2.5 bg-white/90 hover:bg-white rounded-lg shadow-lg transition-all hover:scale-105 flex items-center gap-2 opacity-0 group-hover:opacity-100"
+              >
+                <Maximize size={16} className="text-gray-700" />
+                <span className="text-sm font-medium text-gray-700">Fullscreen</span>
+              </a>
+
+              {/* Location Badge */}
+              <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg shadow-lg">
+                <MapPin size={14} />
+                <span className="text-sm font-medium">{property.city || property.postcode || 'UK'}</span>
+              </div>
             </div>
+
+            {/* Street View Quick Info */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <MapPin size={16} className="text-orange-600 dark:text-orange-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Street Level</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-lg font-bold text-orange-600 dark:text-orange-400">360°</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Panoramic</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <ExternalLink size={16} className="text-orange-600 dark:text-orange-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Google Maps</p>
+              </div>
+            </div>
+
+            {/* Open in Google Maps Button */}
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address_line_1 || property.address || `${property.city || ''} ${property.postcode || ''}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-700 dark:text-white rounded-xl font-medium transition-all border border-gray-300 dark:border-gray-600"
+            >
+              <ExternalLink size={18} />
+              Open Full Map in Google Maps
+            </a>
           </div>
 
 

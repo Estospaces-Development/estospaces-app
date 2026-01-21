@@ -58,6 +58,7 @@ import DashboardSaved from './pages/DashboardSaved';
 import DashboardSettings from './pages/DashboardSettings';
 import DashboardHelp from './pages/DashboardHelp';
 import DashboardNotifications from './pages/DashboardNotifications';
+import DashboardOverseas from './pages/DashboardOverseas';
 import PropertyDetail from './pages/PropertyDetail';
 
 // Auth Components
@@ -497,6 +498,17 @@ function App() {
                                 </UserProtectedRoute>
                               }
                             />
+                            <Route
+                              path="/user/dashboard/overseas"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardOverseas />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+
 
                             {/* Catch-all for /user/dashboard/* wildcard routes */}
                             <Route
