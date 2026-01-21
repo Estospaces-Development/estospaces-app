@@ -8,17 +8,17 @@ import { calculateDistance } from '../../services/locationService';
  * Displays properties on an interactive map with markers
  * Highlights nearby properties based on user location
  */
-const NearbyPropertiesMap = ({ 
-  properties = [], 
+const NearbyPropertiesMap = ({
+  properties = [],
   userLocation = null,
-  onPropertyClick = null 
+  onPropertyClick = null
 }) => {
   const navigate = useNavigate();
   const [selectedProperty, setSelectedProperty] = useState(null);
-  
+
   // Safe default location
   const defaultLocation = { lat: 51.5074, lng: -0.1278 }; // London
-  
+
   const [mapCenter, setMapCenter] = useState(() => {
     try {
       if (userLocation && userLocation.latitude && userLocation.longitude) {
@@ -159,7 +159,7 @@ const NearbyPropertiesMap = ({
 
     const latRange = bounds.maxLat - bounds.minLat || 0.1;
     const lngRange = bounds.maxLng - bounds.minLng || 0.1;
-    
+
     const left = ((lng - bounds.minLng) / lngRange) * 100;
     const top = ((bounds.maxLat - lat) / latRange) * 100;
 
@@ -172,160 +172,168 @@ const NearbyPropertiesMap = ({
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       {/* Map Container */}
-      <div className="relative w-full h-full bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800">
-        {/* Map Background Pattern */}
-        <div className="absolute inset-0 opacity-20 dark:opacity-10">
-          <div 
-            className="w-full h-full" 
-            style={{
-              backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)',
-              backgroundSize: `${40 / zoom}px ${40 / zoom}px`
-            }}
-          />
-        </div>
+      <div className="relative w-full h-full">
+        {/* Google Maps Satellite Background */}
+        <iframe
+          title="Map View"
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          style={{ border: 0, position: 'absolute', inset: 0, zIndex: 0 }}
+          src={`https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d${30000 / zoom}!2d${mapCenter.lng}!3d${mapCenter.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e1!3m2!1sen!2suk!4v1640000000000!5m2!1sen!2suk`}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        ></iframe>
 
-        {/* User Location Marker */}
-        {userLocation && userLocation.latitude && (
-          <div
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20"
-            style={latLngToPosition(userLocation.latitude, userLocation.longitude, mapBounds)}
-          >
-            <div className="relative">
-              <div className="w-6 h-6 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center animate-pulse">
-                <Navigation size={14} className="text-white" />
+        {/* Overlay for markers */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <div className="relative w-full h-full pointer-events-auto">
+
+            {/* User Location Marker */}
+            {userLocation && userLocation.latitude && (
+              <div
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20"
+                style={latLngToPosition(userLocation.latitude, userLocation.longitude, mapBounds)}
+              >
+                <div className="relative">
+                  <div className="w-6 h-6 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center animate-pulse">
+                    <Navigation size={14} className="text-white" />
+                  </div>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg">
+                    Your Location
+                  </div>
+                </div>
               </div>
-              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg">
-                Your Location
+            )}
+
+            {/* Property Markers */}
+            {propertiesWithCoords.map((property) => {
+              const position = latLngToPosition(
+                parseFloat(property.latitude),
+                parseFloat(property.longitude),
+                mapBounds
+              );
+
+              return (
+                <div
+                  key={property.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
+                  style={position}
+                >
+                  <button
+                    onClick={() => handleMarkerClick(property)}
+                    className="relative group"
+                  >
+                    <div className={`w-10 h-10 ${getMarkerColor(property.category)} rounded-full border-2 border-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform cursor-pointer`}>
+                      <Home size={20} className="text-white" />
+                    </div>
+
+                    {/* Distance Badge */}
+                    {property.distance !== null && (
+                      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        {property.distance} mi
+                      </div>
+                    )}
+
+                    {/* Selected Property Popup */}
+                    {selectedProperty?.id === property.id && (
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 z-30 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">
+                              {property.title || 'Property'}
+                            </h4>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              {property.address_line_1 || property.city || 'UK'}
+                            </p>
+                            <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                              £{property.price?.toLocaleString()}
+                              {property.property_type === 'rent' && '/month'}
+                            </p>
+                            {property.distance !== null && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {property.distance} miles away
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedProperty(null);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                          {property.bedrooms > 0 && (
+                            <span>{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
+                          )}
+                          {property.bathrooms > 0 && (
+                            <span>{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleViewDetails(property)}
+                          className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Legend */}
+            <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 border border-gray-200 dark:border-gray-700 z-20">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Distance</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Very Near (&lt;1 mi)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Near (1-3 mi)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Moderate (3-5 mi)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Far (5+ mi)</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Property Markers */}
-        {propertiesWithCoords.map((property) => {
-          const position = latLngToPosition(
-            parseFloat(property.latitude),
-            parseFloat(property.longitude),
-            mapBounds
-          );
-
-          return (
-            <div
-              key={property.id}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-              style={position}
-            >
+            {/* Zoom Controls */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
               <button
-                onClick={() => handleMarkerClick(property)}
-                className="relative group"
+                onClick={() => setZoom(prev => Math.min(20, prev + 1))}
+                className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                <div className={`w-10 h-10 ${getMarkerColor(property.category)} rounded-full border-2 border-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform cursor-pointer`}>
-                  <Home size={20} className="text-white" />
-                </div>
-                
-                {/* Distance Badge */}
-                {property.distance !== null && (
-                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                    {property.distance} mi
-                  </div>
-                )}
-
-                {/* Selected Property Popup */}
-                {selectedProperty?.id === property.id && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 z-30 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">
-                          {property.title || 'Property'}
-                        </h4>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          {property.address_line_1 || property.city || 'UK'}
-                        </p>
-                        <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                          £{property.price?.toLocaleString()}
-                          {property.property_type === 'rent' && '/month'}
-                        </p>
-                        {property.distance !== null && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {property.distance} miles away
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProperty(null);
-                        }}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
-                      {property.bedrooms > 0 && (
-                        <span>{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
-                      )}
-                      {property.bathrooms > 0 && (
-                        <span>{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleViewDetails(property)}
-                      className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                )}
+                <ZoomIn size={20} className="text-gray-700 dark:text-gray-300" />
+              </button>
+              <button
+                onClick={() => setZoom(prev => Math.max(5, prev - 1))}
+                className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <ZoomOut size={20} className="text-gray-700 dark:text-gray-300" />
               </button>
             </div>
-          );
-        })}
 
-        {/* Legend */}
-        <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 border border-gray-200 dark:border-gray-700 z-20">
-          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Distance</p>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">Very Near (&lt;1 mi)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">Near (1-3 mi)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">Moderate (3-5 mi)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">Far (5+ mi)</span>
+            {/* Properties Count */}
+            <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg px-4 py-2 border border-gray-200 dark:border-gray-700 z-20">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {propertiesWithCoords.length} {propertiesWithCoords.length === 1 ? 'Property' : 'Properties'} Nearby
+              </p>
             </div>
           </div>
-        </div>
-
-        {/* Zoom Controls */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-          <button
-            onClick={() => setZoom(prev => Math.min(20, prev + 1))}
-            className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <ZoomIn size={20} className="text-gray-700 dark:text-gray-300" />
-          </button>
-          <button
-            onClick={() => setZoom(prev => Math.max(5, prev - 1))}
-            className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <ZoomOut size={20} className="text-gray-700 dark:text-gray-300" />
-          </button>
-        </div>
-
-        {/* Properties Count */}
-        <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg px-4 py-2 border border-gray-200 dark:border-gray-700 z-20">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {propertiesWithCoords.length} {propertiesWithCoords.length === 1 ? 'Property' : 'Properties'} Nearby
-          </p>
         </div>
       </div>
 

@@ -244,6 +244,311 @@ export const MOCK_PROPERTIES = [
 ];
 
 // ============================================================================
+// MOCK INTERNATIONAL PROPERTIES - For Overseas Tab
+// ============================================================================
+
+export const MOCK_OVERSEAS_PROPERTIES = [
+    {
+        id: 'prop-int-001',
+        title: 'Luxury Villa with Sea Views',
+        address_line_1: 'Calle de la Costa',
+        city: 'Marbella',
+        country: 'Spain',
+        country_code: 'ES',
+        postcode: '29600',
+        price: 850000,
+        currency: 'EUR',
+        property_type: 'sale',
+        listing_type: 'sale',
+        bedrooms: 5,
+        bathrooms: 4,
+        area: 3500,
+        description: 'Stunning Mediterranean villa with panoramic sea views, infinity pool, and modern amenities. Located in prestigious Golden Mile area.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
+            'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800',
+            'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800'
+        ],
+        latitude: 36.5104,
+        longitude: -4.8826,
+        view_count: 567,
+        created_at: '2024-01-10T09:00:00Z',
+        features: ['Sea Views', 'Pool', 'Garden', 'Parking', 'Air Conditioning'],
+        virtual_tour_url: 'https://my.matterport.com/show/?m=SxQL3iGyvQk',
+        street_view_lat: 36.5104,
+        street_view_lng: -4.8826,
+        has_virtual_tour: true,
+        agent: {
+            name: 'Carlos Rodriguez',
+            phone: '+34 952 123 456',
+            email: 'carlos@spanishproperties.com',
+            avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100',
+            languages: ['English', 'Spanish']
+        }
+    },
+    {
+        id: 'prop-int-002',
+        title: 'Parisian Apartment with Balcony',
+        address_line_1: '15 Avenue des Champs-Élysées',
+        city: 'Paris',
+        country: 'France',
+        country_code: 'FR',
+        postcode: '75008',
+        price: 1200000,
+        currency: 'EUR',
+        property_type: 'sale',
+        listing_type: 'sale',
+        bedrooms: 3,
+        bathrooms: 2,
+        area: 1800,
+        description: 'Elegant Haussmannian apartment in the heart of Paris with high ceilings, original moldings, and views of the Eiffel Tower.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800'
+        ],
+        latitude: 48.8698,
+        longitude: 2.3076,
+        view_count: 892,
+        created_at: '2024-01-12T14:30:00Z',
+        features: ['Eiffel Tower Views', 'Balcony', 'Period Features', 'Central Location'],
+        virtual_tour_url: 'https://my.matterport.com/show/?m=iJvNfP28yz8',
+        street_view_lat: 48.8698,
+        street_view_lng: 2.3076,
+        has_virtual_tour: true,
+        agent: {
+            name: 'Marie Dubois',
+            phone: '+33 1 42 12 34 56',
+            email: 'marie@parisimmobilier.fr',
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100',
+            languages: ['English', 'French']
+        }
+    },
+    {
+        id: 'prop-int-003',
+        title: 'Beachfront Apartment in Algarve',
+        address_line_1: 'Praia da Rocha',
+        city: 'Portimão',
+        country: 'Portugal',
+        country_code: 'PT',
+        postcode: '8500-801',
+        price: 425000,
+        currency: 'EUR',
+        property_type: 'sale',
+        listing_type: 'sale',
+        bedrooms: 2,
+        bathrooms: 2,
+        area: 1200,
+        description: 'Modern beachfront apartment with direct beach access, stunning ocean views, and resort amenities including pools and spa.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1580587771525-78b9dba3b91d?w=800',
+            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800'
+        ],
+        latitude: 37.1195,
+        longitude: -8.5372,
+        view_count: 445,
+        created_at: '2024-01-14T11:00:00Z',
+        features: ['Beach Access', 'Pool', 'Gym', 'Concierge', 'Parking'],
+        virtual_tour_url: 'https://my.matterport.com/show/?m=Zh14WDtkjdB',
+        street_view_lat: 37.1195,
+        street_view_lng: -8.5372,
+        has_virtual_tour: true,
+        agent: {
+            name: 'João Silva',
+            phone: '+351 282 123 456',
+            email: 'joao@algarveproperties.pt',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
+            languages: ['English', 'Portuguese']
+        }
+    },
+    {
+        id: 'prop-int-004',
+        title: 'Luxury Dubai Marina Penthouse',
+        address_line_1: 'Dubai Marina',
+        city: 'Dubai',
+        country: 'United Arab Emirates',
+        country_code: 'AE',
+        postcode: '',
+        price: 2500000,
+        currency: 'AED',
+        property_type: 'sale',
+        listing_type: 'sale',
+        bedrooms: 4,
+        bathrooms: 5,
+        area: 4200,
+        description: 'Spectacular penthouse with 360-degree views of Dubai Marina, Palm Jumeirah, and Arabian Gulf. Features private elevator and rooftop terrace.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800'
+        ],
+        latitude: 25.0804,
+        longitude: 55.1396,
+        view_count: 1234,
+        created_at: '2024-01-08T08:00:00Z',
+        features: ['Panoramic Views', 'Private Elevator', 'Terrace', 'Smart Home', 'Pool'],
+        virtual_tour_url: 'https://my.matterport.com/show/?m=SxQL3iGyvQk',
+        street_view_lat: 25.0804,
+        street_view_lng: 55.1396,
+        has_virtual_tour: true,
+        agent: {
+            name: 'Ahmed Al Maktoum',
+            phone: '+971 4 123 4567',
+            email: 'ahmed@dubaielite.ae',
+            avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100',
+            languages: ['English', 'Arabic']
+        }
+    },
+    {
+        id: 'prop-int-005',
+        title: 'Modern Manhattan Condo',
+        address_line_1: '432 Park Avenue',
+        city: 'New York',
+        country: 'United States',
+        country_code: 'US',
+        postcode: 'NY 10022',
+        price: 3500000,
+        currency: 'USD',
+        property_type: 'sale',
+        listing_type: 'sale',
+        bedrooms: 3,
+        bathrooms: 3,
+        area: 2800,
+        description: 'Stunning high-rise condo with floor-to-ceiling windows, Central Park views, and world-class building amenities.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800',
+            'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
+        ],
+        latitude: 40.7614,
+        longitude: -73.9776,
+        view_count: 987,
+        created_at: '2024-01-05T10:00:00Z',
+        features: ['Central Park Views', 'Concierge', 'Gym', 'Doorman', 'Storage'],
+        virtual_tour_url: 'https://my.matterport.com/show/?m=iJvNfP28yz8',
+        street_view_lat: 40.7614,
+        street_view_lng: -73.9776,
+        has_virtual_tour: true,
+        agent: {
+            name: 'Jennifer Miller',
+            phone: '+1 212 555 1234',
+            email: 'jennifer@nycpremier.com',
+            avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100',
+            languages: ['English']
+        }
+    },
+    {
+        id: 'prop-int-006',
+        title: 'Barcelona Modernist Apartment',
+        address_line_1: 'Passeig de Gràcia',
+        city: 'Barcelona',
+        country: 'Spain',
+        country_code: 'ES',
+        postcode: '08007',
+        price: 1800,
+        currency: 'EUR',
+        property_type: 'rent',
+        listing_type: 'rent',
+        bedrooms: 2,
+        bathrooms: 2,
+        area: 1100,
+        description: 'Beautiful modernist apartment in Eixample with original features, high ceilings, and balcony overlooking famous boulevard.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800',
+            'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800'
+        ],
+        latitude: 41.3919,
+        longitude: 2.1649,
+        view_count: 356,
+        created_at: '2024-01-16T09:00:00Z',
+        features: ['Balcony', 'Period Features', 'Central Location', 'Furnished'],
+        virtual_tour_url: null,
+        street_view_lat: 41.3919,
+        street_view_lng: 2.1649,
+        has_virtual_tour: false,
+        agent: {
+            name: 'Sofia Martinez',
+            phone: '+34 93 123 4567',
+            email: 'sofia@barcelonarentals.es',
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100',
+            languages: ['English', 'Spanish', 'Catalan']
+        }
+    },
+    {
+        id: 'prop-int-007',
+        title: 'French Riviera Villa',
+        address_line_1: 'Boulevard de la Croisette',
+        city: 'Cannes',
+        country: 'France',
+        country_code: 'FR',
+        postcode: '06400',
+        price: 4500000,
+        currency: 'EUR',
+        property_type: 'sale',
+        listing_type: 'sale',
+        bedrooms: 6,
+        bathrooms: 5,
+        area: 5000,
+        description: 'Magnificent 1920s villa on the Croisette with private beach access, manicured gardens, and breathtaking Mediterranean views.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+            'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800'
+        ],
+        latitude: 43.5513,
+        longitude: 7.0128,
+        view_count: 1567,
+        created_at: '2024-01-03T08:00:00Z',
+        features: ['Beach Access', 'Garden', 'Pool', 'Period Features', 'Parking'],
+        virtual_tour_url: 'https://my.matterport.com/show/?m=Zh14WDtkjdB',
+        street_view_lat: 43.5513,
+        street_view_lng: 7.0128,
+        has_virtual_tour: true,
+        agent: {
+            name: 'Pierre Laurent',
+            phone: '+33 4 93 12 34 56',
+            email: 'pierre@rivieraluxe.fr',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
+            languages: ['English', 'French', 'Italian']
+        }
+    },
+    {
+        id: 'prop-int-008',
+        title: 'Lisbon Historic District Loft',
+        address_line_1: 'Bairro Alto',
+        city: 'Lisbon',
+        country: 'Portugal',
+        country_code: 'PT',
+        postcode: '1200-109',
+        price: 1200,
+        currency: 'EUR',
+        property_type: 'rent',
+        listing_type: 'rent',
+        bedrooms: 1,
+        bathrooms: 1,
+        area: 750,
+        description: 'Charming loft in historic Bairro Alto with exposed stone walls, modern amenities, and rooftop terrace with Tagus River views.',
+        image_urls: [
+            'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800',
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'
+        ],
+        latitude: 38.7139,
+        longitude: -9.1450,
+        view_count: 234,
+        created_at: '2024-01-18T14:00:00Z',
+        features: ['Rooftop Terrace', 'Historic Building', 'Furnished', 'City Centre'],
+        virtual_tour_url: null,
+        street_view_lat: 38.7139,
+        street_view_lng: -9.1450,
+        has_virtual_tour: false,
+        agent: {
+            name: 'Ana Costa',
+            phone: '+351 21 123 4567',
+            email: 'ana@lisbonliving.pt',
+            avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100',
+            languages: ['English', 'Portuguese']
+        }
+    }
+];
+
+
+// ============================================================================
 // MOCK APPLICATIONS
 // ============================================================================
 
@@ -524,3 +829,38 @@ export const getMessages = () => MOCK_MESSAGES;
 export const getPayments = () => MOCK_PAYMENTS;
 export const getReviews = () => MOCK_REVIEWS;
 export const getUserProfile = () => MOCK_USER_PROFILE;
+
+// Overseas properties exports
+export const getOverseasProperties = (filters = {}) => {
+    let filtered = [...MOCK_OVERSEAS_PROPERTIES];
+
+    if (filters.country) {
+        filtered = filtered.filter(p => p.country_code === filters.country);
+    }
+
+    if (filters.type === 'buy' || filters.type === 'sale') {
+        filtered = filtered.filter(p => p.property_type === 'sale');
+    } else if (filters.type === 'rent') {
+        filtered = filtered.filter(p => p.property_type === 'rent');
+    }
+
+    if (filters.minPrice) {
+        filtered = filtered.filter(p => p.price >= filters.minPrice);
+    }
+    if (filters.maxPrice) {
+        filtered = filtered.filter(p => p.price <= filters.maxPrice);
+    }
+    if (filters.bedrooms) {
+        filtered = filtered.filter(p => p.bedrooms >= filters.bedrooms);
+    }
+    if (filters.city) {
+        const cityLower = filters.city.toLowerCase();
+        filtered = filtered.filter(p => p.city.toLowerCase().includes(cityLower));
+    }
+
+    return filtered;
+};
+
+export const getOverseasPropertyById = (id) => {
+    return MOCK_OVERSEAS_PROPERTIES.find(p => p.id === id) || MOCK_OVERSEAS_PROPERTIES[0];
+};
