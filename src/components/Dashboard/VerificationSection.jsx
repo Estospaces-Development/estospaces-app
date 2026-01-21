@@ -58,8 +58,8 @@ const VerificationSection = ({ userId, currentUser }) => {
     setError(null);
 
     try {
-      // Simulate upload delay (in real app, this would upload to Supabase Storage)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // OPTIMIZED FOR DEMO: 800ms instead of 1500ms
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       // Mark step as completed
       setVerificationSteps(prev => ({
@@ -107,8 +107,8 @@ const VerificationSection = ({ userId, currentUser }) => {
   const handleEmailVerification = async () => {
     setLoading(true);
     try {
-      // In real app, would send verification email
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // OPTIMIZED FOR DEMO: 600ms instead of 1000ms
+      await new Promise(resolve => setTimeout(resolve, 600));
       setSuccess('Verification email sent! Please check your inbox.');
     } catch (err) {
       setError('Failed to send verification email.');
