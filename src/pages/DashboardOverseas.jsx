@@ -19,16 +19,34 @@ const COUNTRY_FLAGS = {
     AE: '🇦🇪',
     US: '🇺🇸',
     GB: '🇬🇧',
+    IT: '🇮🇹',
+    JP: '🇯🇵',
+    AU: '🇦🇺',
+    CA: '🇨🇦',
+    DE: '🇩🇪',
+    TH: '🇹🇭',
+    GR: '🇬🇷',
+    CH: '🇨🇭',
+    MX: '🇲🇽',
 };
 
-// Popular destinations
+// Popular destinations - Worldwide
 const COUNTRIES = [
     { code: 'ALL', name: 'All Countries', flag: '🌍' },
     { code: 'ES', name: 'Spain', flag: '🇪🇸' },
     { code: 'FR', name: 'France', flag: '🇫🇷' },
     { code: 'PT', name: 'Portugal', flag: '🇵🇹' },
+    { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+    { code: 'GR', name: 'Greece', flag: '🇬🇷' },
     { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪' },
+    { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
+    { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+    { code: 'AU', name: 'Australia', flag: '🇦🇺' },
     { code: 'US', name: 'United States', flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+    { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+    { code: 'CH', name: 'Switzerland', flag: '🇨🇭' },
+    { code: 'DE', name: 'Germany', flag: '🇩🇪' },
 ];
 
 const DashboardOverseas = () => {
@@ -127,35 +145,37 @@ const DashboardOverseas = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Globe className="text-orange-500" size={32} />
+                    <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white flex items-center gap-3">
+                        <div className="p-2 rounded-full border border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                            <Globe className="text-gray-900 dark:text-white stroke-1" size={24} />
+                        </div>
                         Overseas Properties
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 ml-1">
                         Explore international properties across multiple countries
                     </p>
                 </div>
             </div>
 
             {/* Hero Section with Search */}
-            <div className="relative rounded-2xl shadow-2xl overflow-hidden min-h-[420px] flex flex-col items-center justify-center">
+            <div className="relative rounded-3xl shadow-2xl overflow-hidden min-h-[500px] flex flex-col items-center justify-center group">
                 {/* Background Image */}
                 <div
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105"
                     style={{
-                        backgroundImage: `url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1920')`,
+                        backgroundImage: `url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2600&auto=format&fit=crop')`, // Luxury Villa with Pool
                     }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-purple-900/70 to-orange-900/60" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
 
                 {/* Content */}
-                <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
-                        Find Your Perfect Home{' '}
-                        <span className="text-orange-400">Worldwide</span>
+                <div className="relative z-10 text-center px-6 max-w-5xl mx-auto w-full">
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
+                        Find Your Dream{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-400">Worldwide Property</span>
                     </h2>
-                    <p className="text-white/90 text-base md:text-lg mb-8">
-                        Discover luxury properties in Spain, France, Portugal, UAE, USA and more
+                    <p className="text-white/95 text-lg md:text-xl mb-10 font-light tracking-wide max-w-2xl mx-auto">
+                        Explore exclusive properties across Europe, Asia, Americas, and beyond
                     </p>
 
                     {/* Search Card */}
@@ -166,8 +186,8 @@ const DashboardOverseas = () => {
                                 type="button"
                                 onClick={() => setSelectedPropertyType('buy')}
                                 className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${selectedPropertyType === 'buy'
-                                        ? 'bg-orange-500 text-white shadow-md'
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                                    ? 'bg-orange-500 text-white shadow-md'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                                     }`}
                             >
                                 Buy
@@ -176,8 +196,8 @@ const DashboardOverseas = () => {
                                 type="button"
                                 onClick={() => setSelectedPropertyType('rent')}
                                 className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${selectedPropertyType === 'rent'
-                                        ? 'bg-orange-500 text-white shadow-md'
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                                    ? 'bg-orange-500 text-white shadow-md'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                                     }`}
                             >
                                 Rent
@@ -199,7 +219,6 @@ const DashboardOverseas = () => {
                                     onClick={() => setIsCountrySelectorOpen(!isCountrySelectorOpen)}
                                     className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
                                 >
-                                    <Globe size={18} className="text-gray-600" />
                                     <span className="text-sm font-medium">
                                         {COUNTRIES.find(c => c.code === selectedCountry)?.flag}{' '}
                                         {COUNTRIES.find(c => c.code === selectedCountry)?.name}
@@ -354,20 +373,6 @@ const DashboardOverseas = () => {
 
                             return (
                                 <div key={property.id} className="relative">
-                                    {/* Country Badge */}
-                                    <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                                        <span className="text-lg">{COUNTRY_FLAGS[property.country_code]}</span>
-                                        <span className="text-xs font-semibold text-gray-700">{property.country}</span>
-                                    </div>
-
-                                    {/* Virtual Tour Badge */}
-                                    {property.has_virtual_tour && (
-                                        <div className="absolute top-4 right-4 z-10 bg-orange-500 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                                            <Video size={14} />
-                                            <span className="text-xs font-semibold">Virtual Tour</span>
-                                        </div>
-                                    )}
-
                                     <PropertyCard
                                         property={transformed}
                                         onViewDetails={handlePropertyClick}

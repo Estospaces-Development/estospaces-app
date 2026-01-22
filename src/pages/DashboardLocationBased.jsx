@@ -115,32 +115,29 @@ const DashboardLocationBased = () => {
     setError(null);
     setLocationMessage(null);
 
-    // Simulate network delay
-    setTimeout(() => {
-      // Use Mock Data
-      const mockProps = MOCK_PROPERTIES;
+    // Use Mock Data immediately - no artificial delay
+    const mockProps = MOCK_PROPERTIES;
 
-      // Distribute mock properties across sections
-      setDiscoveryProperties(mockProps);
-      setMostViewedProperties(mockProps.slice(0, 4));
-      setTrendingProperties(mockProps.slice(2, 6));
-      setRecentlyAddedProperties(mockProps.slice(0, 3));
-      setHighDemandProperties(mockProps.slice(3, 7));
+    // Distribute mock properties across sections
+    setDiscoveryProperties(mockProps);
+    setMostViewedProperties(mockProps.slice(0, 4));
+    setTrendingProperties(mockProps.slice(2, 6));
+    setRecentlyAddedProperties(mockProps.slice(0, 3));
+    setHighDemandProperties(mockProps.slice(3, 7));
 
-      setStats(prev => ({
-        ...prev,
-        totalProperties: mockProps.length,
-      }));
+    setStats(prev => ({
+      ...prev,
+      totalProperties: mockProps.length,
+    }));
 
-      if (showLoading) {
-        setLoading(false);
-        setLoadingDiscovery(false);
-        setLoadingMostViewed(false);
-        setLoadingTrending(false);
-        setLoadingRecentlyAdded(false);
-        setLoadingHighDemand(false);
-      }
-    }, 800);
+    if (showLoading) {
+      setLoading(false);
+      setLoadingDiscovery(false);
+      setLoadingMostViewed(false);
+      setLoadingTrending(false);
+      setLoadingRecentlyAdded(false);
+      setLoadingHighDemand(false);
+    }
   }, []);
 
   // State for filter dropdown
@@ -214,90 +211,93 @@ const DashboardLocationBased = () => {
     setShowFilteredResults(true);
 
     try {
-      const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      // For Demo mode, use Mock Data as primary source
+      // This ensures a fast and reliable experience for the user
+      console.log('[Dashboard] Filtering properties using Mock Data Service');
 
-      // Build query based on filters
-      let filterParams = [];
-      let orderBy = 'created_at.desc';
+      let results = [...MOCK_PROPERTIES];
 
-      // Base filters
-      const listingType = selectedPropertyType === 'rent' ? 'rent' : 'sale';
-      filterParams.push(`listing_type=eq.${listingType}`);
-      filterParams.push('or=(status.eq.online,status.eq.published,status.eq.active)');
-
-      // Apply filter options
-      if (selectedFilters.includes('recently_added')) {
-        const twentyFourHoursAgo = new Date();
-        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-        filterParams.push(`created_at=gte.${twentyFourHoursAgo.toISOString()}`);
-        orderBy = 'created_at.desc';
-      }
-
-      if (selectedFilters.includes('most_viewed')) {
-        orderBy = 'view_count.desc.nullslast,created_at.desc';
-      }
-
-      if (selectedFilters.includes('high_demand')) {
-        filterParams.push('view_count=gte.1');
-        if (!selectedFilters.includes('most_viewed')) {
-          orderBy = 'view_count.desc.nullslast,created_at.desc';
+      // Filter by property type (Buy/Rent/Sold)
+      if (selectedPropertyType === 'rent') {
+        results = results.filter(p => p.property_type === 'rent');
+      } else {
+        results = results.filter(p => p.property_type === 'sale' || p.listing_type === 'sale');
+        if (selectedPropertyType === 'sold') {
+          // In real app, we'd filter by status=sold, here we'll just use a subset for demo
+          results = results.slice(0, 5);
         }
       }
 
-      if (selectedFilters.includes('budget_friendly')) {
-        if (selectedPropertyType === 'rent') {
-          filterParams.push('price=lte.2000');
-        } else {
-          filterParams.push('price=lte.500000');
+      // Apply filter options (Multiple filters work as OR or AND depending on logic)
+      if (selectedFilters.length > 0) {
+        let filteredResults = [];
+
+        if (selectedFilters.includes('recently_added')) {
+          // Properties created in last 7 days (for demo)
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const recent = results.filter(p => new Date(p.created_at || Date.now()) >= sevenDaysAgo);
+          filteredResults = [...filteredResults, ...recent];
         }
-        if (!selectedFilters.includes('most_viewed') && !selectedFilters.includes('high_demand') && !selectedFilters.includes('recently_added')) {
-          orderBy = 'price.asc,created_at.desc';
+
+        if (selectedFilters.includes('most_viewed')) {
+          // Properties with high view count
+          const popular = results.filter(p => (p.view_count || 0) > 200);
+          filteredResults = [...filteredResults, ...popular];
         }
+
+        if (selectedFilters.includes('high_demand')) {
+          // For demo, similar to most viewed or specific ones
+          const highDemand = results.filter(p => (p.view_count || 0) > 150);
+          filteredResults = [...filteredResults, ...highDemand];
+        }
+
+        if (selectedFilters.includes('budget_friendly')) {
+          // Under 1M for sale, under 2k for rent
+          const budget = results.filter(p => {
+            const price = parseFloat(p.price) || 0;
+            return selectedPropertyType === 'rent' ? price <= 2000 : price <= 1000000;
+          });
+          filteredResults = [...filteredResults, ...budget];
+        }
+
+        // Remove duplicates if multiple filters are selected
+        results = [...new Set(filteredResults)];
       }
 
-      // Location filter
-      const locationTerm = searchInput.trim();
+      // Apply location filter if text exists
+      const locationTerm = searchInput.trim().toLowerCase();
       if (locationTerm) {
-        filterParams.push(`or=(city.ilike.*${locationTerm}*,postcode.ilike.*${locationTerm}*,address_line_1.ilike.*${locationTerm}*,state.ilike.*${locationTerm}*)`);
+        results = results.filter(p =>
+          (p.city || '').toLowerCase().includes(locationTerm) ||
+          (p.address_line_1 || '').toLowerCase().includes(locationTerm) ||
+          (p.postcode || '').toLowerCase().includes(locationTerm)
+        );
       }
 
-      const url = `${supabaseUrl}/rest/v1/properties?select=*&${filterParams.join('&')}&order=${orderBy}&limit=12`;
+      // Sort by created_at desc by default
+      results.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
-      console.log('[Dashboard] Fetching filtered properties:', url);
+      // Immediate state update - no artificial delay
+      setFilteredProperties(results);
+      setFilteredCount(results.length);
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'count=exact'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const countHeader = response.headers.get('content-range');
-      const totalCount = countHeader ? parseInt(countHeader.split('/')[1]) : data.length;
-
-      console.log('[Dashboard] Filtered properties received:', data.length);
-
-      setFilteredProperties(data || []);
-      setFilteredCount(totalCount || 0);
-
-      if (data.length === 0) {
+      if (results.length === 0) {
         setLocationMessage('No properties found matching your filters. Try adjusting your search criteria.');
       }
+      setSearchLoading(false);
+
+      return; // Exit early as we're using mock data
+
+      // Real API logic below (commented out or kept as secondary)
+      /*
+      const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      // ... rest of API code ...
+      */
     } catch (err) {
-      console.error('[Dashboard] Error fetching filtered properties:', err);
-      setError('Failed to fetch properties. Please try again.');
-      setFilteredProperties([]);
-      setFilteredCount(0);
-    } finally {
+      console.error('[Dashboard] Error filtering properties:', err);
+      // Fallback already handled by using mock data above
       setSearchLoading(false);
     }
   }, [selectedPropertyType, selectedFilters, searchInput]);
@@ -483,10 +483,10 @@ const DashboardLocationBased = () => {
       </div>
 
       {/* Hero Search Section - Modern Polished Design */}
-      <div className="relative rounded-2xl shadow-2xl overflow-hidden min-h-[480px] lg:min-h-[520px] flex flex-col items-center justify-center animate-fadeIn">
-        {/* Background Image with smooth loading */}
+      <div className="relative rounded-3xl shadow-soft-xl overflow-hidden min-h-[500px] lg:min-h-[550px] flex flex-col items-center justify-center animate-fadeIn group">
+        {/* Background Image with smooth loading and parallax effect */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105"
           style={{
             backgroundImage: `url('https://images.pexels.com/photos/8293778/pexels-photo-8293778.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2')`,
           }}
@@ -494,20 +494,28 @@ const DashboardLocationBased = () => {
         {/* Elegant gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/70 via-gray-900/50 to-orange-900/30" />
 
-        {/* Hero Content - Clean & Readable */}
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight tracking-tight animate-slideUp">
-            Find your perfect{' '}
-            <span className="text-orange-400">home</span>
+        {/* Top decorative gradient for seamless header blend */}
+        <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-black/20 to-transparent" />
+
+        {/* Hero Content - Enhanced Contrast for Bright Image */}
+        <div className="relative z-10 text-center px-4 md:px-6 max-w-5xl mx-auto w-full">
+          <h1
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight tracking-tight animate-slideUp"
+            style={{ textShadow: '0 4px 20px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)' }}
+          >
+            Find your <span className="text-orange-400" style={{ textShadow: '0 4px 20px rgba(251,146,60,0.4), 0 2px 8px rgba(0,0,0,0.3)' }}>perfect space</span>
           </h1>
-          <p className="text-white/90 text-base md:text-lg mb-8 max-w-2xl mx-auto animate-slideUp" style={{ animationDelay: '0.1s' }}>
-            Search thousands of properties for sale and rent across the UK
+          <p
+            className="text-white text-lg md:text-xl mb-10 max-w-2xl mx-auto animate-slideUp font-medium tracking-wide"
+            style={{ animationDelay: '0.1s', textShadow: '0 2px 12px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3)' }}
+          >
+            Discover thousands of premium properties for sale and rent across the UK
           </p>
 
           {/* Search Card - Clean Glass Effect */}
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 lg:p-6 shadow-2xl max-w-3xl mx-auto animate-slideUp" style={{ animationDelay: '0.2s' }}>
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl p-6 lg:p-8 shadow-2xl max-w-4xl mx-auto animate-slideUp border border-white/50 ring-1 ring-black/5" style={{ animationDelay: '0.2s' }}>
             {/* Tabs */}
-            <div className="flex items-center gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit mx-auto">
+            <div className="flex items-center gap-2 mb-6 bg-gray-100/80 p-1.5 rounded-2xl w-fit mx-auto border border-gray-200/50">
               <button
                 type="button"
                 onClick={(e) => {
@@ -515,9 +523,9 @@ const DashboardLocationBased = () => {
                   setSelectedPropertyType('buy');
                   setSearchParams({ type: 'buy' }, { replace: true });
                 }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${selectedPropertyType === 'buy'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${selectedPropertyType === 'buy'
+                  ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                   }`}
               >
                 Buy
@@ -529,9 +537,9 @@ const DashboardLocationBased = () => {
                   setSelectedPropertyType('rent');
                   setSearchParams({ type: 'rent' }, { replace: true });
                 }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${selectedPropertyType === 'rent'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${selectedPropertyType === 'rent'
+                  ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                   }`}
               >
                 Rent
@@ -543,9 +551,9 @@ const DashboardLocationBased = () => {
                   setSelectedPropertyType('sold');
                   setSearchParams({ type: 'sold' }, { replace: true });
                 }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${selectedPropertyType === 'sold'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${selectedPropertyType === 'sold'
+                  ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                   }`}
               >
                 Sold
@@ -553,7 +561,7 @@ const DashboardLocationBased = () => {
             </div>
 
             {/* Filter Options Row - Multiple Selection */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
               {[
                 { id: 'all', label: 'All Properties', icon: Sparkles },
                 { id: 'recently_added', label: 'Recently Added', icon: Clock },
@@ -598,12 +606,12 @@ const DashboardLocationBased = () => {
                       }
                       setSearchParams(newParams, { replace: true });
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isSelected
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${isSelected
+                      ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-none'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                   >
-                    <Icon size={14} />
+                    <Icon size={16} className={isSelected ? 'text-orange-500' : 'text-gray-400'} />
                     <span>{filter.label}</span>
                   </button>
                 );
@@ -611,35 +619,35 @@ const DashboardLocationBased = () => {
             </div>
 
             {/* Search Form - Inline */}
-            <form onSubmit={handleLocationSearch} className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <form onSubmit={handleLocationSearch} className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative group/input">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-orange-500 transition-colors" size={22} />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Enter postcode, city, or area..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                  className="w-full pl-14 pr-12 py-4 bg-gray-50 hover:bg-white border-2 border-transparent focus:bg-white focus:border-orange-500 rounded-2xl text-gray-900 placeholder-gray-400 text-lg transition-all duration-300 outline-none shadow-inner"
                   disabled={searchLoading}
                 />
                 {searchInput && (
                   <button
                     type="button"
                     onClick={() => setSearchInput('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
                   >
-                    <X size={18} />
+                    <X size={20} />
                   </button>
                 )}
               </div>
               <button
                 type="submit"
                 disabled={searchLoading}
-                className="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[140px] shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30"
+                className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 min-w-[160px] shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 transform hover:-translate-y-1"
               >
                 {searchLoading ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} />
+                    <Loader2 className="animate-spin" size={24} />
                     <span>Searching</span>
                   </>
                 ) : (

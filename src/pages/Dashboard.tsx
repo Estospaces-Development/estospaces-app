@@ -117,9 +117,6 @@ const Dashboard = () => {
     };
 
     fetchStats();
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch leads from API
@@ -144,9 +141,6 @@ const Dashboard = () => {
     };
 
     fetchLeads();
-    // Refresh leads every 30 seconds
-    const interval = setInterval(fetchLeads, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch analytics data
@@ -197,9 +191,6 @@ const Dashboard = () => {
     };
 
     fetchApplications();
-    // Refresh applications every 30 seconds
-    const interval = setInterval(fetchApplications, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Filter applications based on search and status

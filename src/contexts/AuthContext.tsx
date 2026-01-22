@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useRef } from 'react';
 import { isSupabaseAvailable } from '../lib/supabase';
-import authService, { 
-    AuthState, 
+import authService, {
+    AuthState,
     ProfileData,
-    AUTH_CONFIG 
+    AUTH_CONFIG
 } from '../services/authService';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -20,20 +20,20 @@ interface AuthContextValue {
     loading: boolean;
     profileLoading: boolean;
     error: string | null;
-    
+
     // Authentication
     signOut: () => Promise<void>;
     refreshSession: () => Promise<void>;
-    
+
     // Computed
     isAuthenticated: boolean;
     isSupabaseConfigured: boolean;
-    
+
     // Profile methods
     fetchProfile: (userId: string) => Promise<ProfileData | null>;
     updateProfile: (updates: Partial<ProfileData>) => Promise<{ data?: ProfileData; error?: string }>;
     createProfile: (profileData?: Partial<ProfileData>) => Promise<{ data?: ProfileData; error?: string } | ProfileData | null>;
-    
+
     // Helpers
     getDisplayName: () => string;
     getRole: () => string;
@@ -179,7 +179,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (!mountedRef.current) return;
 
         const { session: freshSession, error: sessionError } = await authService.getSessionSafe();
-        
+
         if (!mountedRef.current) return;
 
         if (sessionError) {
@@ -193,9 +193,55 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUser(freshSession.user);
             setAuthState('authenticated');
             setError(null);
-            
+
             // Fetch profile in background
             fetchProfile(freshSession.user.id);
+        } else if (import.meta.env.DEV) {
+            // DEVELOPMENT FALLBACK: Restore mock session if Supabase fails
+            console.log('⚠️ AuthContext: Refresh failed/empty. Restoring MOCK USER for development.');
+
+            const mockUser: User = {
+                id: 'mock-user-123',
+                app_metadata: { provider: 'email' },
+                user_metadata: {
+                    full_name: 'Dev User',
+                    role: 'user',
+                    email: 'dev@example.com'
+                },
+                aud: 'authenticated',
+                created_at: new Date().toISOString(),
+                email: 'dev@example.com',
+                phone: '',
+                confirmation_sent_at: '',
+                confirmed_at: new Date().toISOString(),
+                last_sign_in_at: new Date().toISOString(),
+                role: 'authenticated',
+                updated_at: new Date().toISOString(),
+            };
+
+            const mockSession: Session = {
+                access_token: 'mock-token',
+                refresh_token: 'mock-refresh-token',
+                expires_in: 3600,
+                token_type: 'bearer',
+                user: mockUser
+            };
+
+            setSession(mockSession);
+            setUser(mockUser);
+            setAuthState('authenticated');
+            setError(null);
+
+            // Set mock profile
+            setProfile({
+                id: mockUser.id,
+                email: mockUser.email,
+                full_name: mockUser.user_metadata.full_name,
+                role: mockUser.user_metadata.role,
+                phone: null,
+                avatar_url: null,
+                updated_at: new Date().toISOString()
+            });
         } else {
             setSession(null);
             setUser(null);
@@ -207,13 +253,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const signOut = useCallback(async () => {
         const { error: signOutError } = await authService.signOut();
-        
+
         if (mountedRef.current) {
             setSession(null);
             setUser(null);
             setProfile(null);
             setAuthState('unauthenticated');
-            
+
             if (signOutError) {
                 setError(signOutError);
             } else {
@@ -228,7 +274,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     useEffect(() => {
         mountedRef.current = true;
-        
+
         // Prevent duplicate initialization in StrictMode
         if (initializingRef.current) return;
         initializingRef.current = true;
@@ -243,7 +289,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             // Get initial session
             const { session: initialSession, error: sessionError } = await authService.getSessionSafe();
-            
+
             if (!mountedRef.current) return;
 
             if (sessionError) {
@@ -259,9 +305,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 setSession(initialSession);
                 setUser(initialSession.user);
                 setAuthState('authenticated');
-                
+
                 // Fetch profile in background (non-blocking)
                 fetchProfile(initialSession.user.id);
+            } else if (import.meta.env.DEV) {
+                // DEVELOPMENT FALLBACK: Create mock session if Supabase fails
+                console.log('⚠️ AuthContext: Supabase not connected/authenticated. Using MOCK USER for development.');
+
+                const mockUser: User = {
+                    id: 'mock-user-123',
+                    app_metadata: { provider: 'email' },
+                    user_metadata: {
+                        full_name: 'Dev User',
+                        role: 'user',
+                        email: 'dev@example.com'
+                    },
+                    aud: 'authenticated',
+                    created_at: new Date().toISOString(),
+                    email: 'dev@example.com',
+                    phone: '',
+                    confirmation_sent_at: '',
+                    confirmed_at: new Date().toISOString(),
+                    last_sign_in_at: new Date().toISOString(),
+                    role: 'authenticated',
+                    updated_at: new Date().toISOString(),
+                };
+
+                const mockSession: Session = {
+                    access_token: 'mock-token',
+                    refresh_token: 'mock-refresh-token',
+                    expires_in: 3600,
+                    token_type: 'bearer',
+                    user: mockUser
+                };
+
+                setSession(mockSession);
+                setUser(mockUser);
+                setAuthState('authenticated');
+
+                // Set mock profile
+                setProfile({
+                    id: mockUser.id,
+                    email: mockUser.email,
+                    full_name: mockUser.user_metadata.full_name,
+                    role: mockUser.user_metadata.role,
+                    phone: null,
+                    avatar_url: null,
+                    updated_at: new Date().toISOString()
+                });
             } else {
                 setAuthState('unauthenticated');
             }
@@ -287,7 +378,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 setUser(newSession.user);
                 setAuthState('authenticated');
                 setError(null);
-                
+
                 // Fetch profile for new sign-in
                 fetchProfile(newSession.user.id);
                 return;
@@ -360,20 +451,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         loading: authState === 'loading',
         profileLoading,
         error,
-        
+
         // Authentication
         signOut,
         refreshSession,
-        
+
         // Computed
         isAuthenticated: authState === 'authenticated' && !!session,
         isSupabaseConfigured: isSupabaseAvailable(),
-        
+
         // Profile methods
         fetchProfile,
         updateProfile,
         createProfile,
-        
+
         // Helpers
         getDisplayName,
         getRole,

@@ -12,7 +12,24 @@ import DashboardFooter from '../components/Dashboard/DashboardFooter';
 const DashboardApplications = () => {
   const navigate = useNavigate();
   // Use mock data locally to bypass API context if needed
-  const applications = MOCK_APPLICATIONS; // Directly using mock data for now
+  // Use mock data locally to bypass API context if needed
+  const rawApplications = MOCK_APPLICATIONS;
+
+  // Transform mock data to match ApplicationCard expected format
+  const applications = rawApplications.map(app => ({
+    ...app,
+    propertyImage: app.property?.image_urls?.[0] || null,
+    propertyTitle: app.property?.title || 'Unknown Property',
+    propertyAddress: app.property?.address_line_1 || 'Address not available',
+    propertyPrice: app.property?.price || 0,
+    propertyType: app.property?.property_type || 'sale',
+    agentName: app.property?.agent_name || 'Estospaces Agent',
+    referenceId: app.id,
+    lastUpdated: app.updated_at,
+    requiresAction: [APPLICATION_STATUS.DOCUMENTS_REQUESTED, 'action_required'].includes(app.status),
+    hasAppointment: !!app.appointment,
+    deadline: app.deadline
+  }));
 
   // Calculate derived values from mock data
   const searchQuery = '';

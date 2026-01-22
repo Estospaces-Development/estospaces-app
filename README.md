@@ -617,6 +617,21 @@ The Supabase client includes fallback configuration to ensure reliable API conne
   - **Status States**: Real-time tracking of request status (Pending -> Searching -> Broker Found)
   - **Mock Simulation**: Fully functional demo mode for testing the flow without live agents
 
+### Overseas Property Investment (January 2026)
+
+- **Dedicated Overseas Dashboard**: New specialized dashboard (`/dashboard/overseas`) for international property investments.
+- **Interactive Globe UI**: Visually stunning 3D globe interface for selecting regions and exploring global markets.
+- **Investment-Focused Metrics**: specialized property cards featuring ROI estimates, yield projections, and currency conversion.
+- **Curated International Listings**: Access to premium properties in top global destinations (Dubai, New York, Bali, etc.).
+- **Smart Currency Handling**: Auto-conversion of prices to user's preferred currency.
+
+### Performance Optimizations (January 2026)
+
+- **Optimized Rendering**: Implemented lazy loading and suspense boundaries for heavy dashboard components.
+- **Efficient Data Handling**: Refactored mock data service to support pagination and reduce initial load times.
+- **Code Splitting**: Enhanced route-based code splitting to improve application startup performance.
+- **Asset Optimization**: improved handling of static assets and images for faster rendering.
+
 ### Demo Mode & Mock Data (January 2026)
 
 - **Full Offline Capability**: The entire dashboard now functions seamlessly with a comprehensive Mock Data Service

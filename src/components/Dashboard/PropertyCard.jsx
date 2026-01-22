@@ -146,9 +146,10 @@ const PropertyCard = ({ property, onViewDetails }) => {
   // Handle images - support multiple field name variations from database
   // Priority: images (array) -> image (single) -> image_url -> thumbnail_url -> photo
   const getPropertyImages = () => {
-    // If images array exists and is not empty
-    if (property.images && Array.isArray(property.images) && property.images.length > 0) {
-      return property.images.slice(0, 4);
+    // If images array exists and is not empty (support both images and image_urls)
+    const imagesList = property.images || property.image_urls;
+    if (imagesList && Array.isArray(imagesList) && imagesList.length > 0) {
+      return imagesList.slice(0, 4);
     }
 
     // If images is a JSON string, parse it
@@ -259,9 +260,9 @@ const PropertyCard = ({ property, onViewDetails }) => {
       {/* Save Toast Notification - Rendered via Portal */}
       <ToastNotification />
 
-      <div className="bg-white dark:bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 hover:-translate-y-1.5 hover:border-orange-200 dark:hover:border-orange-500/30 transition-all duration-300 group cursor-pointer">
         {/* Image Carousel */}
-        <div className="relative h-56 bg-gray-200 overflow-hidden">
+        <div className="relative h-56 bg-gray-100 dark:bg-gray-800 overflow-hidden">
           {images.length > 0 ? (
             <>
               <img
@@ -370,29 +371,29 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-900 mb-1 line-clamp-1">{property.title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-700 mb-3 flex items-center gap-1">
-            <MapPin size={14} className="text-gray-400 dark:text-gray-600" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1">{property.title}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+            <MapPin size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
             <span className="line-clamp-1">{property.location}</span>
           </p>
 
           {/* Specs */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-700 mb-3">
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
             {property.beds && (
               <div className="flex items-center gap-1">
-                <Bed size={16} className="text-gray-400 dark:text-gray-600" />
+                <Bed size={16} className="text-gray-400 dark:text-gray-500" />
                 <span>{property.beds} Bed{property.beds > 1 ? 's' : ''}</span>
               </div>
             )}
             {property.baths && (
               <div className="flex items-center gap-1">
-                <Bath size={16} className="text-gray-400 dark:text-gray-600" />
-                <span>{property.baths} Bath{property.baths > 1 ? 'room' : ''}</span>
+                <Bath size={16} className="text-gray-400 dark:text-gray-500" />
+                <span>{property.baths} Bath{property.baths > 1 ? 's' : ''}</span>
               </div>
             )}
             {property.area && (
               <div className="flex items-center gap-1">
-                <Maximize size={16} className="text-gray-400 dark:text-gray-600" />
+                <Maximize size={16} className="text-gray-400 dark:text-gray-500" />
                 <span>{property.area} sqft</span>
               </div>
             )}
@@ -434,7 +435,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleViewDetails}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+              className="flex-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
             >
               View Details
             </button>
@@ -444,7 +445,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                 e.stopPropagation();
                 setShowVirtualTour(true);
               }}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-700 dark:text-gray-800 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-all duration-200"
             >
               Virtual Tour
             </button>
@@ -453,7 +454,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                 e.stopPropagation();
                 setShowShareModal(true);
               }}
-              className="p-2 border border-gray-300 dark:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-700 dark:text-gray-800 rounded-lg transition-colors"
+              className="p-2.5 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl transition-all duration-200"
               title="Share property"
             >
               <Share2 size={16} />

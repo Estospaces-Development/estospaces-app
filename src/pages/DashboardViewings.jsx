@@ -18,15 +18,9 @@ const DashboardViewings = () => {
   // Fetch viewings (mock)
   const fetchViewings = useCallback(async () => {
     setLoading(true);
-
-    // Simulate network delay
-    setTimeout(() => {
-      // Use mock viewings
-      // Filter by user ID if needed, but for now we just show all mock viewings
-      // since this is a protected dashboard view for the logged in user
-      setViewings(MOCK_VIEWINGS);
-      setLoading(false);
-    }, 600);
+    // Use mock viewings immediately - no artificial delay
+    setViewings(MOCK_VIEWINGS);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -255,11 +249,15 @@ const DashboardViewings = () => {
             >
               <div className="flex flex-col md:flex-row">
                 {/* Property Image */}
-                <div className="md:w-48 h-40 md:h-auto flex-shrink-0">
+                <div className="md:w-48 h-40 md:h-auto flex-shrink-0 bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={viewing.propertyImage}
+                    src={viewing.propertyImage || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=800'}
                     alt={viewing.propertyTitle}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=800';
+                    }}
                   />
                 </div>
 
