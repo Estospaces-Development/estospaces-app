@@ -197,6 +197,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             // Fetch profile in background
             fetchProfile(freshSession.user.id);
         } else if (import.meta.env.DEV) {
+            /*
             // DEVELOPMENT FALLBACK: Restore mock session if Supabase fails
             console.log('⚠️ AuthContext: Refresh failed/empty. Restoring MOCK USER for development.');
 
@@ -242,6 +243,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 avatar_url: null,
                 updated_at: new Date().toISOString()
             });
+            */
+            // In dev (and prod), if there's no session, we are unauthenticated.
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setAuthState('unauthenticated');
+            setError(null);
         } else {
             setSession(null);
             setUser(null);
@@ -309,6 +317,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 // Fetch profile in background (non-blocking)
                 fetchProfile(initialSession.user.id);
             } else if (import.meta.env.DEV) {
+                /*
                 // DEVELOPMENT FALLBACK: Create mock session if Supabase fails
                 console.log('⚠️ AuthContext: Supabase not connected/authenticated. Using MOCK USER for development.');
 
@@ -353,6 +362,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                     avatar_url: null,
                     updated_at: new Date().toISOString()
                 });
+                */
+                // Treat as unauthenticated in Dev if no real session
+                setAuthState('unauthenticated');
             } else {
                 setAuthState('unauthenticated');
             }

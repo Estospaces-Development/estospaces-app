@@ -685,6 +685,16 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 - **Document Verification Modal**: Upload modal with tips for identity and address verification
 - **Consistent Navigation**: All back buttons navigate to `/user/dashboard`
 
+### App Tour (Late January 2026)
+- **Interactive Onboarding**: New users are greeted with a comprehensive tour of the dashboard features.
+- **Guided Walkthrough**: Highlights key sections like "Discover", "Saved Properties", "Applications", and "Messages".
+- **Dismissible**: Users can skip the tour or revisit it later from the Help & Support section.
+
+### UI/UX Polish (Late January 2026)
+- **Expert Help Redesign**: Completely redesigned "Expert Help" widget with a premium, investor-ready look.
+- **Overseas Dashboard Refinements**: Enhanced visuals for the Overseas Dashboard, including a new hero image and refined property cards.
+- **Performance Optimizations**: General performance improvements across the dashboard for a smoother experience.
+
 ## 📊 Database Schema
 
 The application uses Supabase PostgreSQL with the following key tables:

@@ -25,9 +25,9 @@ import { getUserVerificationStatus } from '../../services/verificationService';
 // Helper component to get unread count badge
 const UnreadCountBadge = ({ isOpen }) => {
   const { totalUnreadCount } = useMessages();
-  
+
   if (totalUnreadCount === 0) return null;
-  
+
   if (isOpen) {
     return (
       <span className="ml-auto bg-orange-500 text-white text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">
@@ -123,7 +123,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase?.auth.onAuthStateChange(async (event, session) => {
       setCurrentUser(session?.user || null);
-      
+
       if (session?.user) {
         setLoadingVerification(true);
         const verificationResult = await getUserVerificationStatus(session.user.id);
@@ -160,11 +160,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40 transition-all duration-300 ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } ${isOpen ? 'w-64' : 'w-20'}`}
+        id="sidebar-nav"
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40 transition-all duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          } ${isOpen ? 'w-64' : 'w-20'}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo & User Info */}
@@ -222,18 +221,17 @@ const Sidebar = ({ isOpen, onToggle }) => {
                   <Link
                     key={item.path}
                     to={item.path}
+                    id={item.label === 'Messages' ? 'messages-badge' : undefined}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
-                      active
-                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-                    }`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${active
+                      ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                      }`}
                   >
                     <Icon
                       size={20}
-                      className={`flex-shrink-0 ${
-                        active ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                      }`}
+                      className={`flex-shrink-0 ${active ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                        }`}
                     />
                     {isOpen && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                     {item.showBadge && <UnreadCountBadge isOpen={isOpen} />}
@@ -249,19 +247,17 @@ const Sidebar = ({ isOpen, onToggle }) => {
             <Link
               to="/user/dashboard/profile"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                location.pathname === '/user/dashboard/profile'
-                  ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-              } ${!isOpen && 'justify-center'}`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${location.pathname === '/user/dashboard/profile'
+                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                } ${!isOpen && 'justify-center'}`}
             >
               <User
                 size={20}
-                className={`flex-shrink-0 ${
-                  location.pathname === '/user/dashboard/profile'
-                    ? 'text-orange-600 dark:text-orange-400'
-                    : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                }`}
+                className={`flex-shrink-0 ${location.pathname === '/user/dashboard/profile'
+                  ? 'text-orange-600 dark:text-orange-400'
+                  : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                  }`}
               />
               {isOpen && <span className="text-xs font-medium whitespace-nowrap">Profile</span>}
             </Link>
@@ -270,19 +266,17 @@ const Sidebar = ({ isOpen, onToggle }) => {
             <Link
               to="/user/dashboard/help"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                location.pathname === '/user/dashboard/help'
-                  ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-              } ${!isOpen && 'justify-center'}`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${location.pathname === '/user/dashboard/help'
+                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                } ${!isOpen && 'justify-center'}`}
             >
               <HelpCircle
                 size={20}
-                className={`flex-shrink-0 ${
-                  location.pathname === '/user/dashboard/help'
-                    ? 'text-orange-600 dark:text-orange-400'
-                    : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                }`}
+                className={`flex-shrink-0 ${location.pathname === '/user/dashboard/help'
+                  ? 'text-orange-600 dark:text-orange-400'
+                  : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                  }`}
               />
               {isOpen && <span className="text-xs font-medium whitespace-nowrap">Help & Support</span>}
             </Link>
@@ -291,9 +285,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
             <button
               onClick={handleSignOut}
               disabled={signingOut}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 w-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 group disabled:opacity-50 disabled:cursor-not-allowed ${
-                !isOpen && 'justify-center'
-              }`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 w-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-red-600 dark:hover:text-red-400 group disabled:opacity-50 disabled:cursor-not-allowed ${!isOpen && 'justify-center'
+                }`}
             >
               <LogOut size={20} className={`flex-shrink-0 text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 ${signingOut ? 'animate-spin' : ''}`} />
               {isOpen && <span className="text-xs font-medium whitespace-nowrap">{signingOut ? 'Signing out...' : 'Sign Out'}</span>}

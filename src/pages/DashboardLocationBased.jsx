@@ -20,8 +20,12 @@ import * as propertiesService from '../services/propertiesService';
 import { MOCK_PROPERTIES } from '../services/mockDataService';
 import BrokerRequestWidget from '../components/Dashboard/BrokerRequestWidget';
 import ApplicationTimelineWidget from '../components/Dashboard/ApplicationTimelineWidget';
+import ProfileCompletionCard from '../components/Dashboard/ProfileCompletionCard';
+import { useAppTour } from '../components/Tour/useAppTour';
 
 const DashboardLocationBased = () => {
+  // Initialize App Tour
+  useAppTour();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { savedProperties } = useSavedProperties();
@@ -471,7 +475,7 @@ const DashboardLocationBased = () => {
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen transition-all duration-300">
 
       {/* Simple Welcome Greeting */}
-      <div className="flex items-center justify-between animate-fadeIn">
+      <div id="greeting-section" className="flex items-center justify-between animate-fadeIn">
         <div>
           <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white">
             {getGreeting()}, <span className="text-orange-500 capitalize">{firstName}</span> 👋
@@ -480,10 +484,17 @@ const DashboardLocationBased = () => {
             What would you like to do today?
           </p>
         </div>
+
+        {/* Profile Completion Widget - Top Right */}
+        <div className="ml-auto">
+          <ProfileCompletionCard />
+        </div>
       </div>
 
+
+
       {/* Hero Search Section - Modern Polished Design */}
-      <div className="relative rounded-3xl shadow-soft-xl overflow-hidden min-h-[500px] lg:min-h-[550px] flex flex-col items-center justify-center animate-fadeIn group">
+      <div id="hero-search" className="relative rounded-3xl shadow-soft-xl overflow-hidden min-h-[500px] lg:min-h-[550px] flex flex-col items-center justify-center animate-fadeIn group">
         {/* Background Image with smooth loading and parallax effect */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105"

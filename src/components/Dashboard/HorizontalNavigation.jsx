@@ -134,7 +134,7 @@ const HorizontalNavigation = () => {
                 to={item.path}
                 onClick={() => handleNavClick(item.path)}
                 className={`
-                  relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 ease-out
+                  relative flex items-center gap-2 px-2 py-2.5 text-sm font-medium transition-all duration-200 ease-out
                   rounded-lg
                   ${active
                     ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10'
@@ -166,7 +166,7 @@ const HorizontalNavigation = () => {
             <button
               onClick={handleBuyClickWithAnimation}
               className={`
-                relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 ease-out
+                relative flex items-center gap-2 px-2 py-2.5 text-sm font-medium transition-all duration-200 ease-out
                 rounded-lg
                 ${isBuyActive()
                   ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10'
@@ -190,7 +190,7 @@ const HorizontalNavigation = () => {
             <button
               onClick={handleRentClickWithAnimation}
               className={`
-                relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 ease-out
+                relative flex items-center gap-2 px-2 py-2.5 text-sm font-medium transition-all duration-200 ease-out
                 rounded-lg
                 ${isRentActive()
                   ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10'
@@ -224,7 +224,7 @@ const HorizontalNavigation = () => {
                 to={item.path}
                 onClick={() => handleNavClick(item.path)}
                 className={`
-                  relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
+                  relative flex items-center gap-2 px-2 py-3 text-sm font-medium transition-all duration-300 ease-out
                   border-b-2 border-transparent
                   ${active
                     ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'
@@ -262,7 +262,7 @@ const HorizontalNavigation = () => {
                 to={item.path}
                 onClick={() => handleNavClick(item.path)}
                 className={`
-                  relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 ease-out
+                  relative flex items-center gap-2 px-2 py-3 text-sm font-medium transition-all duration-300 ease-out
                   border-b-2 border-transparent
                   ${active
                     ? 'text-orange-600 dark:text-orange-400 border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 active:text-orange-700 dark:active:text-orange-300 active:bg-orange-100 dark:active:bg-orange-900/30'

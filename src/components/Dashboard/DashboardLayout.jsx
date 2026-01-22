@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
@@ -9,6 +9,14 @@ import { PropertiesProvider } from '../../contexts/PropertiesContext';
 
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
+  const mainContentRef = useRef(null);
+
+  // Scroll to top on route change
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+    }
+  }, [location.pathname]);
 
   // Only show Lakshmi Assistant on the main dashboard page
   const isMainDashboard = location.pathname === '/user/dashboard' || location.pathname === '/user/dashboard/';
@@ -37,7 +45,7 @@ const DashboardLayout = ({ children }) => {
         <div className="light flex flex-col h-screen bg-gray-50 overflow-hidden">
           <Header />
           <HorizontalNavigation />
-          <main className="flex-1 overflow-y-auto bg-gray-50">
+          <main ref={mainContentRef} className="flex-1 overflow-y-auto bg-gray-50">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
