@@ -144,6 +144,13 @@ A modern, responsive property search and management dashboard for property seeke
   - Free cancellation notice
   - Success animation with redirect to My Applications
 
+- **Overseas Properties**
+  - dedicated dashboard for international property investments
+  - Browse properties from multiple countries (Dubai, USA, etc.)
+  - Currency conversion rates and investment insights
+  - International property specific search filters
+  - Specialized support for overseas buying process
+
 - **Financial Management**
   - Digital contracts with e-signature functionality
   - Payment management (rent, utilities)
@@ -371,6 +378,7 @@ All pages feature smart navigation that returns users to their previous location
 - **Settings**: `http://localhost:5173/user/dashboard/settings`
 - **Help & Support**: `http://localhost:5173/user/dashboard/help`
 - **Profile**: `http://localhost:5173/user/dashboard/profile`
+- **Overseas Properties**: `http://localhost:5173/user/dashboard/overseas`
 
 #### Legal & Support Pages
 - **Privacy Policy**: `http://localhost:5173/privacy`
@@ -600,6 +608,13 @@ The Supabase client includes fallback configuration to ensure reliable API conne
   - Integrated a new **Satellite View** mode in the property detail page using hybrid satellite imagery (satellite + labels).
   - Added a responsive toggle to switch between **Satellite Map** and **Interactive Street View**.
   - Enhanced the "Property Location" section with mode-specific descriptions and fullscreen shortcuts.
+
+### Overseas Properties (January 2026)
+- **International Market Access**: 
+  - New dedicated dashboard for overseas properties
+  - Support for multi-currency display and conversion
+  - Region-specific filtering and search
+  - Integrated mock data for international listings
 
 ### Real-Time Features (Late January 2026)
 
