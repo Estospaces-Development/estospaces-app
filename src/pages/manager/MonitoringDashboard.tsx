@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Building2, Zap, Eye, FileCheck, AlertCircle } from 'lucide-react';
+import BackButton from '../../components/ui/BackButton';
 import MonitorMetricCard from '../../components/manager/MonitorMetricCard';
 import SystemHealthBar, { HealthStatus } from '../../components/manager/SystemHealthBar';
 import LiveActivityFeed from '../../components/manager/LiveActivityFeed';
@@ -62,18 +63,21 @@ const MonitoringDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 space-y-8 animate-in fade-in duration-500 pb-20">
+        <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg shadow-blue-500/20">
-                        <Activity className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Real-Time Monitoring</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Live operational view of property & deal activity
-                        </p>
+            <div className="flex flex-col gap-2">
+                <BackButton />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg shadow-blue-500/20">
+                            <Activity className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Real-Time Monitoring</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Live operational view of property & deal activity
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

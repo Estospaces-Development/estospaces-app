@@ -371,7 +371,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1">{property.title}</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{property.title}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
             <MapPin size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
             <span className="line-clamp-1">{property.location}</span>

@@ -36,7 +36,7 @@ const WelcomeBanner = () => {
   }, []);
 
   return (
-    <div className="mb-6">
+    <div className="mb-2">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="page-title text-gray-800 dark:text-white mb-2">Welcome {displayName}</h2>

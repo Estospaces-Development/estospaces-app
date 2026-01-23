@@ -243,6 +243,16 @@ function App() {
                               }
                             />
                             <Route
+                              path="/manager/dashboard/notifications"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <DashboardNotifications />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
                               path="/manager/dashboard/billing"
                               element={
                                 <ManagerProtectedRoute>

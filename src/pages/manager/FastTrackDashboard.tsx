@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { mockFastTrackCases, FastTrackCase } from '../../mocks/fastTrackCases';
 import FastTrackCaseCard from '../../components/manager/FastTrackCaseCard';
 import { Zap, Clock, CheckCircle2, AlertOctagon } from 'lucide-react';
+import BackButton from '../../components/ui/BackButton';
 
 const FastTrackDashboard = () => {
     const [cases, setCases] = useState<FastTrackCase[]>(mockFastTrackCases);
@@ -19,16 +20,19 @@ const FastTrackDashboard = () => {
     }, [cases]);
 
     return (
-        <div className="p-6 space-y-8 animate-in fade-in duration-500 pb-20">
+        <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20">
-                        <Zap className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">24-Hour Fast Track</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Manager-led deal acceleration & readiness workflow</p>
+            <div className="flex flex-col gap-2">
+                <BackButton />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20">
+                            <Zap className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">24-Hour Fast Track</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Manager-led deal acceleration & readiness workflow</p>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useProperties } from '../../contexts/PropertyContext';
 
@@ -119,8 +120,8 @@ const AddLeadModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">
@@ -144,9 +145,8 @@ const AddLeadModal = ({
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter lead name"
               />
               {errors.name && (
@@ -162,9 +162,8 @@ const AddLeadModal = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter email address"
               />
               {errors.email && (
@@ -209,17 +208,16 @@ const AddLeadModal = ({
                 <select
                   value={formData.propertyInterested}
                   onChange={(e) => handleInputChange('propertyInterested', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                    errors.propertyInterested ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.propertyInterested ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select a property</option>
                   {properties.map((property) => {
-                    const displayText = property.address 
+                    const displayText = property.address
                       ? `${property.title} - ${property.address}${property.price ? ` (${property.price})` : ''}`
                       : property.price
-                      ? `${property.title} (${property.price})`
-                      : property.title;
+                        ? `${property.title} (${property.price})`
+                        : property.title;
                     return (
                       <option key={property.id} value={property.title}>
                         {displayText}
@@ -236,9 +234,8 @@ const AddLeadModal = ({
                     type="text"
                     value={formData.propertyInterested}
                     onChange={(e) => handleInputChange('propertyInterested', e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.propertyInterested ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.propertyInterested ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="Enter property name (no properties available)"
                   />
                   <p className="text-xs text-gray-500">
@@ -261,9 +258,8 @@ const AddLeadModal = ({
                 max="100"
                 value={formData.score}
                 onChange={(e) => handleInputChange('score', parseInt(e.target.value) || 0)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.score ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.score ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter score"
               />
               {errors.score && (
@@ -279,9 +275,8 @@ const AddLeadModal = ({
                 type="text"
                 value={formData.budget}
                 onChange={(e) => handleInputChange('budget', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.budget ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.budget ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="e.g., $2,500/mo"
               />
               {errors.budget && (
@@ -307,7 +302,8 @@ const AddLeadModal = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

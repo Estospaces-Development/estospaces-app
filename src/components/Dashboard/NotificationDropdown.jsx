@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Bell,
   Check,
@@ -18,6 +18,7 @@ import { useNotifications, NOTIFICATION_TYPES } from '../../contexts/Notificatio
 import { useToast } from '../../contexts/ToastContext';
 
 const NotificationDropdown = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const {
@@ -247,7 +248,7 @@ const NotificationDropdown = () => {
           {notifications.length > 0 && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               <Link
-                to="/user/dashboard/notifications"
+                to={location.pathname.includes('/manager') ? "/manager/dashboard/notifications" : "/user/dashboard/notifications"}
                 onClick={() => setIsOpen(false)}
                 className="block text-center text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
               >

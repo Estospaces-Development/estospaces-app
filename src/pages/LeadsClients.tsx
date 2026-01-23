@@ -1,17 +1,18 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import SummaryCard from '../components/ui/SummaryCard';
 import AddLeadModal from '../components/ui/AddLeadModal';
 import BackButton from '../components/ui/BackButton';
 import { useLeads, Lead } from '../contexts/LeadContext';
-import { 
-  UserPlus, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Users, 
-  Plus, 
-  Filter, 
+import {
+  UserPlus,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Users,
+  Plus,
+  Filter,
   Search,
   MoreVertical,
   Eye,
@@ -41,18 +42,18 @@ const LeadsClients = () => {
   const [scoreFilter, setScoreFilter] = useState('all');
 
   const filteredLeads = leads.filter((lead) => {
-    const matchesSearch = 
+    const matchesSearch =
       lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.propertyInterested.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-    
-    const matchesScore = scoreFilter === 'all' || 
+
+    const matchesScore = scoreFilter === 'all' ||
       (scoreFilter === 'high' && lead.score >= 90) ||
       (scoreFilter === 'medium' && lead.score >= 70 && lead.score < 90) ||
       (scoreFilter === 'low' && lead.score < 70);
-    
+
     return matchesSearch && matchesStatus && matchesScore;
   });
 
@@ -292,7 +293,7 @@ const LeadsClients = () => {
               </div>
             )}
           </div>
-          <button 
+          <button
             onClick={handleAddLead}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
           >
@@ -354,12 +355,11 @@ const LeadsClients = () => {
                     <div className="text-sm text-gray-900 dark:text-white">{lead.propertyInterested}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      lead.status === 'New Lead' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${lead.status === 'New Lead' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
                       lead.status === 'In Progress' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                      lead.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                      'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                    }`}>
+                        lead.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                          'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                      }`}>
                       {lead.status}
                     </span>
                   </td>
@@ -381,23 +381,23 @@ const LeadsClients = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleEditLead(lead)}
-                        className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300" 
+                        className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => window.location.href = `mailto:${lead.email}`}
-                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200" 
+                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                         title="Email"
                       >
                         <Mail className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => lead.phone && (window.location.href = `tel:${lead.phone}`)}
-                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200" 
+                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                         title="Call"
                       >
                         <Phone className="w-4 h-4" />
@@ -409,9 +409,9 @@ const LeadsClients = () => {
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => setShowDeleteConfirm(lead.id)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300" 
+                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -440,8 +440,8 @@ const LeadsClients = () => {
       {showViewModal && (() => {
         const lead = leads.find(l => l.id === showViewModal);
         if (!lead) return null;
-        return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        return createPortal(
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Lead Details</h3>
@@ -473,12 +473,11 @@ const LeadsClients = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                    lead.status === 'New Lead' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${lead.status === 'New Lead' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
                     lead.status === 'In Progress' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                    lead.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                    'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                  }`}>
+                      lead.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                        'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                    }`}>
                     {lead.status}
                   </span>
                 </div>
@@ -504,13 +503,14 @@ const LeadsClients = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {showDeleteConfirm && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Delete Lead</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -531,7 +531,8 @@ const LeadsClients = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

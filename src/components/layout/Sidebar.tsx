@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import logoIcon from '../../assets/logo-icon.png';
 import {
   LayoutDashboard,
   Building2,
@@ -126,17 +127,25 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
     <div className={`fixed left-0 top-0 h-full bg-white dark:bg-black shadow-lg transition-all duration-300 z-50 font-sans ${isOpen ? 'w-64' : 'w-20'}`}>
       <div className="flex flex-col h-full">
         {/* Logo Section */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-lg">E</span>
+        {/* Logo Section */}
+        <div className="p-6 border-b border-gray-100 dark:border-gray-800 transition-colors duration-300">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm group-hover:shadow-md group-hover:border-primary/20 dark:group-hover:border-primary/30 transition-all duration-300">
+              <img
+                src={logoIcon}
+                alt="Estospaces Logo"
+                className="w-7 h-7 object-contain flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+              />
             </div>
+
             {isOpen && (
-              <div>
-                <h1 className="text-xl font-bold text-gray-800 dark:text-white transition-colors duration-300">Estospaces</h1>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary">
+                  Estospaces
+                </h1>
               </div>
             )}
-          </div>
+          </Link>
         </div>
 
         {/* User Profile */}

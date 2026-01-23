@@ -405,7 +405,7 @@ const Dashboard = () => {
 
 
   return (
-    <div className="space-y-6 font-sans relative">
+    <div className="space-y-4 font-sans relative">
       {/* Chatbot Toggle Button */}
       {!isChatbotOpen && (
         <button

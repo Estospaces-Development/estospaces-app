@@ -6,10 +6,10 @@ import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import BackButton from '../components/ui/BackButton';
 import SharePropertyModal from '../components/ui/SharePropertyModal';
-import { 
+import {
   Plus, Edit, Trash2, Eye, Filter, Download, Search, Grid, List, Map,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Copy, MoreVertical,
-  CheckSquare, Square, Star, Verified, TrendingUp, Home, Building, 
+  CheckSquare, Square, Star, Verified, TrendingUp, Home, Building,
   DollarSign, Bed, Bath, Maximize, Calendar, MapPin, Heart, Share2,
   FileText, FileJson, ArrowUpDown, RefreshCw, Settings, BarChart3, Send
 } from 'lucide-react';
@@ -95,15 +95,15 @@ const sortOptions: { field: SortField; order: SortOrder; label: string }[] = [
 const PropertiesList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { 
-    filteredProperties, 
+  const {
+    filteredProperties,
     properties,
     selectedProperties,
     filters,
     sort,
     pagination,
     loading,
-    deleteProperty, 
+    deleteProperty,
     deleteProperties,
     duplicateProperty,
     updateProperty,
@@ -136,11 +136,11 @@ const PropertiesList = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedPropertyForShare, setSelectedPropertyForShare] = useState<Property | null>(null);
   const [publishingPropertyId, setPublishingPropertyId] = useState<string | null>(null);
-  
+
   // Favorited properties state (manager-specific from database)
   const [favoritedIds, setFavoritedIds] = useState<string[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
-  
+
   // Load favorited properties from database
   useEffect(() => {
     const loadFavorites = async () => {
@@ -148,15 +148,15 @@ const PropertiesList = () => {
         setLoadingFavorites(false);
         return;
       }
-      
+
       try {
         const { data, error } = await (supabase as SupabaseClient)
           .from('saved_properties')
           .select('property_id')
           .eq('user_id', user.id);
-        
+
         if (error) throw error;
-        
+
         const ids = (data || []).map(item => item.property_id);
         setFavoritedIds(ids);
       } catch (err) {
@@ -165,19 +165,19 @@ const PropertiesList = () => {
         setLoadingFavorites(false);
       }
     };
-    
+
     loadFavorites();
   }, [user?.id]);
-  
+
   // Toggle favorite status (save to database)
   const toggleFavorite = async (propertyId: string) => {
     if (!user?.id || !isSupabaseAvailable() || !supabase) {
       alert('Please log in to save favorites');
       return;
     }
-    
+
     const isCurrentlyFavorited = favoritedIds.includes(propertyId);
-    
+
     try {
       if (isCurrentlyFavorited) {
         // Remove from favorites
@@ -186,9 +186,9 @@ const PropertiesList = () => {
           .delete()
           .eq('user_id', user.id)
           .eq('property_id', propertyId);
-        
+
         if (error) throw error;
-        
+
         setFavoritedIds(prev => prev.filter(id => id !== propertyId));
       } else {
         // Add to favorites (upsert prevents duplicates)
@@ -200,9 +200,9 @@ const PropertiesList = () => {
           }, {
             onConflict: 'user_id,property_id'
           });
-        
+
         if (error) throw error;
-        
+
         setFavoritedIds(prev => [...prev, propertyId]);
       }
     } catch (err: any) {
@@ -210,12 +210,12 @@ const PropertiesList = () => {
       alert(`Failed to ${isCurrentlyFavorited ? 'remove from' : 'add to'} favorites: ${err?.message || 'Unknown error'}`);
     }
   };
-  
+
   // Check if property is favorited
   const isFavorited = (propertyId: string) => {
     return favoritedIds.includes(propertyId);
   };
-  
+
   // Filter properties based on active tab
   const tabFilteredProperties = useMemo(() => {
     if (activeTab === 'favorited') {
@@ -226,7 +226,7 @@ const PropertiesList = () => {
     }
     return filteredProperties;
   }, [filteredProperties, activeTab, favoritedIds]);
-  
+
   // Count draft properties
   const draftCount = useMemo(() => {
     return filteredProperties.filter(p => p.draft === true || p.status === 'draft').length;
@@ -270,12 +270,12 @@ const PropertiesList = () => {
 
   const handlePublish = async (id: string) => {
     if (!id) return;
-    
+
     setPublishingPropertyId(id);
     try {
       // Find the property in the current list to preserve all its data
       const property = filteredProperties.find(p => p.id === id);
-      
+
       if (!property) {
         throw new Error('Property not found');
       }
@@ -355,8 +355,8 @@ const PropertiesList = () => {
   const getStatusBadge = (status: PropertyStatus | string) => {
     if (!status) return null;
     const statusConfig = statusOptions.find(s => s.value === status?.toLowerCase());
-    const defaultConfig = { 
-      bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20', 
+    const defaultConfig = {
+      bgColor: 'bg-black/60 backdrop-blur-sm border border-white/20',
       color: 'text-white',
       label: status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
     };
@@ -392,11 +392,11 @@ const PropertiesList = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Properties</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {activeTab === 'favorited' 
+            {activeTab === 'favorited'
               ? `Your favorited properties (${tabFilteredProperties.length} ${tabFilteredProperties.length === 1 ? 'property' : 'properties'})`
               : activeTab === 'draft'
-              ? `Saved draft properties (${tabFilteredProperties.length} ${tabFilteredProperties.length === 1 ? 'draft' : 'drafts'})`
-              : `Manage all your property listings (${pagination.total} total)`}
+                ? `Saved draft properties (${tabFilteredProperties.length} ${tabFilteredProperties.length === 1 ? 'draft' : 'drafts'})`
+                : `Manage all your property listings (${pagination.total} total)`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -427,32 +427,29 @@ const PropertiesList = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('all')}
-            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
-              activeTab === 'all'
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${activeTab === 'all'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
+              }`}
           >
             All Properties ({pagination.total})
           </button>
           <button
             onClick={() => setActiveTab('favorited')}
-            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'favorited'
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'favorited'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
+              }`}
           >
             <Heart className={`w-4 h-4 ${activeTab === 'favorited' ? 'fill-current' : ''}`} />
             Favorited ({favoritedIds.length})
           </button>
           <button
             onClick={() => setActiveTab('draft')}
-            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'draft'
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'draft'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
+              }`}
           >
             <FileText className={`w-4 h-4 ${activeTab === 'draft' ? 'fill-current' : ''}`} />
             Saved Draft ({draftCount})
@@ -488,11 +485,10 @@ const PropertiesList = () => {
             {/* Filter Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg transition-all ${
-                showFilters || activeFiltersCount > 0
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg transition-all ${showFilters || activeFiltersCount > 0
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
+                }`}
             >
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
@@ -513,7 +509,7 @@ const PropertiesList = () => {
                 <span className="text-sm font-medium hidden sm:inline">Sort</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
-              
+
               <AnimatePresence>
                 {showSortMenu && (
                   <motion.div
@@ -529,11 +525,10 @@ const PropertiesList = () => {
                           setSort({ field: option.field, order: option.order });
                           setShowSortMenu(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                          sort.field === option.field && sort.order === option.order
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors first:rounded-t-lg last:rounded-b-lg ${sort.field === option.field && sort.order === option.order
                             ? 'bg-primary/10 text-primary font-medium'
                             : 'text-gray-700 dark:text-gray-300'
-                        }`}
+                          }`}
                       >
                         {option.label}
                       </button>
@@ -552,7 +547,7 @@ const PropertiesList = () => {
                 <Download className="w-4 h-4" />
                 <span className="text-sm font-medium hidden sm:inline">Export</span>
               </button>
-              
+
               <AnimatePresence>
                 {showExportMenu && (
                   <motion.div
@@ -590,11 +585,10 @@ const PropertiesList = () => {
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`p-2 rounded-md transition-all ${
-                    viewMode === mode
+                  className={`p-2 rounded-md transition-all ${viewMode === mode
                       ? 'bg-white dark:bg-gray-700 text-primary shadow-sm'
                       : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   {icon}
                 </button>
@@ -635,7 +629,7 @@ const PropertiesList = () => {
                       Change Status
                       <ChevronDown className="w-4 h-4" />
                     </button>
-                    
+
                     <AnimatePresence>
                       {showBulkActions && (
                         <motion.div
@@ -658,7 +652,7 @@ const PropertiesList = () => {
                       )}
                     </AnimatePresence>
                   </div>
-                  
+
                   <button
                     onClick={() => setShowBulkDeleteConfirm(true)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-all"
@@ -720,11 +714,10 @@ const PropertiesList = () => {
                       <button
                         key={option.label}
                         onClick={() => setSelectedBedrooms(option.value)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          selectedBedrooms === option.value
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedBedrooms === option.value
                             ? 'bg-primary text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
+                          }`}
                       >
                         {option.label}
                       </button>
@@ -748,11 +741,10 @@ const PropertiesList = () => {
                             setSelectedPropertyTypes([...selectedPropertyTypes, option.value]);
                           }
                         }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          selectedPropertyTypes.includes(option.value)
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedPropertyTypes.includes(option.value)
                             ? 'bg-primary text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
+                          }`}
                       >
                         {option.icon}
                         {option.label}
@@ -777,11 +769,10 @@ const PropertiesList = () => {
                             setSelectedStatuses([...selectedStatuses, option.value as PropertyStatus | string]);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          selectedStatuses.includes(option.value as PropertyStatus | string)
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedStatuses.includes(option.value as PropertyStatus | string)
                             ? `${option.bgColor} ${option.color}`
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
+                          }`}
                       >
                         {option.label}
                       </button>
@@ -830,20 +821,20 @@ const PropertiesList = () => {
             )}
           </div>
           <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-            {activeTab === 'favorited' 
+            {activeTab === 'favorited'
               ? 'No favorited properties'
               : activeTab === 'draft'
-              ? 'No draft properties'
-              : 'No properties found'}
+                ? 'No draft properties'
+                : 'No properties found'}
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             {activeTab === 'favorited'
               ? 'Properties you like will appear here. Click the heart icon on any property to add it to favorites.'
               : activeTab === 'draft'
-              ? 'Properties saved as drafts will appear here. Use "Save as Draft" when creating or editing a property.'
-              : activeFiltersCount > 0 
-                ? 'Try adjusting your filters to see more results.'
-                : 'Start by adding your first property listing.'}
+                ? 'Properties saved as drafts will appear here. Use "Save as Draft" when creating or editing a property.'
+                : activeFiltersCount > 0
+                  ? 'Try adjusting your filters to see more results.'
+                  : 'Start by adding your first property listing.'}
           </p>
           <div className="flex items-center justify-center gap-3">
             {activeFiltersCount > 0 && (
@@ -880,11 +871,10 @@ const PropertiesList = () => {
                     e.stopPropagation();
                     handleSelectProperty(property.id);
                   }}
-                  className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
-                    selectedProperties.includes(property.id)
+                  className={`w-6 h-6 rounded flex items-center justify-center transition-all ${selectedProperties.includes(property.id)
                       ? 'bg-primary text-white'
                       : 'bg-white/90 text-gray-400 opacity-0 group-hover:opacity-100'
-                  }`}
+                    }`}
                 >
                   {selectedProperties.includes(property.id) ? (
                     <CheckSquare className="w-4 h-4" />
@@ -895,7 +885,7 @@ const PropertiesList = () => {
               </div>
 
               {/* Image */}
-              <div 
+              <div
                 className="relative h-48 bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
@@ -916,7 +906,7 @@ const PropertiesList = () => {
                     <Home className="w-16 h-16 text-gray-300" />
                   </div>
                 )}
-                
+
                 {/* Badges */}
                 <div className="absolute top-3 right-3 flex flex-col gap-2">
                   {property.draft && (
@@ -942,11 +932,10 @@ const PropertiesList = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <div className={`absolute bottom-3 right-3 flex gap-2 transition-opacity ${
-                  isFavorited(property.id) || (property.draft || property.status === 'draft') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}>
+                <div className={`absolute bottom-3 right-3 flex gap-2 transition-opacity ${isFavorited(property.id) || (property.draft || property.status === 'draft') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
                   {(property.draft || property.status === 'draft') && (
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         if (property.id) {
@@ -960,19 +949,18 @@ const PropertiesList = () => {
                       <Send className="w-4 h-4" />
                     </button>
                   )}
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(property.id);
                     }}
-                    className={`w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors ${
-                      isFavorited(property.id) ? 'text-red-500' : 'text-gray-600'
-                    }`}
+                    className={`w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors ${isFavorited(property.id) ? 'text-red-500' : 'text-gray-600'
+                      }`}
                     title={isFavorited(property.id) ? 'Remove from favorites' : 'Add to favorites'}
                   >
                     <Heart className={`w-4 h-4 ${isFavorited(property.id) ? 'fill-current' : ''}`} />
                   </button>
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedPropertyForShare(property);
@@ -990,8 +978,8 @@ const PropertiesList = () => {
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
-                    <h3 
-                      className="font-semibold text-gray-800 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                    <h3
+                      className="font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-primary transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -1016,7 +1004,7 @@ const PropertiesList = () => {
                     >
                       <MoreVertical className="w-5 h-5" />
                     </button>
-                    
+
                     <AnimatePresence>
                       {activePropertyMenu === property.id && (
                         <motion.div
@@ -1050,7 +1038,7 @@ const PropertiesList = () => {
                               disabled={publishingPropertyId === property.id}
                               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/10 dark:hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Send className="w-4 h-4" /> 
+                              <Send className="w-4 h-4" />
                               {publishingPropertyId === property.id ? 'Publishing...' : 'Publish'}
                             </button>
                           )}
@@ -1090,8 +1078,8 @@ const PropertiesList = () => {
                 {/* Price */}
                 <div className="mb-3">
                   <span className="text-xl font-bold text-primary">
-                    {property.price?.amount 
-                      ? formatPrice(property.price) 
+                    {property.price?.amount
+                      ? formatPrice(property.price)
                       : property.priceString || 'Price on Request'}
                   </span>
                   {property.listingType === 'rent' && (
@@ -1150,11 +1138,10 @@ const PropertiesList = () => {
                 <div className="relative md:w-72 h-48 md:h-auto flex-shrink-0">
                   <button
                     onClick={() => handleSelectProperty(property.id)}
-                    className={`absolute top-3 left-3 z-10 w-6 h-6 rounded flex items-center justify-center transition-all ${
-                      selectedProperties.includes(property.id)
+                    className={`absolute top-3 left-3 z-10 w-6 h-6 rounded flex items-center justify-center transition-all ${selectedProperties.includes(property.id)
                         ? 'bg-primary text-white'
                         : 'bg-white/90 text-gray-400'
-                    }`}
+                      }`}
                   >
                     {selectedProperties.includes(property.id) ? (
                       <CheckSquare className="w-4 h-4" />
@@ -1163,7 +1150,7 @@ const PropertiesList = () => {
                     )}
                   </button>
 
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-br from-primary/20 via-purple-400/20 to-pink-400/20 cursor-pointer"
                     onClick={(e) => {
                       e.preventDefault();
@@ -1193,7 +1180,7 @@ const PropertiesList = () => {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1 flex-wrap">
-                          <h3 
+                          <h3
                             className="text-lg font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-primary transition-colors"
                             onClick={(e) => {
                               e.preventDefault();
@@ -1223,8 +1210,8 @@ const PropertiesList = () => {
                         </p>
                       </div>
                       <span className="text-xl font-bold text-primary ml-4">
-                        {property.price?.amount 
-                          ? formatPrice(property.price) 
+                        {property.price?.amount
+                          ? formatPrice(property.price)
                           : property.priceString || 'Price on Request'}
                       </span>
                     </div>
@@ -1260,11 +1247,10 @@ const PropertiesList = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => toggleFavorite(property.id)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isFavorited(property.id)
+                        className={`p-2 rounded-lg transition-colors ${isFavorited(property.id)
                             ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                             : 'text-gray-600 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                          }`}
                         title={isFavorited(property.id) ? 'Remove from favorites' : 'Add to favorites'}
                       >
                         <Heart className={`w-5 h-5 ${isFavorited(property.id) ? 'fill-current' : ''}`} />
@@ -1352,7 +1338,7 @@ const PropertiesList = () => {
                   value={pagination.limit}
                   onChange={(e) => setLimit(Number(e.target.value))}
                   className="px-3 py-1.5 pr-8 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all min-w-[110px]"
-                  style={{ 
+                  style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'right 0.5rem center',
@@ -1398,7 +1384,7 @@ const PropertiesList = () => {
                     )}
                   </>
                 )}
-                
+
                 {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                   let pageNum: number;
                   if (pagination.totalPages <= 5) {
@@ -1415,11 +1401,10 @@ const PropertiesList = () => {
                     <button
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
-                      className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                        pagination.page === pageNum
+                      className={`w-10 h-10 rounded-lg font-medium transition-colors ${pagination.page === pageNum
                           ? 'bg-primary text-white'
                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                        }`}
                       aria-label={`Go to page ${pageNum}`}
                       aria-current={pagination.page === pageNum ? 'page' : undefined}
                     >
@@ -1427,7 +1412,7 @@ const PropertiesList = () => {
                     </button>
                   );
                 })}
-                
+
                 {pagination.totalPages > 5 && pagination.page < pagination.totalPages - 2 && (
                   <>
                     {pagination.page < pagination.totalPages - 3 && (

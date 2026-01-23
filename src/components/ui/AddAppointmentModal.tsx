@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface Appointment {
@@ -82,8 +83,8 @@ const AddAppointmentModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">
@@ -107,9 +108,8 @@ const AddAppointmentModal = ({
                 type="text"
                 value={formData.clientName}
                 onChange={(e) => handleInputChange('clientName', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.clientName ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.clientName ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter client name"
               />
               {errors.clientName && (
@@ -137,9 +137,8 @@ const AddAppointmentModal = ({
                 type="date"
                 value={formData.date}
                 onChange={(e) => handleInputChange('date', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.date ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.date ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
             </div>
@@ -150,9 +149,8 @@ const AddAppointmentModal = ({
                 type="time"
                 value={formData.time}
                 onChange={(e) => handleInputChange('time', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.time ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.time ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.time && <p className="text-red-500 text-xs mt-1">{errors.time}</p>}
             </div>
@@ -196,9 +194,8 @@ const AddAppointmentModal = ({
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                  errors.description ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.description ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter appointment description"
               />
               {errors.description && (
@@ -224,7 +221,8 @@ const AddAppointmentModal = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
