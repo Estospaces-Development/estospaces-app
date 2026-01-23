@@ -785,47 +785,44 @@ export const MOCK_APPLICATIONS = [
 export const MOCK_VIEWINGS = [
     {
         id: 'view-001',
-        propertyId: 'prop-002',
-        propertyTitle: 'Ultra-Modern River View Penthouse',
-        propertyAddress: '15 Canary Wharf Tower, London E14 5AB',
-        propertyImage: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2000&auto=format&fit=crop',
-        propertyPrice: 850000,
-        listingType: 'sale',
-        date: format(addDays(NOW, 2), 'yyyy-MM-dd'),
-        time: '10:00',
+        property_id: 'prop-002',
+        property: MOCK_PROPERTIES[1],
+        scheduled_date: format(addDays(NOW, 2), 'yyyy-MM-dd'),
+        scheduled_time: '10:00',
         status: 'confirmed',
-        agentName: 'Sarah Mitchell',
-        agentPhone: '+44 7700 900123',
+        agent: {
+            name: 'Sarah Mitchell',
+            phone: '+44 7700 900123',
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100'
+        },
         notes: 'Please arrive 5 minutes early. Parking available in the building.'
     },
     {
         id: 'view-002',
-        propertyId: 'prop-003',
-        propertyTitle: 'Stunning Cotswold Stone Cottage',
-        propertyAddress: '7 Rose Lane, Cotswolds GL54 2HN',
-        propertyImage: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=2000&auto=format&fit=crop',
-        propertyPrice: 685000,
-        listingType: 'sale',
-        date: format(addDays(NOW, 5), 'yyyy-MM-dd'),
-        time: '14:30',
+        property_id: 'prop-003',
+        property: MOCK_PROPERTIES[2],
+        scheduled_date: format(addDays(NOW, 5), 'yyyy-MM-dd'),
+        scheduled_time: '14:30',
         status: 'pending',
-        agentName: 'James Wilson',
-        agentPhone: '+44 7700 900456',
+        agent: {
+            name: 'James Wilson',
+            phone: '+44 7700 900456',
+            avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100'
+        },
         notes: 'Virtual viewing also available upon request.'
     },
     {
         id: 'view-003',
-        propertyId: 'prop-006',
-        propertyTitle: 'Stylish Manchester Loft',
-        propertyAddress: '88 Northern Quarter, Manchester M4 1HQ',
-        propertyImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2000&auto=format&fit=crop',
-        propertyPrice: 1850,
-        listingType: 'rent',
-        date: format(subDays(NOW, 3), 'yyyy-MM-dd'),
-        time: '11:00',
+        property_id: 'prop-006',
+        property: MOCK_PROPERTIES[5],
+        scheduled_date: format(subDays(NOW, 3), 'yyyy-MM-dd'),
+        scheduled_time: '11:00',
         status: 'completed',
-        agentName: 'Emma Thompson',
-        agentPhone: '+44 7700 900789',
+        agent: {
+            name: 'Emma Thompson',
+            phone: '+44 7700 900789',
+            avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100'
+        },
         notes: 'Viewing completed. Follow-up call scheduled.'
     }
 ];

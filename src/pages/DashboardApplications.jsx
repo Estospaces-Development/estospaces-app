@@ -16,7 +16,7 @@ const DashboardApplications = () => {
   const rawApplications = MOCK_APPLICATIONS;
 
   // Transform mock data to match ApplicationCard expected format
-  const applications = rawApplications.map(app => ({
+  const initialApplications = rawApplications.map(app => ({
     ...app,
     propertyImage: app.property?.image_urls?.[0] || null,
     propertyTitle: app.property?.title || 'Unknown Property',
@@ -26,10 +26,23 @@ const DashboardApplications = () => {
     agentName: app.property?.agent_name || 'Estospaces Agent',
     referenceId: app.id,
     lastUpdated: app.updated_at,
+    submittedDate: app.created_at, // Map created_at to submittedDate for ApplicationDetail
     requiresAction: [APPLICATION_STATUS.DOCUMENTS_REQUESTED, 'action_required'].includes(app.status),
     hasAppointment: !!app.appointment,
     deadline: app.deadline
   }));
+
+  const [applications, setApplications] = useState(initialApplications);
+
+  const handleUpdateStatus = (applicationId, newStatus) => {
+    setApplications(prevApps =>
+      prevApps.map(app =>
+        app.id === applicationId
+          ? { ...app, status: newStatus, lastUpdated: new Date().toISOString() }
+          : app
+      )
+    );
+  };
 
   // Calculate derived values from mock data
   const searchQuery = '';
@@ -49,8 +62,7 @@ const DashboardApplications = () => {
   const getApplicationsWithDeadlineWarnings = () => []; // Simplified for mock
 
   const allApplications = applications;
-  const selectedApplicationId = null;
-  const setSelectedApplicationId = () => { };
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
 
   // NOTE: In a real refactor, we would update the ApplicationsContext to use the mock service
   // But for this task, we are overriding local variables to force mock display
@@ -121,10 +133,13 @@ const DashboardApplications = () => {
   ];
 
   if (viewMode === 'detail' && selectedApplicationId) {
+    const selectedApplication = allApplications.find(app => app.id === selectedApplicationId);
     return (
       <ApplicationDetail
         applicationId={selectedApplicationId}
+        application={selectedApplication}
         onClose={handleBackToList}
+        onUpdateStatus={handleUpdateStatus}
       />
     );
   }

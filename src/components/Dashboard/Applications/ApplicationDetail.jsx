@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  ArrowLeft, 
-  ExternalLink, 
-  MapPin, 
-  MessageSquare, 
-  Upload, 
-  XCircle, 
+import {
+  ArrowLeft,
+  ExternalLink,
+  MapPin,
+  MessageSquare,
+  Upload,
+  XCircle,
   CheckCircle,
   Calendar,
   Clock,
@@ -21,20 +21,22 @@ import {
   Banknote,
   Briefcase,
   History,
-  Shield
+  Shield,
+  Key
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApplications, APPLICATION_STATUS } from '../../../contexts/ApplicationsContext';
 import StatusTracker from './StatusTracker';
 
-const ApplicationDetail = ({ applicationId, onClose }) => {
+const ApplicationDetail = ({ applicationId, application: initialApplication, onClose, onUpdateStatus }) => {
   const navigate = useNavigate();
   const { allApplications, withdrawApplication, updateApplicationStatus } = useApplications();
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Find the application
-  const application = allApplications?.find(app => app.id === applicationId);
+  // Find the application - prioritize the passed prop, fall back to context search
+  const application = initialApplication || allApplications?.find(app => app.id === applicationId);
 
   if (!application) {
     return (
@@ -77,8 +79,19 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
   };
 
   const handleWithdraw = async () => {
-    await withdrawApplication(applicationId);
+    if (onUpdateStatus) {
+      onUpdateStatus(applicationId, APPLICATION_STATUS.WITHDRAWN);
+    } else {
+      await withdrawApplication(applicationId);
+    }
     setShowWithdrawConfirm(false);
+  };
+
+  const handleComplete = async () => {
+    if (onUpdateStatus) {
+      onUpdateStatus(applicationId, APPLICATION_STATUS.COMPLETED);
+      setShowCompleteConfirm(false);
+    }
   };
 
   // Generate mock activity history based on status
@@ -143,6 +156,18 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
       });
     }
 
+    if (application.status === APPLICATION_STATUS.COMPLETED) {
+      history.push({
+        id: 5,
+        type: 'completed',
+        title: application.listingType === 'rent' ? 'Keys Collected' : 'Handover Complete',
+        description: application.listingType === 'rent' ? 'You have collected the keys and moved in' : 'Key handover completed successfully',
+        date: application.lastUpdated,
+        icon: Key,
+        color: 'green'
+      });
+    }
+
     if (application.status === APPLICATION_STATUS.WITHDRAWN) {
       history.push({
         id: 4,
@@ -172,14 +197,14 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          >
-            <ArrowLeft size={20} />
+            <button
+              onClick={onClose}
+              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            >
+              <ArrowLeft size={20} />
               <span className="font-medium">Back to Applications</span>
-          </button>
-            
+            </button>
+
             <div className="flex items-center gap-3">
               {canWithdraw && (
                 <button
@@ -189,7 +214,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                   Withdraw
                 </button>
               )}
-          </div>
+            </div>
           </div>
         </div>
       </div>
@@ -209,34 +234,33 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                   e.target.src = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400';
                 }}
               />
-          </div>
+            </div>
 
             {/* Property Info */}
             <div className="flex-1 p-6">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      application.listingType === 'rent' 
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${application.listingType === 'rent'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      }`}>
                       {application.listingType === 'rent' ? 'Rental' : 'Purchase'}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       Ref: {application.referenceId}
                     </span>
                   </div>
-                  
+
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                     {application.propertyTitle}
                   </h1>
-                  
+
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4">
                     <MapPin size={16} />
                     <span>{application.propertyAddress}</span>
                   </div>
-                  
+
                   <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                     {formatPrice(application.propertyPrice)}
                     {application.listingType === 'rent' && (
@@ -244,7 +268,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                     )}
                   </div>
                 </div>
-                
+
                 <button
                   onClick={() => navigate(`/user/dashboard/property/${application.propertyId}`)}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
@@ -253,27 +277,27 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                   <ExternalLink size={16} />
                 </button>
               </div>
-              
+
               {/* Quick Info */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div>
+                <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Submitted</p>
                   <p className="font-semibold text-gray-900 dark:text-white">
                     {formatDate(application.submittedDate)}
-                    </p>
-                  </div>
-                  <div>
+                  </p>
+                </div>
+                <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
                   <p className="font-semibold text-gray-900 dark:text-white">
                     {formatDate(application.lastUpdated)}
-                    </p>
-                  </div>
-                  <div>
+                  </p>
+                </div>
+                <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Property Type</p>
                   <p className="font-semibold text-gray-900 dark:text-white capitalize">
                     {application.propertyType}
-                    </p>
-                  </div>
+                  </p>
+                </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Application Type</p>
                   <p className="font-semibold text-gray-900 dark:text-white capitalize">
@@ -288,7 +312,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
         {/* Status Tracker */}
         <div className="mb-6">
           <StatusTracker status={application.status} listingType={application.listingType} />
-          </div>
+        </div>
 
         {/* Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -300,11 +324,10 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'border-orange-500 text-orange-600 dark:text-orange-400'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
+                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
+                      ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
                   >
                     <Icon size={18} />
                     <span>{tab.label}</span>
@@ -322,21 +345,21 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <User size={20} className="text-orange-500" />
-              Agent Information
+                    Agent Information
                   </h3>
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
                       {application.agentName?.charAt(0)?.toUpperCase() || 'A'}
-                </div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-gray-900 dark:text-white">
-                    {application.agentName}
+                        {application.agentName}
                       </h4>
                       {application.agentAgency && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
                           <Building2 size={14} />
-                    {application.agentAgency}
-                  </p>
+                          {application.agentAgency}
+                        </p>
                       )}
                       {application.agentEmail && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
@@ -350,15 +373,15 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                           {application.agentPhone}
                         </p>
                       )}
-                </div>
-              </div>
-              <button
+                    </div>
+                  </div>
+                  <button
                     onClick={() => navigate('/user/dashboard/messages')}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
-              >
+                  >
                     <MessageSquare size={18} />
-                <span>Message Agent</span>
-              </button>
+                    <span>Message Agent</span>
+                  </button>
                 </div>
 
                 {/* Application Summary */}
@@ -388,85 +411,84 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                     </div>
                     <div className="flex items-center justify-between py-3">
                       <span className="text-gray-500 dark:text-gray-400">Status</span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        application.status === APPLICATION_STATUS.APPROVED
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : application.status === APPLICATION_STATUS.REJECTED
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${application.status === APPLICATION_STATUS.APPROVED
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : application.status === APPLICATION_STATUS.REJECTED
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           : application.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED
-                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
                         {application.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     </div>
-            </div>
-          </div>
+                  </div>
+                </div>
 
-          {/* Next Steps */}
-                {application.status !== APPLICATION_STATUS.APPROVED && 
-                 application.status !== APPLICATION_STATUS.REJECTED &&
-                 application.status !== APPLICATION_STATUS.WITHDRAWN && (
-                  <div className="lg:col-span-2 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-6 border border-orange-200 dark:border-orange-800">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <ChevronRight size={20} className="text-orange-500" />
-                      What's Next?
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {application.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED ? (
-                        <>
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">1</div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">Upload Documents</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Submit the requested documents</p>
+                {/* Next Steps */}
+                {application.status !== APPLICATION_STATUS.APPROVED &&
+                  application.status !== APPLICATION_STATUS.REJECTED &&
+                  application.status !== APPLICATION_STATUS.WITHDRAWN && (
+                    <div className="lg:col-span-2 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-6 border border-orange-200 dark:border-orange-800">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <ChevronRight size={20} className="text-orange-500" />
+                        What's Next?
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {application.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED ? (
+                          <>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">1</div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Upload Documents</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Submit the requested documents</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">2</div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">Verification</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Documents will be verified</p>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">2</div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Verification</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Documents will be verified</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">3</div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">Final Decision</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Receive approval status</p>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">3</div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Final Decision</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Receive approval status</p>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
-                              <CheckCircle size={16} />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
+                                <CheckCircle size={16} />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Application Received</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Your application is being processed</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">Application Received</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Your application is being processed</p>
+                            <div className="flex items-start gap-3">
+                              <div className={`w-8 h-8 ${application.status === APPLICATION_STATUS.UNDER_REVIEW ? 'bg-orange-500 text-white' : 'bg-gray-300 text-gray-600'} rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold`}>2</div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Agent Review</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Agent will review your details</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className={`w-8 h-8 ${application.status === APPLICATION_STATUS.UNDER_REVIEW ? 'bg-orange-500 text-white' : 'bg-gray-300 text-gray-600'} rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold`}>2</div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">Agent Review</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Agent will review your details</p>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">3</div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Final Decision</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Typically within 3-5 days</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">3</div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">Final Decision</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Typically within 3-5 days</p>
-                            </div>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        )}
+                      </div>
                     </div>
-            </div>
-          )}
+                  )}
 
                 {/* Approved Message */}
                 {application.status === APPLICATION_STATUS.APPROVED && (
@@ -483,12 +505,73 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                           The agent has approved your application. Contact them to proceed with the next steps
                           {application.listingType === 'rent' ? ' including signing the tenancy agreement and arranging your move-in date.' : ' including contract signing and completion.'}
                         </p>
-              <button
-                          onClick={() => navigate('/user/dashboard/messages')}
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => navigate('/user/dashboard/messages')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 hover:bg-green-50 border border-green-200 rounded-lg font-medium transition-colors"
+                          >
+                            <MessageSquare size={18} />
+                            <span>Contact Agent</span>
+                          </button>
+                          <button
+                            onClick={() => setShowCompleteConfirm(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors shadow-sm"
+                          >
+                            <FileText size={18} />
+                            <span>Sign Contract & Complete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Completed Message */}
+                {application.status === APPLICATION_STATUS.COMPLETED && (
+                  <div className="lg:col-span-2 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
+                        <Key size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                          Key Handover Complete!
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          Congratulations! The process is complete. You have successfully {application.listingType === 'rent' ? 'rented' : 'purchased'} this property.
+                        </p>
+                        <button
+                          onClick={() => navigate('/user/dashboard')}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
                         >
-                          <MessageSquare size={18} />
-                          <span>Contact Agent</span>
+                          <Home size={18} />
+                          <span>Back to Dashboard</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Completed Message */}
+                {application.status === APPLICATION_STATUS.COMPLETED && (
+                  <div className="lg:col-span-2 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
+                        <Key size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                          Key Handover Complete!
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          Congratulations! The process is complete. You have successfully {application.listingType === 'rent' ? 'rented' : 'purchased'} this property.
+                        </p>
+                        <button
+                          onClick={() => navigate('/user/dashboard')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                          <Home size={18} />
+                          <span>Back to Dashboard</span>
                         </button>
                       </div>
                     </div>
@@ -509,9 +592,8 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                     {['ID Proof', 'Proof of Address', 'Employment Letter', 'Bank Statements'].map((doc, index) => (
                       <div key={index} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            index < 2 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${index < 2 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700'
+                            }`}>
                             {index < 2 ? (
                               <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
                             ) : (
@@ -527,7 +609,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                         </div>
                         <button className="px-3 py-1.5 text-sm font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
                           {index < 2 ? 'View' : 'Upload'}
-              </button>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -554,7 +636,7 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                         yellow: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
                         gray: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
                       };
-                      
+
                       return (
                         <div key={activity.id} className="relative flex items-start pb-8 last:pb-0">
                           {index < activityHistory.length - 1 && (
@@ -581,8 +663,8 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                     })}
                   </div>
                 </div>
-            </div>
-          )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -612,6 +694,37 @@ const ApplicationDetail = ({ applicationId, onClose }) => {
                 className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
               >
                 Yes, Withdraw
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Confirmation Modal */}
+      {showCompleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Key size={28} className="text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              Complete Handover?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+              Confirm that you are ready to sign the contract and complete the key handover process.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCompleteConfirm(false)}
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleComplete}
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
+              >
+                Confirm & Complete
               </button>
             </div>
           </div>
