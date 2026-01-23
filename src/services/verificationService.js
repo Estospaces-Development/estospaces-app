@@ -270,6 +270,27 @@ export const getUserVerificationStatus = async (userId) => {
       return { data: null, error: 'Supabase client not initialized' };
     }
 
+    // Check for mock user
+    if (userId && userId.startsWith('mock-')) {
+      return {
+        data: {
+          user_id: userId,
+          is_verified: true,
+          verification_level: 'full',
+          brp_verified: true,
+          passport_verified: true,
+          utility_bill_verified: true,
+          guarantor_verified: true,
+          documents: [
+            { document_type: 'brp', verification_status: 'approved' },
+            { document_type: 'passport', verification_status: 'approved' }
+          ],
+          guarantor: null,
+        },
+        error: null,
+      };
+    }
+
     // Get or create verification status record
     let { data, error } = await supabase
       .from('user_verification_status')

@@ -16,7 +16,7 @@ import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
 const EmailLogin = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated, loading: authLoading, getRole } = useAuth();
+    const { isAuthenticated, loading: authLoading, getRole, refreshSession } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -217,8 +217,8 @@ const EmailLogin = () => {
                 isAuthenticated: true
             }));
 
-            // Small delay to show loading state
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // CRITICAL: Update AuthContext state immediately before navigating
+            await refreshSession();
 
             console.log('✅ EmailLogin: Navigating to:', mockUser.redirectPath);
             navigate(mockUser.redirectPath, { replace: true });

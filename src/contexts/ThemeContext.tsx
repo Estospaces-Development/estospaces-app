@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export type Theme = 'light' | 'dark';
 
@@ -19,6 +20,7 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const location = useLocation();
   const [theme, setThemeState] = useState<Theme>(() => {
     // Load theme from localStorage or default to 'light'
     if (typeof window !== 'undefined') {
@@ -37,28 +39,30 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // Apply theme to DOM
   useEffect(() => {
     const root = document.documentElement;
-    
-    // Save theme to localStorage
+    const isManagerRoute = location.pathname.startsWith('/manager');
+    const activeTheme = isManagerRoute ? theme : 'light';
+
+    // Save theme to localStorage (always save the user preference, even if not active)
     localStorage.setItem('estospaces-theme', theme);
-    
+
     // Apply theme class to document root
-    root.setAttribute('data-theme', theme);
-    
+    root.setAttribute('data-theme', activeTheme);
+
     // Apply theme-specific classes
     root.classList.remove('theme-light', 'theme-dark', 'dark');
-    root.classList.add(`theme-${theme}`);
-    
+    root.classList.add(`theme-${activeTheme}`);
+
     // Add dark class for Tailwind dark mode when theme is dark
-    if (theme === 'dark') {
+    if (activeTheme === 'dark') {
       root.classList.add('dark');
     }
-    
+
     // Also update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', theme === 'dark' ? '#1f2937' : '#ffffff');
+      metaThemeColor.setAttribute('content', activeTheme === 'dark' ? '#1f2937' : '#ffffff');
     }
-  }, [theme]);
+  }, [theme, location.pathname]);
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);

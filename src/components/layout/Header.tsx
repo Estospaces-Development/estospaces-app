@@ -78,7 +78,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         <div className="flex items-center justify-between">
           {/* Left Section */}
           <div className="flex items-center gap-6 flex-1">
-            <h1 className="page-title text-gray-800 dark:text-white transition-colors duration-300">Manager Dashboard</h1>
+
 
             {/* Search Bar */}
             <div className="flex-1 max-w-md">

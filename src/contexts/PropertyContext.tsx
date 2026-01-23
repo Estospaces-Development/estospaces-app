@@ -631,21 +631,8 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
   const fetchProperties = useCallback(async () => {
     const isDev = import.meta.env.DEV;
     const role = getRole();
-    const isManagerRole = role === 'manager' || role === 'admin';
     const isManagerPath = typeof window !== 'undefined' && window.location.pathname.includes('/manager');
-
-    // Check mock login from localStorage
-    let isMockManager = false;
-    try {
-      const mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
-      if (mockUser?.isAuthenticated && mockUser?.role === 'manager') {
-        isMockManager = true;
-      }
-    } catch (e) {
-      // Ignore
-    }
-
-    const isManager = isManagerRole || isMockManager || isManagerPath;
+    const isManager = role === 'manager' || role === 'admin' || isManagerPath;
 
     // In development mode, if we are in a manager context, use mock data
     if (isDev && isManager) {
@@ -760,16 +747,16 @@ export const PropertyProvider = ({ children }: { children: ReactNode }) => {
           bValue = b.price?.amount || 0;
           break;
         case 'area':
-          aValue = a.area?.value || 0;
-          bValue = b.area?.value || 0;
+          aValue = a.area || 0;
+          bValue = b.area || 0;
           break;
         case 'bedrooms':
           aValue = a.bedrooms || 0;
           bValue = b.bedrooms || 0;
           break;
         case 'views':
-          aValue = a.views || 0;
-          bValue = b.views || 0;
+          aValue = a.analytics?.views || 0;
+          bValue = b.analytics?.views || 0;
           break;
         case 'title':
           aValue = (a.title || '').toLowerCase();

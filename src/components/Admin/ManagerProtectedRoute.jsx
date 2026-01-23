@@ -14,19 +14,6 @@ const ManagerProtectedRoute = ({ children }) => {
     const { authState, isAuthenticated, loading, getRole } = useAuth();
     const location = useLocation();
 
-    // DEVELOPMENT BYPASS: Check for mock user in localStorage
-    if (import.meta.env.DEV) {
-        try {
-            const mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
-            if (mockUser && mockUser.isAuthenticated && mockUser.role === 'manager') {
-                console.log('🔓 ManagerProtectedRoute: Development bypass mode - allowing manager access');
-                return children;
-            }
-        } catch (e) {
-            // Ignore JSON parse errors
-        }
-    }
-
     // Show loading spinner while checking auth
     if (loading || authState === 'loading') {
         return (

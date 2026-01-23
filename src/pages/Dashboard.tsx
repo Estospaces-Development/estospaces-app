@@ -414,7 +414,7 @@ const Dashboard = () => {
           title="Ask Lakshmi"
         >
           <Bot className="w-5 h-5" />
-          <span className="btn-primary">Ask Lakshmi</span>
+          <span className="font-medium">Ask Lakshmi</span>
         </button>
       )}
 

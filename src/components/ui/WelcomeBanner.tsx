@@ -41,7 +41,7 @@ const WelcomeBanner = () => {
         <div>
           <h2 className="page-title text-gray-800 dark:text-white mb-2">Welcome {displayName}</h2>
           <p className="body-text text-gray-600 dark:text-gray-400">
-            Manage Your Properties, ideas, and grow your business with powerful insight
+            Manage Your Properties, ideas, and grow your business
           </p>
         </div>
         <button

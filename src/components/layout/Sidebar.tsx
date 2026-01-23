@@ -53,6 +53,13 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         return;
       }
 
+      // Check for mock user
+      if (user.id.startsWith('mock-')) {
+        setVerificationStatus('approved');
+        setVerificationLoading(false);
+        return;
+      }
+
       try {
         const result = await managerVerificationService.getManagerProfile(user.id);
         if (result.data) {

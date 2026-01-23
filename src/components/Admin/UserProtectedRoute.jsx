@@ -13,27 +13,6 @@ const UserProtectedRoute = ({ children }) => {
     const location = useLocation();
     const { isAuthenticated, loading, isSupabaseConfigured, authState } = useAuth();
 
-    // DEVELOPMENT BYPASS: Check for mock user in localStorage
-    if (import.meta.env.DEV) {
-        try {
-            const mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
-            if (mockUser && mockUser.isAuthenticated && mockUser.role === 'user') {
-                console.log('🔓 UserProtectedRoute: Development bypass mode - allowing user access');
-                return children;
-            }
-        } catch (e) {
-            // Ignore JSON parse errors
-        }
-        // Still allow general dev bypass for backwards compatibility
-        console.log('🔓 UserProtectedRoute: Development bypass mode - allowing access');
-        return children;
-    }
-
-    // If Supabase is not configured, redirect to login
-    if (!isSupabaseConfigured) {
-        return <Navigate to="/auth/login" state={{ from: location, intendedRole: 'user' }} replace />;
-    }
-
     // Show loading state while checking auth
     if (loading || authState === 'loading') {
         return (
