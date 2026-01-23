@@ -118,42 +118,38 @@ const Navbar = () => {
 
     return (
         <header
-            className={`fixed w-full z-50 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isScrolled
-                ? 'glass-nav py-3 shadow-sm'
-                : 'bg-transparent py-5 lg:py-6'
-                }`}
+            className={`fixed w-full z-50 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isScrolled
+                    ? 'bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50 py-3'
+                    : 'bg-white/60 backdrop-blur-sm border-b border-white/20 py-4 lg:py-5'
+            }`}
         >
             <div className="container mx-auto px-4 lg:px-6">
                 <div className="flex justify-between items-center">
                     {/* Logo - Refined */}
                     <div className="flex items-center">
                         <a href="/" className="group flex items-center gap-3" onClick={handleNavClick}>
-                            <div className={`relative transition-transform duration-500 ${isScrolled ? 'scale-90' : 'scale-100'}`}>
+                            <div className="relative transition-transform duration-500">
                                 <img
                                     src={logoIcon}
                                     alt="Estospaces Logo"
-                                    className={`h-9 w-auto object-contain transition-all duration-500 ${isScrolled ? '' : 'brightness-0 invert drop-shadow-md'
-                                        }`}
+                                    className="h-9 w-auto object-contain transition-all duration-500"
                                 />
                             </div>
-                            <span className={`font-bold text-xl tracking-tight transition-colors duration-300 ${isScrolled ? 'text-gray-900 dark:text-white' : 'text-white drop-shadow-md'
-                                }`}>
+                            <span className="font-bold text-xl tracking-tight transition-colors duration-300 text-gray-900 dark:text-white">
                                 Estospaces
                             </span>
                         </a>
                     </div>
 
-                    {/* Desktop Navigation - Minimalist */}
-                    <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 bg-white/5 backdrop-blur-sm rounded-full px-2 py-1 border border-white/10 shadow-lg shadow-black/5">
+                    {/* Desktop Navigation - Minimalist Pill */}
+                    <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 bg-white rounded-full px-4 py-1.5 border border-gray-100 shadow-sm">
                         {['Features', 'How It Works', 'FAQ', 'Join Waitlist'].map((item) => (
                             <a
                                 key={item}
                                 href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
                                 onClick={handleNavClick}
-                                className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ${isScrolled
-                                    ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
-                                    : 'text-white/90 hover:text-white hover:bg-white/20'
-                                    }`}
+                                className="px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                             >
                                 {item}
                             </a>
@@ -167,13 +163,9 @@ const Navbar = () => {
                             <div className="relative" ref={profileMenuRef}>
                                 <button
                                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                                    className={`flex items-center gap-3 px-2 py-1.5 pl-3 rounded-full transition-all duration-300 border ${isScrolled
-                                        ? 'bg-white/50 hover:bg-white/80 border-gray-200/60 dark:bg-gray-800/50 dark:border-gray-700'
-                                        : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md'
-                                        }`}
+                                    className="flex items-center gap-3 px-2 py-1.5 pl-3 rounded-full transition-all duration-300 border bg-white/50 hover:bg-white/80 border-gray-200/60 dark:bg-gray-800/50 dark:border-gray-700"
                                 >
-                                    <span className={`font-medium text-sm max-w-[120px] truncate ${isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white'
-                                        }`}>
+                                    <span className="font-medium text-sm max-w-[120px] truncate text-gray-700 dark:text-gray-200">
                                         {getDisplayName()}
                                     </span>
                                     {getAvatarUrl() ? (
@@ -239,23 +231,16 @@ const Navbar = () => {
                             <>
                                 <button
                                     onClick={() => navigate('/auth/login')}
-                                    className={`px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-300 ${isScrolled
-                                        ? 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
-                                        : 'text-white/90 hover:text-white'
-                                        }`}
+                                    className="px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-300 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                                 >
                                     Log in
                                 </button>
                                 <button
                                     onClick={() => navigate('/auth/signup')}
-                                    className={`group px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${isScrolled
-                                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20'
-                                        : 'bg-white text-gray-900 hover:bg-gray-100'
-                                        }`}
+                                    className="group px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
                                 >
                                     <span>Get Started</span>
-                                    <ArrowRight size={16} className={`transition-transform duration-300 group-hover:translate-x-1 ${isScrolled ? 'text-white' : 'text-gray-900'
-                                        }`} />
+                                    <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1 text-white" />
                                 </button>
                             </>
                         )}
@@ -263,10 +248,7 @@ const Navbar = () => {
 
                     {/* Mobile Menu Button - Styled */}
                     <button
-                        className={`md:hidden p-2 rounded-full transition-colors ${isScrolled
-                            ? 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                            : 'text-white hover:bg-white/10'
-                            }`}
+                        className="md:hidden p-2 rounded-full transition-colors text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     >
                         {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
