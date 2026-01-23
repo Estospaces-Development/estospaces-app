@@ -4,13 +4,13 @@ import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
 import Calendar from '../components/ui/Calendar';
 import AddAppointmentModal from '../components/ui/AddAppointmentModal';
-import { 
-  Calendar as CalendarIcon, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  CalendarCheck, 
-  Plus, 
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  CheckCircle,
+  XCircle,
+  CalendarCheck,
+  Plus,
   Eye,
   Edit,
   Trash2,
@@ -47,7 +47,75 @@ const Appointment = () => {
 
   // Fetch appointments from database
   const fetchAppointments = useCallback(async () => {
-    if (!isSupabaseAvailable() || !user) {
+    // Check for mock user or if Supabase is unavailable
+    if (!isSupabaseAvailable() || user?.id?.startsWith('mock-')) {
+      const mockAppointments: Appointment[] = [
+        {
+          id: '1',
+          clientName: 'Sarah Johnson',
+          date: '2025-01-28',
+          time: '14:00',
+          description: 'First viewing - Modern Downtown Apartment',
+          status: 'Confirmed',
+          property: 'Modern Downtown Apartment',
+          phone: '+1 (555) 123-4567',
+          email: 'sarah.j@example.com'
+        },
+        {
+          id: '2',
+          clientName: 'Michael Chen',
+          date: '2025-01-29',
+          time: '10:30',
+          description: 'Second viewing - Luxury Condo',
+          status: 'Pending',
+          property: 'Luxury Condo with City View',
+          phone: '+1 (555) 987-6543',
+          email: 'michael.c@example.com'
+        },
+        {
+          id: '3',
+          clientName: 'Emily Wilson',
+          date: '2025-01-25',
+          time: '16:00',
+          description: 'Initial consultation',
+          status: 'Completed',
+          property: 'Spacious Penthouse',
+          phone: '+1 (555) 456-7890',
+          email: 'emily.w@example.com'
+        },
+        {
+          id: '4',
+          clientName: 'David Brown',
+          date: '2025-02-01',
+          time: '11:00',
+          description: 'Follow-up viewing',
+          status: 'Cancelled',
+          property: 'Suburban Family Home',
+          phone: '+1 (555) 234-5678',
+          email: 'david.b@example.com'
+        },
+        {
+          id: '5',
+          clientName: 'Jessica Taylor',
+          date: '2025-02-05',
+          time: '15:30',
+          description: 'Contract signing',
+          status: 'Confirmed',
+          property: 'Modern Downtown Apartment',
+          phone: '+1 (555) 345-6789',
+          email: 'jessica.t@example.com'
+        }
+      ];
+
+      // Simulate a small network delay for realism, but much faster than timeout
+      setTimeout(() => {
+        setAppointments(mockAppointments);
+        setLoading(false);
+      }, 300);
+      return;
+    }
+
+    if (!user) {
       setAppointments([]);
       setLoading(false);
       return;
@@ -102,7 +170,7 @@ const Appointment = () => {
       const transformedAppointments: Appointment[] = (data || []).map((item: any) => {
         const property = item.properties || {};
         const userProfile = item.profiles || {};
-        const propertyAddress = property.address_line_1 
+        const propertyAddress = property.address_line_1
           ? `${property.address_line_1}, ${property.city || ''} ${property.postcode || ''}`.trim()
           : property.title || 'Property Location';
 
@@ -112,10 +180,10 @@ const Appointment = () => {
           date: item.viewing_date,
           time: item.viewing_time || 'TBD',
           description: `Property viewing - ${property.title || 'Property'}`,
-          status: item.status === 'pending' ? 'Pending' : 
-                 item.status === 'confirmed' ? 'Confirmed' : 
-                 item.status === 'completed' ? 'Completed' : 
-                 item.status === 'cancelled' ? 'Cancelled' : 'Pending',
+          status: item.status === 'pending' ? 'Pending' :
+            item.status === 'confirmed' ? 'Confirmed' :
+              item.status === 'completed' ? 'Completed' :
+                item.status === 'cancelled' ? 'Cancelled' : 'Pending',
           property: propertyAddress,
           phone: userProfile.phone || '',
           email: userProfile.email || '',
@@ -186,7 +254,7 @@ const Appointment = () => {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Page Header */}
       <div>
         <div className="mb-4">
@@ -234,11 +302,10 @@ const Appointment = () => {
       <div className="flex flex-col sm:flex-row gap-4">
         <button
           onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
-          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
-            viewMode === 'calendar'
-              ? 'bg-primary text-white border-primary'
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${viewMode === 'calendar'
+            ? 'bg-primary text-white border-primary'
+            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
         >
           <CalendarIcon className="w-4 h-4" />
           <span className="text-sm font-medium">Calendar</span>
@@ -306,15 +373,14 @@ const Appointment = () => {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold text-gray-800">{appointment.clientName}</h3>
                             <span
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                appointment.status === 'Confirmed'
-                                  ? 'bg-green-100 text-green-800'
-                                  : appointment.status === 'Pending'
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${appointment.status === 'Confirmed'
+                                ? 'bg-green-100 text-green-800'
+                                : appointment.status === 'Pending'
                                   ? 'bg-yellow-100 text-yellow-800'
                                   : appointment.status === 'Completed'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}
                             >
                               {appointment.status}
                             </span>

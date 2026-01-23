@@ -420,7 +420,7 @@ const DashboardProfile = () => {
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h2>
+                    <h2 className="text-lg font-manager font-semibold text-gray-900 dark:text-white">Personal Information</h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Update your contact details and address</p>
                   </div>
                   <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center">

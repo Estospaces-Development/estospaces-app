@@ -313,14 +313,14 @@ const PropertyCard = ({ property, onViewDetails }) => {
             </>
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-              <span className="text-gray-500">No Image</span>
+              <span className="text-gray-500 font-manager font-medium">No Image</span>
             </div>
           )}
 
           {/* Property Type Badge */}
           {property.type && (
             <div className="absolute top-3 left-3">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${property.type?.toLowerCase() === 'rent'
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-manager font-bold shadow-sm ${property.type?.toLowerCase() === 'rent'
                 ? 'bg-blue-500 text-white'
                 : property.type?.toLowerCase() === 'sale'
                   ? 'bg-emerald-500 text-white'
@@ -363,7 +363,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
           {/* Price */}
           <div className="absolute bottom-3 left-3">
-            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-semibold text-lg">
+            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-manager font-bold text-lg">
               {formatPrice(property.price)}
             </span>
           </div>

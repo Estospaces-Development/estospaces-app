@@ -143,7 +143,7 @@ const VerificationSection = ({ userId, currentUser }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h4 className={`font-medium text-sm ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-gray-900 dark:text-white'}`}>
+              <h4 className={`font-manager font-medium text-sm ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-gray-900 dark:text-white'}`}>
                 {title}
               </h4>
               <p className={`text-xs mt-0.5 ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -183,7 +183,7 @@ const VerificationSection = ({ userId, currentUser }) => {
               <Shield size={18} className="text-gray-500 dark:text-gray-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Account Verification</h2>
+              <h2 className="text-lg font-manager font-semibold text-gray-900 dark:text-white">Account Verification</h2>
               <p className="text-gray-500 dark:text-gray-400 text-sm">Complete these steps to verify your account</p>
             </div>
           </div>

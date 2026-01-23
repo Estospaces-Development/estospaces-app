@@ -82,7 +82,7 @@ const Application = () => {
       return;
     }
 
-    if (!isSupabaseAvailable()) {
+    if (!isSupabaseAvailable() || user?.id?.startsWith('mock-')) {
       // Use mock data when Supabase is not available
       const mockApplications: Application[] = [
         {
@@ -544,8 +544,8 @@ const Application = () => {
 
   const handleDeleteApplication = async (id: string) => {
     if (!isSupabaseAvailable()) {
-    setApplications(applications.filter(app => app.id !== id));
-    setShowDeleteConfirm(null);
+      setApplications(applications.filter(app => app.id !== id));
+      setShowDeleteConfirm(null);
       return;
     }
 
@@ -752,7 +752,7 @@ const Application = () => {
   }
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Page Header */}
       <div>
         <div className="mb-4">
@@ -763,7 +763,7 @@ const Application = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <SummaryCard
           title="New Applications"
           value={applications.filter(a => a.status === 'New Application').length}
@@ -798,7 +798,7 @@ const Application = () => {
 
       {/* Search and Actions */}
       <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row flex-wrap gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -945,30 +945,29 @@ const Application = () => {
                       className="rounded border-gray-300 text-primary focus:ring-primary"
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-normal min-w-[200px]">
                     <div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">{app.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{app.email}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 break-all">{app.email}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-normal min-w-[250px]">
                     <div className="text-sm text-gray-900 dark:text-white">{app.propertyInterested}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <select
                       value={app.status}
                       onChange={(e) => handleUpdateStatus(app.id, e.target.value)}
-                      className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${
-                        app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                      className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
                         app.status === 'Appointment Booked' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400' :
-                        app.status === 'Viewing Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400' :
-                        app.status === 'Viewing Completed' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400' :
-                        app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                        app.status === 'Verification' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
-                        app.status === 'Approved' || app.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                        app.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                      }`}
+                          app.status === 'Viewing Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400' :
+                            app.status === 'Viewing Completed' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400' :
+                              app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                                app.status === 'Verification' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                                  app.status === 'Approved' || app.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                    app.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
+                                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                        }`}
                     >
                       <option value="New Application">New Application</option>
                       <option value="Appointment Booked">Appointment Booked</option>
@@ -1268,12 +1267,11 @@ const Application = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                    app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
                     app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                    app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                    'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                  }`}>
+                      app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                        'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                    }`}>
                     {app.status}
                   </span>
                 </div>
