@@ -581,7 +581,7 @@ export const getPendingVerifications = async (
         displayName = emailPart
           .replace(/[._-]/g, ' ')
           .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ');
       }
 
@@ -653,7 +653,7 @@ export const getManagerVerificationDetails = async (
         full_name: emailPart
           .replace(/[._-]/g, ' ')
           .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ')
       };
     }
@@ -889,17 +889,17 @@ export const revokeManagerApproval = async (
     }
 
     // Log the revocation
-    const auditError = await logAuditEvent({
-      actionType: 'approval_revoked',
-      actorId: adminId,
-      actorRole: 'admin',
-      targetManagerId: managerId,
-      previousStatus: 'approved',
-      newStatus: 'rejected',
-      details: { reason, action: 'approval_revoked' },
-    });
-
-    if (auditError) {
+    try {
+      await logAuditEvent({
+        actionType: 'approval_revoked',
+        actorId: adminId,
+        actorRole: 'admin',
+        targetManagerId: managerId,
+        previousStatus: 'approved',
+        newStatus: 'rejected',
+        details: { reason, action: 'approval_revoked' },
+      });
+    } catch (auditError) {
       console.warn('Warning: Failed to log audit event:', auditError);
       // Don't fail the whole operation if audit logging fails
     }

@@ -1,18 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  FileCheck, 
-  Plus, 
-  Filter, 
+import { useToast } from '../contexts/ToastContext';
+import {
+  notifyApplicationApproved,
+  notifyApplicationRejected,
+  notifyApplicationSubmitted,
+  notifyDocumentsRequested
+} from '../services/notificationsService';
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  FileCheck,
+  Plus,
+  Filter,
   Search,
   Eye,
   Edit,
@@ -43,7 +50,8 @@ interface Application {
 
 const Application = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, getRole } = useAuth();
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -65,9 +73,15 @@ const Application = () => {
   });
 
   const [applications, setApplications] = useState<Application[]>([]);
+  const isFetchingRef = useRef(false);
 
   // Fetch applications from Supabase
   const fetchApplications = useCallback(async () => {
+    // Prevent multiple simultaneous fetches
+    if (isFetchingRef.current) {
+      return;
+    }
+
     if (!isSupabaseAvailable()) {
       // Use mock data when Supabase is not available
       const mockApplications: Application[] = [
@@ -209,10 +223,21 @@ const Application = () => {
       return;
     }
 
+    // Check if user is available
+    if (!user?.id) {
+      setIsLoading(false);
+      setApplications([]);
+      return;
+    }
+
+    isFetchingRef.current = true;
     setIsLoading(true);
     try {
-      // Fetch all applications (for managers)
-      const { data, error } = await supabase
+      const role = getRole();
+      const isManagerOrAdmin = role === 'manager' || role === 'admin';
+
+      // Build query - managers/admins see all, users see only their own
+      let query = supabase
         .from('applied_properties')
         .select(`
           id,
@@ -231,6 +256,13 @@ const Application = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // If not manager/admin, filter by user_id
+      if (!isManagerOrAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
       // Transform to match the Application interface
@@ -238,7 +270,12 @@ const Application = () => {
         const appData = item.application_data || {};
         const personalInfo = appData.personal_info || {};
         const property = item.properties || {};
-        
+
+        // Use application data for applicant information
+        const applicantName = personalInfo.full_name || 'Unknown Applicant';
+        const applicantEmail = personalInfo.email || 'No email provided';
+        const applicantPhone = personalInfo.phone || '';
+
         // Calculate time since last update
         const lastUpdate = new Date(item.updated_at || item.created_at);
         const now = new Date();
@@ -277,337 +314,159 @@ const Application = () => {
 
         return {
           id: item.id,
-          name: personalInfo.full_name || 'Unknown Applicant',
-          email: personalInfo.email || 'No email provided',
-          phone: personalInfo.phone || '',
+          name: applicantName,
+          email: applicantEmail,
+          phone: applicantPhone,
           propertyInterested: property.title || appData.property_title || 'Property',
           propertyId: item.property_id,
           status: statusMap[item.status] || 'New Application',
           score: Math.min(score, 100),
-          budget: property.price 
+          budget: property.price
             ? `£${property.price.toLocaleString()}${property.listing_type === 'rent' ? '/mo' : ''}`
             : 'Not specified',
           lastContact,
-          applicationData: appData,
+          applicationData: { ...appData, user_id: item.user_id },
         };
       });
 
-      // Always include mock data in Applications Overview
-      // Merge mock data with real data, or use mock data if no real data exists
-      const mockApplications: Application[] = [
-        {
-          id: 'mock-1',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@email.com',
-          phone: '+44 7700 900123',
-          propertyInterested: 'Modern 2BR Flat in Canary Wharf',
-          status: 'New Application',
-          score: 92,
-          budget: '£2,200/mo',
-          lastContact: '2 hours ago',
-        },
-        {
-          id: 'mock-2',
-          name: 'Michael Chen',
-          email: 'michael.chen@email.com',
-          phone: '+44 7700 900456',
-          propertyInterested: 'Luxury 3BR Apartment in Shoreditch',
-          status: 'In Review',
-          score: 88,
-          budget: '£3,500/mo',
-          lastContact: '1 day ago',
-        },
-        {
-          id: 'mock-3',
-          name: 'Emma Williams',
-          email: 'emma.williams@email.com',
-          phone: '+44 7700 900789',
-          propertyInterested: 'Spacious Studio in Camden',
-          status: 'Appointment Booked',
-          score: 85,
-          budget: '£1,800/mo',
-          lastContact: '3 hours ago',
-        },
-        {
-          id: 'mock-4',
-          name: 'David Brown',
-          email: 'david.brown@email.com',
-          phone: '+44 7700 900321',
-          propertyInterested: 'Family Home in Islington',
-          status: 'Approved',
-          score: 95,
-          budget: '£4,200/mo',
-          lastContact: '5 days ago',
-        },
-        {
-          id: 'mock-5',
-          name: 'Sophie Anderson',
-          email: 'sophie.anderson@email.com',
-          phone: '+44 7700 900654',
-          propertyInterested: 'Penthouse in Mayfair',
-          status: 'Viewing Scheduled',
-          score: 90,
-          budget: '£6,500/mo',
-          lastContact: '1 day ago',
-        },
-        {
-          id: 'mock-6',
-          name: 'James Taylor',
-          email: 'james.taylor@email.com',
-          phone: '+44 7700 900987',
-          propertyInterested: '2BR Flat in Notting Hill',
-          status: 'Documents Required',
-          score: 78,
-          budget: '£2,800/mo',
-          lastContact: '2 days ago',
-        },
-        {
-          id: 'mock-7',
-          name: 'Olivia Martinez',
-          email: 'olivia.martinez@email.com',
-          phone: '+44 7700 900147',
-          propertyInterested: '1BR Apartment in Kensington',
-          status: 'New Application',
-          score: 82,
-          budget: '£2,100/mo',
-          lastContact: '4 hours ago',
-        },
-        {
-          id: 'mock-8',
-          name: 'Robert Wilson',
-          email: 'robert.wilson@email.com',
-          phone: '+44 7700 900258',
-          propertyInterested: '3BR House in Hampstead',
-          status: 'Verification',
-          score: 87,
-          budget: '£5,200/mo',
-          lastContact: '3 days ago',
-        },
-        {
-          id: 'mock-9',
-          name: 'Isabella Garcia',
-          email: 'isabella.garcia@email.com',
-          phone: '+44 7700 900369',
-          propertyInterested: 'Studio in Covent Garden',
-          status: 'In Review',
-          score: 80,
-          budget: '£1,950/mo',
-          lastContact: '1 day ago',
-        },
-        {
-          id: 'mock-10',
-          name: 'Thomas Lee',
-          email: 'thomas.lee@email.com',
-          phone: '+44 7700 900741',
-          propertyInterested: '2BR Flat in Greenwich',
-          status: 'Approved',
-          score: 91,
-          budget: '£2,400/mo',
-          lastContact: '6 days ago',
-        },
-        {
-          id: 'mock-11',
-          name: 'Charlotte White',
-          email: 'charlotte.white@email.com',
-          phone: '+44 7700 900852',
-          propertyInterested: 'Luxury 4BR in Chelsea',
-          status: 'Viewing Completed',
-          score: 94,
-          budget: '£7,800/mo',
-          lastContact: '2 days ago',
-        },
-        {
-          id: 'mock-12',
-          name: 'Daniel Harris',
-          email: 'daniel.harris@email.com',
-          phone: '+44 7700 900963',
-          propertyInterested: '1BR Apartment in Clapham',
-          status: 'New Application',
-          score: 76,
-          budget: '£1,700/mo',
-          lastContact: 'Just now',
-        },
-        {
-          id: 'mock-13',
-          name: 'Amelia Thompson',
-          email: 'amelia.thompson@email.com',
-          phone: '+44 7700 901147',
-          propertyInterested: '2BR Apartment in Battersea',
-          status: 'In Review',
-          score: 89,
-          budget: '£2,600/mo',
-          lastContact: '5 hours ago',
-        },
-        {
-          id: 'mock-14',
-          name: 'Lucas Rodriguez',
-          email: 'lucas.rodriguez@email.com',
-          phone: '+44 7700 901258',
-          propertyInterested: '3BR Flat in King\'s Cross',
-          status: 'Appointment Booked',
-          score: 83,
-          budget: '£3,200/mo',
-          lastContact: '1 day ago',
-        },
-        {
-          id: 'mock-15',
-          name: 'Grace Mitchell',
-          email: 'grace.mitchell@email.com',
-          phone: '+44 7700 901369',
-          propertyInterested: 'Luxury Studio in Soho',
-          status: 'Approved',
-          score: 93,
-          budget: '£2,300/mo',
-          lastContact: '4 days ago',
-        },
-      ];
-      
-      // Merge real data with mock data, prioritizing real data
-      // Filter out any mock entries that might conflict with real data IDs
-      const realAppIds = new Set(transformedApps.map(app => app.id));
-      const filteredMockApps = mockApplications.filter(mock => !realAppIds.has(mock.id));
-      
-      // Combine: real data first, then mock data
-      const allApplications = [...transformedApps, ...filteredMockApps];
-      
-      // If we have real data, show it with some mock data
-      // If no real data, show all mock data
-      setApplications(allApplications.length > 0 ? allApplications : mockApplications);
-    } catch (err) {
+      setApplications(transformedApps);
+    } catch (err: any) {
       console.error('Error fetching applications:', err);
-      // Use mock data on error as well
-      const mockApplications: Application[] = [
-        {
-          id: 'mock-1',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@email.com',
-          phone: '+44 7700 900123',
-          propertyInterested: 'Modern 2BR Flat in Canary Wharf',
-          status: 'New Application',
-          score: 92,
-          budget: '£2,200/mo',
-          lastContact: '2 hours ago',
-        },
-        {
-          id: 'mock-2',
-          name: 'Michael Chen',
-          email: 'michael.chen@email.com',
-          phone: '+44 7700 900456',
-          propertyInterested: 'Luxury 3BR Apartment in Shoreditch',
-          status: 'In Review',
-          score: 88,
-          budget: '£3,500/mo',
-          lastContact: '1 day ago',
-        },
-        {
-          id: 'mock-3',
-          name: 'Emma Williams',
-          email: 'emma.williams@email.com',
-          phone: '+44 7700 900789',
-          propertyInterested: 'Spacious Studio in Camden',
-          status: 'Appointment Booked',
-          score: 85,
-          budget: '£1,800/mo',
-          lastContact: '3 hours ago',
-        },
-        {
-          id: 'mock-4',
-          name: 'David Brown',
-          email: 'david.brown@email.com',
-          phone: '+44 7700 900321',
-          propertyInterested: 'Family Home in Islington',
-          status: 'Approved',
-          score: 95,
-          budget: '£4,200/mo',
-          lastContact: '5 days ago',
-        },
-        {
-          id: 'mock-5',
-          name: 'Sophie Anderson',
-          email: 'sophie.anderson@email.com',
-          phone: '+44 7700 900654',
-          propertyInterested: 'Penthouse in Mayfair',
-          status: 'Viewing Scheduled',
-          score: 90,
-          budget: '£6,500/mo',
-          lastContact: '1 day ago',
-        },
-        {
-          id: 'mock-6',
-          name: 'James Taylor',
-          email: 'james.taylor@email.com',
-          phone: '+44 7700 900987',
-          propertyInterested: '2BR Flat in Notting Hill',
-          status: 'Documents Required',
-          score: 78,
-          budget: '£2,800/mo',
-          lastContact: '2 days ago',
-        },
-        {
-          id: 'mock-7',
-          name: 'Olivia Martinez',
-          email: 'olivia.martinez@email.com',
-          phone: '+44 7700 900147',
-          propertyInterested: '1BR Apartment in Kensington',
-          status: 'New Application',
-          score: 82,
-          budget: '£2,100/mo',
-          lastContact: '4 hours ago',
-        },
-        {
-          id: 'mock-8',
-          name: 'Robert Wilson',
-          email: 'robert.wilson@email.com',
-          phone: '+44 7700 900258',
-          propertyInterested: '3BR House in Hampstead',
-          status: 'Verification',
-          score: 87,
-          budget: '£5,200/mo',
-          lastContact: '3 days ago',
-        },
-      ];
-      setApplications(mockApplications);
+      const errorMessage = err?.message || 'Unknown error occurred';
+      console.error('Error details:', {
+        message: errorMessage,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+      });
+      toast.error(`Failed to load applications: ${errorMessage}`, {
+        title: 'Error',
+        duration: 5000,
+      });
+      setApplications([]); // Set empty array on error
+
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, [user?.id]); // Only depend on user.id, not the whole user object or functions
 
-  // Fetch on mount
+  // Fetch on mount and when user changes
   useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+    if (user?.id && !isFetchingRef.current) {
+      fetchApplications();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only re-fetch when user.id changes
+
+  // Real-time subscription for application updates
+  useEffect(() => {
+    if (!isSupabaseAvailable() || !user?.id) return;
+
+    const role = getRole();
+    const isManagerOrAdmin = role === 'manager' || role === 'admin';
+    const userId = user.id;
+
+    const channel = supabase
+      .channel('applications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'applied_properties',
+          ...(isManagerOrAdmin ? {} : { filter: `user_id=eq.${userId}` }),
+        },
+        (payload) => {
+          console.log('Application update received:', payload);
+          // Use a small delay to debounce rapid updates
+          setTimeout(() => {
+            if (!isFetchingRef.current) {
+              fetchApplications();
+            }
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only re-subscribe when user.id changes
 
   const filteredApplications = applications.filter((app) => {
-    const matchesSearch = 
+    const matchesSearch =
       app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.propertyInterested.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-    
-    const matchesScore = scoreFilter === 'all' || 
+
+    const matchesScore = scoreFilter === 'all' ||
       (scoreFilter === 'high' && app.score >= 90) ||
       (scoreFilter === 'medium' && app.score >= 70 && app.score < 90) ||
       (scoreFilter === 'low' && app.score < 70);
-    
+
     return matchesSearch && matchesStatus && matchesScore;
   });
 
-  const handleAddApplication = (e: React.FormEvent) => {
+  const handleAddApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newApp: Application = {
-      id: Date.now().toString(),
-      name: newApplication.name,
-      email: newApplication.email,
-      propertyInterested: newApplication.propertyInterested,
-      status: 'New Application',
-      score: Math.floor(Math.random() * 30) + 70,
-      budget: newApplication.budget || '$0/mo',
-      lastContact: 'Just now',
-    };
-    setApplications([...applications, newApp]);
-    setShowAddModal(false);
-    setNewApplication({ name: '', email: '', propertyInterested: '', budget: '', notes: '' });
+
+    // For managers: Create application in database
+    // Note: This creates an application but requires a user_id
+    // In a real scenario, managers would convert leads to applications
+    if (!isSupabaseAvailable() || !user) {
+      toast.error('Cannot create application - database not available', {
+        title: 'Error',
+        duration: 5000,
+      });
+      return;
+    }
+
+    try {
+      // For manager-created applications, we'll use the manager's ID as a placeholder
+      // In production, you might want to create a user account for the lead first
+      const { data, error } = await supabase
+        .from('applied_properties')
+        .insert({
+          user_id: user.id, // Using manager's ID as placeholder - in production, create user account first
+          property_id: null,
+          status: 'pending',
+          application_data: {
+            property_title: newApplication.propertyInterested,
+            property_address: '',
+            personal_info: {
+              full_name: newApplication.name,
+              email: newApplication.email,
+              phone: '',
+            },
+            notes: newApplication.notes || '',
+          },
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Application created successfully', {
+        title: 'Success',
+        duration: 3000,
+      });
+
+      // Refresh applications list
+      await fetchApplications();
+
+      setShowAddModal(false);
+      setNewApplication({ name: '', email: '', propertyInterested: '', budget: '', notes: '' });
+    } catch (err: any) {
+      console.error('Error creating application:', err);
+      toast.error(err.message || 'Failed to create application', {
+        title: 'Error',
+        duration: 5000,
+      });
+    }
   };
 
   const handleEditApplication = (app: Application) => {
@@ -622,17 +481,64 @@ const Application = () => {
     setShowEditModal(true);
   };
 
-  const handleUpdateApplication = (e: React.FormEvent) => {
+  const handleUpdateApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingApplication) {
-      setApplications(applications.map(app => 
-        app.id === editingApplication.id 
+    if (!editingApplication) return;
+
+    if (!isSupabaseAvailable()) {
+      // Fallback to local state update if database not available
+      setApplications(applications.map(app =>
+        app.id === editingApplication.id
           ? { ...app, name: newApplication.name, email: newApplication.email, propertyInterested: newApplication.propertyInterested, budget: newApplication.budget }
           : app
       ));
       setShowEditModal(false);
       setEditingApplication(null);
       setNewApplication({ name: '', email: '', propertyInterested: '', budget: '', notes: '' });
+      return;
+    }
+
+    try {
+      // Update application data in database
+      const appData = editingApplication.applicationData || {};
+      const updatedAppData = {
+        ...appData,
+        personal_info: {
+          ...appData.personal_info,
+          full_name: newApplication.name,
+          email: newApplication.email,
+        },
+        property_title: newApplication.propertyInterested,
+        notes: newApplication.notes || appData.notes || '',
+      };
+
+      const { error } = await supabase
+        .from('applied_properties')
+        .update({
+          application_data: updatedAppData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingApplication.id);
+
+      if (error) throw error;
+
+      toast.success('Application updated successfully', {
+        title: 'Updated',
+        duration: 3000,
+      });
+
+      // Refresh applications list
+      await fetchApplications();
+
+      setShowEditModal(false);
+      setEditingApplication(null);
+      setNewApplication({ name: '', email: '', propertyInterested: '', budget: '', notes: '' });
+    } catch (err: any) {
+      console.error('Error updating application:', err);
+      toast.error(err.message || 'Failed to update application', {
+        title: 'Error',
+        duration: 5000,
+      });
     }
   };
 
@@ -650,10 +556,20 @@ const Application = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
-      setApplications(applications.filter(app => app.id !== id));
+
+      // Refresh applications list
+      await fetchApplications();
+
+      toast.success('Application deleted successfully', {
+        title: 'Deleted',
+        duration: 3000,
+      });
     } catch (err) {
       console.error('Error deleting application:', err);
+      toast.error('Failed to delete application', {
+        title: 'Error',
+        duration: 5000,
+      });
     } finally {
       setShowDeleteConfirm(null);
     }
@@ -678,7 +594,7 @@ const Application = () => {
     const dbStatus = statusMap[newStatus] || 'pending';
 
     if (!isSupabaseAvailable()) {
-      setApplications(applications.map(app => 
+      setApplications(applications.map(app =>
         app.id === id ? { ...app, status: newStatus } : app
       ));
       return;
@@ -687,89 +603,78 @@ const Application = () => {
     try {
       // First get the application to get the user_id
       const application = applications.find(app => app.id === id);
-      
+
       const { error } = await supabase
         .from('applied_properties')
         .update({ status: dbStatus, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
-      
-      setApplications(applications.map(app => 
-        app.id === id ? { ...app, status: newStatus, lastContact: 'Just now' } : app
-      ));
 
-      // Create notification for the user based on status change
-      if (application) {
-        // Get user_id from the original application data
-        const { data: appData } = await supabase
-          .from('applied_properties')
-          .select('user_id, application_data')
-          .eq('id', id)
-          .single();
+      // Refresh applications list
+      await fetchApplications();
 
-        if (appData?.user_id) {
-          let notificationType = 'application_update';
-          let title = '';
-          let message = '';
+      // Show success toast
+      toast.success(`Application status updated to ${newStatus}`, {
+        title: 'Status Updated',
+        duration: 3000,
+      });
 
-          const propertyTitle = application.propertyInterested || 'your property';
+      // Get application data for notifications
+      const { data: appData } = await supabase
+        .from('applied_properties')
+        .select('user_id, application_data, property_id')
+        .eq('id', id)
+        .single();
 
+      if (appData?.user_id) {
+        const propertyTitle = application?.propertyInterested || appData.application_data?.property_title || 'Property';
+        const propertyId = appData.property_id || '';
+
+        // Send appropriate notification based on status
+        try {
           switch (dbStatus) {
             case 'approved':
-              notificationType = 'appointment_approved';
-              title = '🎉 Application Approved!';
-              message = `Great news! Your application for "${propertyTitle}" has been approved. The agent will contact you soon with next steps.`;
+              await notifyApplicationApproved(
+                appData.user_id,
+                propertyTitle,
+                propertyId,
+                id
+              );
               break;
             case 'rejected':
-              notificationType = 'appointment_rejected';
-              title = 'Application Update';
-              message = `Your application for "${propertyTitle}" was not approved at this time. Please contact the agent for more details.`;
-              break;
-            case 'viewing_scheduled':
-              notificationType = 'application_update';
-              title = '📅 Viewing Scheduled';
-              message = `Your viewing for "${propertyTitle}" has been confirmed. Check your email for details.`;
-              break;
-            case 'viewing_completed':
-              notificationType = 'application_update';
-              title = '✅ Viewing Completed';
-              message = `Your viewing for "${propertyTitle}" is complete. The agent will follow up with next steps.`;
+              await notifyApplicationRejected(
+                appData.user_id,
+                propertyTitle,
+                propertyId,
+                id
+              );
               break;
             case 'documents_requested':
-              notificationType = 'application_update';
-              title = '📄 Documents Required';
-              message = `Please upload the required documents for your application for "${propertyTitle}".`;
-              break;
-            case 'verification_in_progress':
-              notificationType = 'application_update';
-              title = '🔍 Verification In Progress';
-              message = `Your documents for "${propertyTitle}" are being verified. We'll notify you once complete.`;
-              break;
-            case 'completed':
-              notificationType = 'application_update';
-              title = '🏠 Application Complete!';
-              message = `Congratulations! Your application for "${propertyTitle}" has been completed successfully.`;
+              await notifyDocumentsRequested(
+                appData.user_id,
+                propertyTitle,
+                propertyId,
+                id,
+                ['ID Proof', 'Income Statement', 'Bank Statement'] // Default documents
+              );
               break;
             default:
-              // Don't send notification for other statuses
-              return;
+              // For other statuses, use the notification context
+              const { useNotifications } = await import('../contexts/NotificationsContext');
+              // Note: This will be handled by the notification context if needed
+              break;
           }
-
-          // Insert notification for the user
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: appData.user_id,
-              type: notificationType,
-              title,
-              message,
-              data: { application_id: id, property_title: propertyTitle, new_status: dbStatus }
-            });
+        } catch (notifyErr) {
+          console.log('Could not send notification:', notifyErr);
         }
       }
     } catch (err) {
       console.error('Error updating application status:', err);
+      toast.error('Failed to update application status', {
+        title: 'Error',
+        duration: 5000,
+      });
     }
   };
 
@@ -861,31 +766,31 @@ const Application = () => {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SummaryCard
           title="New Applications"
-          value={1}
+          value={applications.filter(a => a.status === 'New Application').length}
           icon={FileText}
           iconColor="bg-blue-500"
         />
         <SummaryCard
           title="In Review"
-          value={1}
+          value={applications.filter(a => a.status === 'In Review').length}
           icon={Clock}
           iconColor="bg-yellow-500"
         />
         <SummaryCard
           title="Approved"
-          value={1}
+          value={applications.filter(a => a.status === 'Approved').length}
           icon={CheckCircle}
           iconColor="bg-green-500"
         />
         <SummaryCard
           title="Rejected"
-          value={1}
+          value={applications.filter(a => a.status === 'Rejected').length}
           icon={XCircle}
           iconColor="bg-red-500"
         />
         <SummaryCard
           title="Total"
-          value={0}
+          value={applications.length}
           icon={FileCheck}
           iconColor="bg-purple-500"
         />

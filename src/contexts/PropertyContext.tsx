@@ -218,7 +218,7 @@ export interface PropertyFilters {
   search?: string;
   propertyType?: PropertyType[];
   listingType?: ListingType[];
-  status?: PropertyStatus[];
+  status?: (PropertyStatus | string)[];
   priceMin?: number;
   priceMax?: number;
   bedroomsMin?: number;

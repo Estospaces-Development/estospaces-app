@@ -9,8 +9,9 @@ import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
 import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import { LocationProvider } from './contexts/LocationContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
-import { ManagerVerificationProvider } from './contexts/ManagerVerificationContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ManagerVerificationProvider } from './contexts/ManagerVerificationContext';
+import NotificationContainer from './components/ui/NotificationContainer';
 import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
 import UserProtectedRoute from './components/Admin/UserProtectedRoute';
@@ -65,7 +66,6 @@ import PropertyDetail from './pages/PropertyDetail';
 import { Login, EmailLogin, Signup, ResetPassword, AuthCallback } from './components/auth';
 
 // Public Pages
-import PropertySearch from './pages/PropertySearch';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiePolicy from './pages/CookiePolicy';
 import TermsConditions from './pages/TermsConditions';
@@ -75,18 +75,19 @@ import FAQ from './pages/FAQ';
 function App() {
   return (
     <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <PropertyProvider>
-            <LeadProvider>
-              <MessagesProvider>
-                <SavedPropertiesProvider>
-                  <ApplicationsProvider>
-                    <NotificationsProvider>
+      <AuthProvider>
+        <PropertyProvider>
+          <LeadProvider>
+            <MessagesProvider>
+              <SavedPropertiesProvider>
+                <ApplicationsProvider>
+                  <NotificationsProvider>
+                    <ToastProvider>
                       <LocationProvider>
                         <PropertyFilterProvider>
+                          <NotificationContainer />
                           <Routes>
-                            {/* Redirect root to sign-in page */}
+                            {/* Redirect root to auth or dashboard based on authentication */}
                             <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
                             {/* Auth Routes */}
@@ -97,7 +98,6 @@ function App() {
                             <Route path="/auth/callback" element={<AuthCallback />} />
 
                             {/* Public Property Search */}
-                            <Route path="/properties/search" element={<PropertySearch />} />
                             <Route path="/property/:id" element={<PropertyDetail />} />
 
                             {/* Dashboard redirect - redirects /dashboard to /user/dashboard */}
@@ -524,14 +524,14 @@ function App() {
                           </Routes>
                         </PropertyFilterProvider>
                       </LocationProvider>
-                    </NotificationsProvider>
-                  </ApplicationsProvider>
-                </SavedPropertiesProvider>
-              </MessagesProvider>
-            </LeadProvider>
-          </PropertyProvider>
-        </AuthProvider>
-      </ToastProvider>
+                    </ToastProvider>
+                  </NotificationsProvider>
+                </ApplicationsProvider>
+              </SavedPropertiesProvider>
+            </MessagesProvider>
+          </LeadProvider>
+        </PropertyProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

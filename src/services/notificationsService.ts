@@ -94,7 +94,7 @@ export async function createNotification({
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZDG6XjdzhFDxcFae0hDSraFhazdNsU';
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await (supabase?.auth.getSession() || Promise.resolve({ data: { session: null }, error: null }));
     const accessToken = sessionData?.session?.access_token || supabaseKey;
 
     const response = await fetch(`${supabaseUrl}/rest/v1/notifications`, {
@@ -188,6 +188,177 @@ export async function notifyViewingReminder(
     message: `Reminder: You have a viewing scheduled for "${propertyTitle}" tomorrow at ${time}.`,
     data: { propertyId, propertyTitle, date, time },
   });
+}
+
+/**
+ * Notify all managers and admins when a new appointment is booked
+ */
+export async function notifyManagersAppointmentBooked(
+  userName: string,
+  userEmail: string,
+  propertyTitle: string,
+  propertyId: string,
+  date: string,
+  time: string
+): Promise<boolean> {
+  try {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return false;
+    }
+
+    // Get all managers and admins
+    const { data: managers, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['manager', 'admin']);
+
+    if (error) {
+      console.error('Error fetching managers:', error);
+      return false;
+    }
+
+    if (!managers || managers.length === 0) {
+      console.log('No managers or admins found to notify');
+      return true; // Not an error, just no one to notify
+    }
+
+    // Create notifications for all managers/admins
+    const notificationPromises = managers.map(manager =>
+      createNotification({
+        userId: manager.id,
+        type: NOTIFICATION_TYPES.VIEWING_BOOKED,
+        title: 'New Appointment Booked',
+        message: `${userName} (${userEmail}) has booked a viewing for "${propertyTitle}" on ${date} at ${time}.`,
+        data: { 
+          propertyId, 
+          propertyTitle, 
+          date, 
+          time,
+          userName,
+          userEmail,
+        },
+      })
+    );
+
+    await Promise.all(notificationPromises);
+    return true;
+  } catch (error) {
+    console.error('Error notifying managers of appointment booking:', error);
+    return false;
+  }
+}
+
+/**
+ * Notify all managers and admins when a new application is submitted
+ */
+export async function notifyManagersApplicationSubmitted(
+  userName: string,
+  userEmail: string,
+  propertyTitle: string,
+  propertyId: string,
+  applicationId: string
+): Promise<boolean> {
+  try {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return false;
+    }
+
+    // Get all managers and admins
+    const { data: managers, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['manager', 'admin']);
+
+    if (error) {
+      console.error('Error fetching managers:', error);
+      return false;
+    }
+
+    if (!managers || managers.length === 0) {
+      console.log('No managers or admins found to notify');
+      return true;
+    }
+
+    // Create notifications for all managers/admins
+    const notificationPromises = managers.map(manager =>
+      createNotification({
+        userId: manager.id,
+        type: NOTIFICATION_TYPES.APPLICATION_SUBMITTED,
+        title: 'New Application Submitted',
+        message: `${userName} (${userEmail}) has submitted an application for "${propertyTitle}".`,
+        data: { 
+          propertyId, 
+          propertyTitle, 
+          applicationId,
+          userName,
+          userEmail,
+        },
+      })
+    );
+
+    await Promise.all(notificationPromises);
+    return true;
+  } catch (error) {
+    console.error('Error notifying managers of application submission:', error);
+    return false;
+  }
+}
+
+/**
+ * Notify all managers and admins when a new lead is created
+ */
+export async function notifyManagersNewLead(
+  leadName: string,
+  leadEmail: string,
+  propertyInterested: string,
+  leadId: string
+): Promise<boolean> {
+  try {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return false;
+    }
+
+    // Get all managers and admins
+    const { data: managers, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['manager', 'admin']);
+
+    if (error) {
+      console.error('Error fetching managers:', error);
+      return false;
+    }
+
+    if (!managers || managers.length === 0) {
+      console.log('No managers or admins found to notify');
+      return true;
+    }
+
+    // Create notifications for all managers/admins
+    const notificationPromises = managers.map(manager =>
+      createNotification({
+        userId: manager.id,
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'New Lead Created',
+        message: `New lead: ${leadName} (${leadEmail}) is interested in "${propertyInterested}".`,
+        data: { 
+          leadId,
+          leadName,
+          leadEmail,
+          propertyInterested,
+        },
+      })
+    );
+
+    await Promise.all(notificationPromises);
+    return true;
+  } catch (error) {
+    console.error('Error notifying managers of new lead:', error);
+    return false;
+  }
 }
 
 // =====================================================
@@ -462,7 +633,7 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZDG6XjdzhFDxcFae0hDSraFhazdNsU';
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await (supabase?.auth.getSession() || Promise.resolve({ data: { session: null }, error: null }));
     const accessToken = sessionData?.session?.access_token || supabaseKey;
 
     const response = await fetch(
@@ -494,7 +665,7 @@ export async function updateNotificationPreferences(
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yydtsteyknbpfpxjtlxe.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZDG6XjdzhFDxcFae0hDSraFhazdNsU';
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await (supabase?.auth.getSession() || Promise.resolve({ data: { session: null }, error: null }));
     const accessToken = sessionData?.session?.access_token || supabaseKey;
 
     // First try to upsert (insert or update)

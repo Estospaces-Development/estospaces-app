@@ -151,6 +151,22 @@ const DashboardDiscover = () => {
     setCurrentPage(1);
   };
 
+  // Handler for "Added to site" filter change (commented out - requires additional state and functions)
+  // const handleAddedToSiteChange = useCallback((value) => {
+  //   setAddedToSite(value);
+  //   
+  //   // Update URL params
+  //   const newParams = new URLSearchParams(searchParams);
+  //   if (value === 'anytime') {
+  //     newParams.delete('added');
+  //   } else {
+  //     newParams.set('added', value);
+  //   }
+  //   setSearchParams(newParams);
+  //   
+  //   // Fetch with new filter
+  //   fetchPropertiesFromAPI(activeTab, true);
+  // }, [searchParams, setSearchParams, activeTab, locationQuery, searchQuery, priceRange, beds, baths, fetchPropertiesFromAPI]);
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });

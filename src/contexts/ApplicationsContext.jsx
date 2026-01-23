@@ -236,6 +236,35 @@ export const ApplicationsProvider = ({ children }) => {
 
       if (insertError) throw insertError;
 
+      // Notify the user
+      try {
+        const { notifyApplicationSubmitted } = await import('../services/notificationsService');
+        await notifyApplicationSubmitted(
+          user.id,
+          applicationData.property_title || 'Property',
+          applicationData.property_id || '',
+          data.id
+        );
+      } catch (notifyErr) {
+        console.log('Could not send user notification:', notifyErr);
+      }
+
+      // Notify all managers and admins
+      try {
+        const { notifyManagersApplicationSubmitted } = await import('../services/notificationsService');
+        const userName = applicationData.personal_info?.full_name || user.email?.split('@')[0] || 'User';
+        const userEmail = applicationData.personal_info?.email || user.email || '';
+        await notifyManagersApplicationSubmitted(
+          userName,
+          userEmail,
+          applicationData.property_title || 'Property',
+          applicationData.property_id || '',
+          data.id
+        );
+      } catch (notifyErr) {
+        console.log('Could not send manager notification:', notifyErr);
+      }
+
       // Refresh applications list
       await fetchApplications();
       

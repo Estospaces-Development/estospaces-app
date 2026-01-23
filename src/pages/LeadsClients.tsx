@@ -66,11 +66,11 @@ const LeadsClients = () => {
     setShowAddLeadModal(true);
   };
 
-  const handleSaveLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingLead) {
       updateLead(editingLead.id, leadData);
     } else {
-      addLead(leadData);
+      await addLead(leadData);
     }
     setShowAddLeadModal(false);
     setEditingLead(null);
