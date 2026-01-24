@@ -133,7 +133,7 @@ const HelpSupport = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 transition-colors">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setCurrentView('search')}
@@ -176,7 +176,7 @@ const HelpSupport = () => {
 
       {/* Content Based on View */}
       {currentView === 'search' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-6 transition-colors">
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-2">How can we help you?</h2>
             <div className="relative">
