@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, AlertCircle, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMessages } from '../contexts/MessagesContext';
 import ConversationList from '../components/Dashboard/Messaging/ConversationList';
 import ConversationThread from '../components/Dashboard/Messaging/ConversationThread';
@@ -39,6 +39,28 @@ const DashboardMessages = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const [searchParams] = useSearchParams();
+
+  // Handle new conversation from query params
+  useEffect(() => {
+    const newContactName = searchParams.get('newConversationWith');
+    if (newContactName) {
+      // Logic to find an existing conversation or "create" a new temporary one
+      // For this mock implementation, we'll auto-select the first conversation if no match, 
+      // or simply log it. In a real app, we'd add to the conversation list.
+      const existing = conversations.find(c => c.contactName === newContactName || c.participants?.some(p => p.name === newContactName));
+
+      if (existing) {
+        setSelectedConversationId(existing.id);
+      } else {
+        // Mock creating a new one by selecting a default or showing a "New Message" state
+        // For visual feedback, let's select the first one but show a toast/console logic
+        console.log(`Starting new conversation with ${newContactName}`);
+        // Optional: you could set a state to show a "New Conversation" header
+      }
+    }
+  }, [searchParams, conversations, setSelectedConversationId]);
 
   const handleSelectConversation = (conversationId) => {
     setSelectedConversationId(conversationId);

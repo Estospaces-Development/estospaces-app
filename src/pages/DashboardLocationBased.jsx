@@ -19,6 +19,7 @@ import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
 import { MOCK_PROPERTIES } from '../services/mockDataService';
 import BrokerRequestWidget from '../components/Dashboard/BrokerRequestWidget';
+import NearbyAgenciesList from '../components/Dashboard/NearbyAgenciesList';
 import ApplicationTimelineWidget from '../components/Dashboard/ApplicationTimelineWidget';
 import ProfileCompletionCard from '../components/Dashboard/ProfileCompletionCard';
 import { useAppTour } from '../components/Tour/useAppTour';
@@ -674,7 +675,14 @@ const DashboardLocationBased = () => {
       {!showFilteredResults && (
         <>
           {/* PROMINENT: 10-Minute Broker Response - Full Width Banner */}
-          <BrokerRequestWidget />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-2">
+              <BrokerRequestWidget />
+            </div>
+            <div>
+              <NearbyAgenciesList />
+            </div>
+          </div>
 
           {/* Quick Action Cards Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
