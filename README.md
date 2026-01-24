@@ -71,6 +71,12 @@ A comprehensive property management dashboard for property managers with tools t
   - Messaging interface
   - Communication management
 
+- **Verification & Security**
+  - **Manager Verification System**
+  - Multi-step verification flow: Email, Phone, and Identity/Business verification
+  - Document upload and review management
+  - Verification status badges and tracking
+
 - **Profile**
   - User profile management
   - Verification system (Email and Phone)
@@ -101,6 +107,14 @@ A modern, responsive property search and management dashboard for property seeke
   - Rent Property - Explore rental options
   - Saved Properties - View all saved properties with count
   - My Applications - Track application progress
+
+- **Agency & Support Services**
+  - **Nearby Agencies** - Discover top-rated local real estate agencies
+  - Contact agents directly via Chat or Phone
+  - Detailed agency profiles with specialties, ratings, and reviews
+  - Search and filter local agencies by name or address
+  - **10-Minute Broker Support** - Urgent assistance request with 10-minute response guarantee
+  - Real-time tracking of broker requests (Searching -> Broker Found)
 
 - **Property Management**
   - Saved/favorited properties with real-time sync
@@ -143,6 +157,11 @@ A modern, responsive property search and management dashboard for property seeke
   - Selected date/time confirmation card
   - Free cancellation notice
   - Success animation with redirect to My Applications
+
+- **Journey Tracking**
+  - **Track Your Journey Widget** - Granular lifecycle tracking for all applications
+  - Transition between Applications (Buy/Rent) and Listings (Sell)
+  - Real-time progress visualization with interactive timelines
 
 - **Overseas Properties**
   - dedicated dashboard for international property investments
@@ -625,12 +644,22 @@ The Supabase client includes fallback configuration to ensure reliable API conne
   - **Real-Time Polling**: Auto-updates status every 10 seconds
   - **Smart Fallback**: Displays educational empty states or mock data for demonstration
 
+### Global Real-Time Connectivity (January 2026)
+
 - **10-Minute Nearest Broker Response**:
   - **Emergency Request**: New "Request Broker Help" widget for urgent assistance
   - **Geolocation Integration**: Automatically detects user location to find nearest agents
   - **Countdown Timer**: 10-minute guarantee countdown visual
   - **Status States**: Real-time tracking of request status (Pending -> Searching -> Broker Found)
-  - **Mock Simulation**: Fully functional demo mode for testing the flow without live agents
+
+- **Nearby Agencies Integration**:
+  - Interactive list of highly-rated local agencies
+  - One-click communication (Call/Chat) options
+  - Verified agency details and performance metrics
+
+- **Manager Verification & Trust**:
+  - New verification framework for property managers
+  - Identity and professional document validation to ensure platform security
 
 ### Overseas Property Investment (January 2026)
 
