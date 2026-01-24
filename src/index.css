@@ -3,10 +3,16 @@
 @tailwind utilities;
 
 @layer base {
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-manager;
   }
-  
+
   body {
     @apply font-sans;
   }
@@ -558,12 +564,12 @@ html.dark * {
 
 /* Hide scrollbar for modal */
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* BotSailor Widget Custom Colors */
