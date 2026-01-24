@@ -261,8 +261,8 @@ const Appointment = () => {
         <div className="mb-4">
           <BackButton />
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Appointment</h1>
-        <p className="text-gray-600">Manage client appointments</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">Appointment</h1>
+        <p className="text-gray-600 dark:text-gray-400">Manage client appointments</p>
       </div>
 
       {/* Summary Cards */}
@@ -305,7 +305,7 @@ const Appointment = () => {
           onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${viewMode === 'calendar'
             ? 'bg-primary text-white border-primary'
-            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
         >
           <CalendarIcon className="w-4 h-4" />
@@ -335,19 +335,19 @@ const Appointment = () => {
 
       {/* Appointments List View */}
       {viewMode === 'list' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">Appointments ({appointments.length})</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Appointments ({appointments.length})</h2>
           </div>
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {loading ? (
               <div className="p-12 text-center">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-4" />
-                <p className="text-gray-500">Loading appointments...</p>
+                <p className="text-gray-500 dark:text-gray-400">Loading appointments...</p>
               </div>
             ) : appointments.length === 0 ? (
               <div className="p-12 text-center">
-                <p className="text-gray-500 mb-4">No appointments scheduled</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">No appointments scheduled</p>
                 <button
                   onClick={() => {
                     setEditingAppointment(null);
@@ -361,7 +361,7 @@ const Appointment = () => {
               </div>
             ) : (
               appointments.map((appointment) => (
-                <div key={appointment.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div key={appointment.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-start gap-4">
@@ -372,22 +372,22 @@ const Appointment = () => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-800">{appointment.clientName}</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{appointment.clientName}</h3>
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-full ${appointment.status === 'Confirmed'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                                 : appointment.status === 'Pending'
-                                  ? 'bg-yellow-100 text-yellow-800'
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                                   : appointment.status === 'Completed'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-red-100 text-red-800'
+                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
+                                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                                 }`}
                             >
                               {appointment.status}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">{appointment.description}</p>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{appointment.description}</p>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-500">
                             <div className="flex items-center gap-2">
                               <CalendarIcon className="w-4 h-4" />
                               <span>{formatDate(appointment.date)}</span>
@@ -406,21 +406,21 @@ const Appointment = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                         title="View"
                         onClick={() => handleAppointmentClick(appointment)}
                       >
                         <Eye className="w-5 h-5" />
                       </button>
                       <button
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                         title="Edit"
                         onClick={() => handleEditClick(appointment)}
                       >
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                         title="Delete"
                         onClick={() => setShowDeleteConfirm(appointment.id)}
                       >
@@ -451,15 +451,15 @@ const Appointment = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete Appointment</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full border border-gray-200 dark:border-gray-800 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Delete Appointment</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete this appointment? This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancel
               </button>
