@@ -1,19 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Bot, ArrowRight, Mic, MicOff, Loader2, MapPin, Home, TrendingUp, Eye, Heart, FileText, Map as MapIcon, Sparkles, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { useProperties } from '../../contexts/PropertiesContext';
 import { useUserLocation } from '../../contexts/LocationContext';
 import { useSavedProperties } from '../../contexts/SavedPropertiesContext';
-import * as propertyDataService from '../../services/propertyDataService';
-import * as propertiesService from '../../services/propertiesService';
 
 const LakshmiAssistant = () => {
   const navigate = useNavigate();
   const { currentUser, viewedProperties, savedProperties: contextSavedProps, appliedProperties } = useProperties();
   const { activeLocation } = useUserLocation();
   const { savedProperties: savedProps } = useSavedProperties();
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -23,57 +20,57 @@ const LakshmiAssistant = () => {
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState([]);
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false); // Disabled welcome popup
-  
+
   // Draggable button state
   const [buttonPosition, setButtonPosition] = useState({ x: null, y: null }); // null means use default position
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false); // Track if user actually moved the button
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const buttonRef = useRef(null);
-  
+
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const inputRef = useRef(null);
-  
+
   // Handle mouse/touch drag start
   const handleDragStart = useCallback((e) => {
     if (!buttonRef.current) return;
-    
+
     e.preventDefault();
     setIsDragging(true);
     setHasDragged(false); // Reset drag tracking
-    
+
     const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
     const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-    
+
     const rect = buttonRef.current.getBoundingClientRect();
     setDragOffset({
       x: clientX - rect.left,
       y: clientY - rect.top
     });
   }, []);
-  
+
   // Handle mouse/touch drag move
   const handleDragMove = useCallback((e) => {
     if (!isDragging) return;
-    
+
     e.preventDefault();
     setHasDragged(true); // User is actually dragging
-    
+
     const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
     const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-    
+
     // Calculate new position (accounting for button size)
     const buttonWidth = buttonRef.current?.offsetWidth || 140;
     const buttonHeight = buttonRef.current?.offsetHeight || 44;
-    
+
     // Keep within viewport bounds
     const newX = Math.max(0, Math.min(window.innerWidth - buttonWidth, clientX - dragOffset.x));
     const newY = Math.max(0, Math.min(window.innerHeight - buttonHeight, clientY - dragOffset.y));
-    
+
     setButtonPosition({ x: newX, y: newY });
   }, [isDragging, dragOffset]);
-  
+
   // Handle mouse/touch drag end
   const handleDragEnd = useCallback(() => {
     // Small delay to allow click handler to check hasDragged
@@ -81,7 +78,7 @@ const LakshmiAssistant = () => {
       setIsDragging(false);
     }, 10);
   }, []);
-  
+
   // Add/remove event listeners for dragging
   useEffect(() => {
     if (isDragging) {
@@ -90,7 +87,7 @@ const LakshmiAssistant = () => {
       window.addEventListener('touchmove', handleDragMove, { passive: false });
       window.addEventListener('touchend', handleDragEnd);
     }
-    
+
     return () => {
       window.removeEventListener('mousemove', handleDragMove);
       window.removeEventListener('mouseup', handleDragEnd);
@@ -99,47 +96,66 @@ const LakshmiAssistant = () => {
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  // Onboarding prompts
+  // Onboarding prompts - Enhanced with icons and categories
   const onboardingPrompts = [
-    { text: "Looking for properties near you?", query: "Show me properties near me" },
-    { text: "Find trending properties in your area", query: "Show trending properties" },
-    { text: "Check most viewed homes near your postcode", query: "Show most viewed properties" },
-    { text: "Help me apply for a property", query: "How do I apply for a property?" },
-    { text: "Show rentals under £1500", query: "Find rentals under 1500" },
+    { text: "🏠 Properties near me", query: "Show me properties near me", category: "search" },
+    { text: "🔥 Trending properties", query: "Show trending properties", category: "search" },
+    { text: "👀 Most viewed homes", query: "Show most viewed properties", category: "search" },
+    { text: "💰 Rentals under £1500", query: "Find rentals under 1500", category: "filter" },
+    { text: "📝 How to apply", query: "How do I apply for a property?", category: "help" },
   ];
 
-  // Initialize and check onboarding status
+  // Quick action suggestions shown after responses
+  const quickActions = [
+    { text: "Show more", query: "Show me more properties" },
+    { text: "Filter by price", query: "Show rentals under 2000" },
+    { text: "Browse all", query: "Take me to discover" },
+  ];
+
+  // Initialize and check onboarding status - Using localStorage (no API calls)
   useEffect(() => {
-    const initializeChat = async () => {
-      // Check if user has completed onboarding
-      if (currentUser) {
-        try {
-          const { data } = await supabase
-            .from('user_preferences')
-            .select('lakshmi_onboarding_completed')
-            .eq('user_id', currentUser.id)
-            .single();
-          
-          if (data?.lakshmi_onboarding_completed) {
-            setOnboardingCompleted(true);
-            setShowOnboarding(false);
-          } else {
-            setShowOnboarding(true);
-          }
-        } catch (error) {
-          // Table might not exist, show onboarding anyway
-          setShowOnboarding(true);
-        }
+    const initializeChat = () => {
+      // Check if user has completed onboarding using localStorage
+      const onboardingKey = currentUser ? `lakshmi_onboarding_${currentUser.id}` : 'lakshmi_onboarding_guest';
+      const hasCompleted = localStorage.getItem(onboardingKey) === 'true';
+
+      if (hasCompleted) {
+        setOnboardingCompleted(true);
+        setShowOnboarding(false);
       } else {
         setShowOnboarding(true);
       }
-      
-      // Start with empty messages - no mock data
+
+      // Start with empty messages
       setMessages([]);
     };
 
     initializeChat();
   }, [currentUser]);
+
+  // Add welcome message when chat opens
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'there';
+      const greeting = getTimeBasedGreeting();
+      const welcomeMessage = {
+        id: Date.now() + Math.random(),
+        type: 'bot',
+        text: `${greeting}, ${userName}! 👋\n\nI'm Lakshmi, your AI property assistant. I can help you:\n\n• Find properties near you\n• Search by price, bedrooms, or location\n• Navigate the dashboard\n• Answer property questions\n\nWhat would you like to explore today?`,
+        data: null,
+        timestamp: new Date(),
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [isOpen]);
+
+  // Get time-based greeting
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   // Initialize voice recognition
   useEffect(() => {
@@ -188,7 +204,7 @@ const LakshmiAssistant = () => {
 
     const generateSuggestions = () => {
       const suggestions = [];
-      
+
       // Check if user has viewed properties
       if (viewedProperties && viewedProperties.length > 0) {
         suggestions.push({
@@ -237,28 +253,14 @@ const LakshmiAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Mark onboarding as completed
-  const markOnboardingCompleted = async () => {
-    if (!currentUser) return;
-    
+  // Mark onboarding as completed - Using localStorage (no API calls)
+  const markOnboardingCompleted = () => {
+    const onboardingKey = currentUser ? `lakshmi_onboarding_${currentUser.id}` : 'lakshmi_onboarding_guest';
     try {
-      // Try to update or insert user preference
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: currentUser.id,
-          lakshmi_onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        });
-
-      if (error && error.code !== '42P01') { // 42P01 = table doesn't exist
-        console.error('Error saving onboarding status:', error);
-      }
+      localStorage.setItem(onboardingKey, 'true');
+      setOnboardingCompleted(true);
     } catch (error) {
-      // Table might not exist, that's okay
-      console.warn('User preferences table not found');
+      console.warn('Could not save onboarding status to localStorage:', error);
     }
   };
 
@@ -365,131 +367,154 @@ const LakshmiAssistant = () => {
     }
   }, [currentUser, viewedProperties, savedProps, appliedProperties, activeLocation]);
 
-  // Process property search query
+  // Process property search query - Using mock data only, no API calls
   const handlePropertySearch = async (query, parsedParams) => {
     setIsProcessing(true);
-    
+
     try {
-      let results = [];
       let searchMessage = "Here are some properties I found:";
 
-      // Helper function to get mock data if live data fails or is empty
-      const getMockDataFallback = (count = 6) => {
-        // Simple mock generator
-        return Array.from({ length: count }).map((_, i) => ({
-          id: `mock-${i}`,
-          title: `Luxury Apartment ${i + 1}`,
-          address_line_1: `${10 + i} Downing Street`,
-          city: "London",
-          postcode: "SW1A 2AA",
-          price: 1500 + (i * 100),
-          bedrooms: 2 + (i % 3),
-          bathrooms: 1 + (i % 2),
-          property_type: i % 2 === 0 ? 'rent' : 'sale',
-          image_urls: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'],
-          description: "A beautiful property in the heart of London.",
-          featured: i === 0
-        }));
+      // Rich mock property data generator
+      const generateMockProperties = (count = 6, params = {}) => {
+        const propertyTypes = ['Apartment', 'House', 'Flat', 'Studio', 'Penthouse', 'Townhouse'];
+        const areas = [
+          { city: 'London', postcodes: ['SW1A 2AA', 'W1J 5PA', 'EC1A 1BB', 'NW1 6XE', 'SE1 7AB', 'E14 5AB'] },
+          { city: 'Manchester', postcodes: ['M1 1HP', 'M2 4WU', 'M3 4JH', 'M4 5FT', 'M15 4PS'] },
+          { city: 'Birmingham', postcodes: ['B1 1AA', 'B2 4ND', 'B3 2NS', 'B5 4BU'] },
+          { city: 'Edinburgh', postcodes: ['EH1 1YZ', 'EH2 2ER', 'EH3 6SS', 'EH4 1NZ'] },
+          { city: 'Bristol', postcodes: ['BS1 4DJ', 'BS2 0JP', 'BS8 1TH'] },
+        ];
+        const streets = ['High Street', 'King\'s Road', 'Queen Street', 'Park Lane', 'Victoria Road', 'Church Street', 'Station Road', 'Mill Lane', 'The Grove', 'Manor Drive'];
+        const images = [
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+          'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800',
+          'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800',
+          'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+        ];
+
+        // Find matching area if location specified
+        let selectedArea = areas[0]; // Default to London
+        if (params.location) {
+          const locationLower = params.location.toLowerCase();
+          const matchedArea = areas.find(a =>
+            a.city.toLowerCase().includes(locationLower) ||
+            a.postcodes.some(p => p.toLowerCase().startsWith(locationLower.substring(0, 2)))
+          );
+          if (matchedArea) selectedArea = matchedArea;
+        } else if (activeLocation?.city) {
+          const cityLower = activeLocation.city.toLowerCase();
+          const matchedArea = areas.find(a => a.city.toLowerCase() === cityLower);
+          if (matchedArea) selectedArea = matchedArea;
+        }
+
+        return Array.from({ length: count }).map((_, i) => {
+          const propType = params.propertyType || (i % 2 === 0 ? 'rent' : 'sale');
+          const bedrooms = params.bedrooms || (2 + (i % 3));
+          const bathrooms = params.bathrooms || (1 + (i % 2));
+
+          // Calculate price based on type and params
+          let basePrice = propType === 'rent' ? 1200 : 250000;
+          if (params.maxPrice) {
+            basePrice = Math.floor(params.maxPrice * 0.7 + (Math.random() * params.maxPrice * 0.25));
+          } else if (params.minPrice) {
+            basePrice = params.minPrice + Math.floor(Math.random() * params.minPrice * 0.5);
+          } else {
+            basePrice = propType === 'rent'
+              ? 1000 + (i * 200) + Math.floor(Math.random() * 500)
+              : 200000 + (i * 50000) + Math.floor(Math.random() * 100000);
+          }
+
+          const propertyTypeName = propertyTypes[i % propertyTypes.length];
+          const street = streets[i % streets.length];
+          const postcode = selectedArea.postcodes[i % selectedArea.postcodes.length];
+
+          // Generate view count for trending/most-viewed
+          const viewCount = params.searchType === 'most-viewed'
+            ? 500 + Math.floor(Math.random() * 500)
+            : params.searchType === 'trending'
+              ? 200 + Math.floor(Math.random() * 300)
+              : 10 + Math.floor(Math.random() * 100);
+
+          return {
+            id: `mock-${Date.now()}-${i}`,
+            title: `${bedrooms} Bed ${propertyTypeName} in ${selectedArea.city}`,
+            address_line_1: `${10 + i * 5} ${street}`,
+            city: selectedArea.city,
+            postcode: postcode,
+            price: basePrice,
+            bedrooms: bedrooms,
+            bathrooms: bathrooms,
+            property_type: propType,
+            image_urls: [images[i % images.length], images[(i + 1) % images.length]],
+            description: `A stunning ${bedrooms} bedroom ${propertyTypeName.toLowerCase()} in the heart of ${selectedArea.city}. This property features ${bathrooms} bathroom${bathrooms > 1 ? 's' : ''}, modern amenities, and excellent transport links.`,
+            featured: i === 0,
+            view_count: viewCount,
+            created_at: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)).toISOString(),
+            latitude: 51.5074 + (Math.random() * 0.1 - 0.05),
+            longitude: -0.1278 + (Math.random() * 0.1 - 0.05),
+            property_size_sqm: 50 + (bedrooms * 20) + Math.floor(Math.random() * 30),
+          };
+        });
       };
 
-      try {
-        // Use search type if specified
-        if (parsedParams.searchType === 'trending') {
-          const trendingResult = await propertyDataService.getTrendingProperties({
-            location: parsedParams.location ? { postcode: parsedParams.location } : activeLocation,
-            limit: 6,
-            userId: currentUser?.id,
-          });
-          results = trendingResult.properties || [];
-          searchMessage = "Here are trending properties:";
-        } else if (parsedParams.searchType === 'most-viewed') {
-          const mostViewedResult = await propertyDataService.getMostViewedProperties({
-            location: parsedParams.location ? { postcode: parsedParams.location } : activeLocation,
-            limit: 6,
-            userId: currentUser?.id,
-          });
-          results = mostViewedResult.properties || [];
-          searchMessage = "Here are the most viewed properties:";
-        } else if (parsedParams.searchType === 'recent') {
-          const recentResult = await propertyDataService.getRecentlyAddedProperties({
-            location: parsedParams.location ? { postcode: parsedParams.location } : activeLocation,
-            limit: 6,
-            userId: currentUser?.id,
-          });
-          results = recentResult.properties || [];
-          searchMessage = "Here are recently added properties:";
-        } else if (parsedParams.searchType === 'high-demand') {
-          const highDemandResult = await propertyDataService.getHighDemandProperties({
-            location: parsedParams.location ? { postcode: parsedParams.location } : activeLocation,
-            limit: 6,
-            userId: currentUser?.id,
-          });
-          results = highDemandResult.properties || [];
-          searchMessage = "Here are high demand properties:";
+      // Generate mock results based on search type
+      let results = [];
+
+      if (parsedParams.searchType === 'trending') {
+        results = generateMockProperties(6, { ...parsedParams, searchType: 'trending' });
+        searchMessage = "🔥 Here are trending properties in your area:";
+      } else if (parsedParams.searchType === 'most-viewed') {
+        results = generateMockProperties(6, { ...parsedParams, searchType: 'most-viewed' });
+        searchMessage = "👀 Here are the most viewed properties:";
+      } else if (parsedParams.searchType === 'recent') {
+        results = generateMockProperties(6, { ...parsedParams, searchType: 'recent' });
+        searchMessage = "✨ Here are recently added properties:";
+      } else if (parsedParams.searchType === 'high-demand') {
+        results = generateMockProperties(6, { ...parsedParams, searchType: 'high-demand' });
+        searchMessage = "🏠 Here are high demand properties:";
+      } else {
+        // Regular search with filters
+        results = generateMockProperties(6, parsedParams);
+
+        // Create contextual message
+        const locationText = parsedParams.location || activeLocation?.postcode || activeLocation?.city || 'your area';
+        if (parsedParams.maxPrice) {
+          searchMessage = `💰 Here are properties under £${parsedParams.maxPrice.toLocaleString()} near ${locationText}:`;
+        } else if (parsedParams.propertyType === 'rent') {
+          searchMessage = `🏡 Here are rental properties near ${locationText}:`;
+        } else if (parsedParams.propertyType === 'sale') {
+          searchMessage = `🏠 Here are properties for sale near ${locationText}:`;
         } else {
-          // Regular search with filters
-          const location = parsedParams.location 
-            ? { postcode: parsedParams.location }
-            : activeLocation || { postcode: 'SW1A 1AA' };
-
-          const searchResult = await propertyDataService.fetchPropertiesWithFallback({
-            location,
-            radius: 5,
-            maxRadius: 20,
-            listingStatus: parsedParams.propertyType || 'both',
-            userId: currentUser?.id,
-            limit: 6,
-          });
-
-          results = searchResult.properties || [];
-
-          // Apply filters
-          if (parsedParams.bedrooms) {
-            results = results.filter(p => p.bedrooms >= parsedParams.bedrooms);
-          }
-          if (parsedParams.bathrooms) {
-            results = results.filter(p => p.bathrooms >= parsedParams.bathrooms);
-          }
-          if (parsedParams.minPrice) {
-            results = results.filter(p => p.price >= parsedParams.minPrice);
-          }
-          if (parsedParams.maxPrice) {
-            results = results.filter(p => p.price <= parsedParams.maxPrice);
-          }
+          searchMessage = `📍 Here are properties I found near ${locationText}:`;
         }
-      } catch (innerError) {
-        console.warn("Live property search failed, falling back to mock data:", innerError);
-        // Fallback execution if API call fails
-      }
-
-      // If no results found (either from empty API response or failed call), use mock data
-      if (!results || results.length === 0) {
-        results = getMockDataFallback();
-        searchMessage = "I couldn't find exact live matches, but here are some similar properties you might like:";
       }
 
       // Add message with results
       addMessage('bot', searchMessage, results.length > 0 ? { type: 'properties', properties: results.slice(0, 6) } : null);
 
     } catch (error) {
-      console.error('Error searching properties:', error);
+      console.error('Error generating property data:', error);
       // Final safety net mock data
       const mockResults = [
         {
-            id: 'mock-error-1',
-            title: 'Modern Apartment',
-            address_line_1: '123 Baker Street',
-            city: 'London',
-            postcode: 'NW1 6XE',
-            price: 2500,
-            bedrooms: 2,
-            bathrooms: 2,
-            property_type: 'rent',
-            image_urls: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'],
-            description: "Spacious modern apartment."
+          id: 'mock-error-1',
+          title: 'Modern Apartment in London',
+          address_line_1: '123 Baker Street',
+          city: 'London',
+          postcode: 'NW1 6XE',
+          price: 2500,
+          bedrooms: 2,
+          bathrooms: 2,
+          property_type: 'rent',
+          image_urls: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'],
+          description: "Spacious modern apartment in central London."
         }
       ];
-      addMessage('bot', "I encountered an error connecting to the database, but here are some example properties:", { type: 'properties', properties: mockResults });
+      addMessage('bot', "Here are some example properties:", { type: 'properties', properties: mockResults });
     } finally {
       setIsProcessing(false);
     }
@@ -505,11 +530,11 @@ const LakshmiAssistant = () => {
       if (lowerQuery.match(/\b(viewed|recent|recently viewed)\b/) && context?.viewedCount > 0) {
         return `You've recently viewed ${context.viewedCount} ${context.viewedCount === 1 ? 'property' : 'properties'}. Would you like me to show you similar properties or help you find more?`;
       }
-      
+
       if (lowerQuery.match(/\b(saved|favorites|favourites)\b/) && context?.savedCount > 0) {
         return `You have ${context.savedCount} saved ${context.savedCount === 1 ? 'property' : 'properties'}. I can help you view them or find similar ones.`;
       }
-      
+
       if (lowerQuery.match(/\b(applied|applications)\b/) && context?.appliedCount > 0) {
         return `You have ${context.appliedCount} active ${context.appliedCount === 1 ? 'application' : 'applications'}. Would you like to check their status?`;
       }
@@ -530,18 +555,18 @@ const LakshmiAssistant = () => {
     // Hide onboarding after first interaction
     if (showOnboarding && !onboardingCompleted) {
       setShowOnboarding(false);
-      await markOnboardingCompleted();
+      markOnboardingCompleted();
     }
 
     // Check for greetings
     if (lowerMessage.match(/\b(hello|hi|hey|greetings|good morning|good afternoon|good evening)\b/)) {
       const context = await getUserContext();
       let greeting = "Hello! How can I help you today?";
-      
+
       if (context?.location) {
         greeting = `Hello! I can help you find properties near ${context.location} or answer any questions. What would you like to explore?`;
       }
-      
+
       addMessage('bot', greeting);
       return;
     }
@@ -635,7 +660,7 @@ const LakshmiAssistant = () => {
   // Handle onboarding prompt click
   const handleOnboardingPrompt = async (prompt) => {
     setShowOnboarding(false);
-    await markOnboardingCompleted();
+    markOnboardingCompleted();
     setInputValue(prompt.query);
     await handleSendMessage(prompt.query);
   };
@@ -733,7 +758,7 @@ const LakshmiAssistant = () => {
     <>
       {/* Chat Bubble Button - Draggable */}
       {!isOpen && (
-        <div 
+        <div
           ref={buttonRef}
           className="fixed z-40"
           style={getButtonStyle()}
@@ -749,9 +774,8 @@ const LakshmiAssistant = () => {
               }
               setHasDragged(false); // Reset for next interaction
             }}
-            className={`px-4 py-3 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 relative select-none ${
-              isDragging ? 'cursor-grabbing scale-105 opacity-90' : 'cursor-grab hover:scale-105'
-            }`}
+            className={`px-4 py-3 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 relative select-none ${isDragging ? 'cursor-grabbing scale-105 opacity-90' : 'cursor-grab hover:scale-105'
+              }`}
             aria-label="Ask Lakshmi - Drag to move"
             title="Click to chat, drag to move"
           >
@@ -796,10 +820,9 @@ const LakshmiAssistant = () => {
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg px-4 py-2 ${
-                      message.type === 'user'
-                        ? 'bg-orange-500 dark:bg-orange-600 text-white'
-                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600'
+                  className={`max-w-[85%] rounded-lg px-4 py-2 ${message.type === 'user'
+                    ? 'bg-orange-500 dark:bg-orange-600 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600'
                     }`}
                 >
                   {message.type === 'bot' && (
@@ -809,7 +832,7 @@ const LakshmiAssistant = () => {
                     </div>
                   )}
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                  
+
                   {/* Property Cards */}
                   {message.data?.type === 'properties' && message.data.properties && (
                     <div className="mt-3 space-y-2">
@@ -878,19 +901,43 @@ const LakshmiAssistant = () => {
               </div>
             ))}
 
-            {/* Onboarding Prompts */}
-            {showOnboarding && !onboardingCompleted && messages.length === 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Try asking:</p>
+            {/* Onboarding Prompts - Always show quick actions after welcome */}
+            {messages.length > 0 && messages.length <= 2 && !isProcessing && (
+              <div className="space-y-3 animate-fadeIn">
+                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <Sparkles size={14} className="text-orange-500" />
+                  <span className="font-medium">Quick actions:</span>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {onboardingPrompts.map((prompt, index) => (
-                <button
+                    <button
                       key={index}
                       onClick={() => handleOnboardingPrompt(prompt)}
-                      className="px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors"
-                >
+                      className="px-3 py-2 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/30 border border-gray-200 dark:border-gray-700 hover:border-orange-400 dark:hover:border-orange-600 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                    >
                       {prompt.text}
-                </button>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions after property results */}
+            {messages.length > 2 && messages[messages.length - 1]?.data?.type === 'properties' && !isProcessing && (
+              <div className="space-y-2 pt-3 animate-fadeIn">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <ArrowRight size={12} />
+                  <span>What's next?</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {quickActions.map((action, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSendMessage(action.query)}
+                      className="px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium transition-colors"
+                    >
+                      {action.text}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -907,25 +954,25 @@ const LakshmiAssistant = () => {
                   {smartSuggestions.map((suggestion, index) => {
                     const Icon = suggestion.icon;
                     return (
-                <button
+                      <button
                         key={index}
                         onClick={() => handleSuggestionClick(suggestion)}
                         className="px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors flex items-center gap-1.5"
-                >
+                      >
                         <Icon size={12} />
                         {suggestion.text}
-                </button>
+                      </button>
                     );
                   })}
-                <button
+                  <button
                     onClick={() => setSmartSuggestions([])}
                     className="px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     Dismiss
-                </button>
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
             {/* Typing Indicator */}
             {isProcessing && (
@@ -977,11 +1024,10 @@ const LakshmiAssistant = () => {
                   type="button"
                   onClick={toggleVoiceInput}
                   disabled={isProcessing}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isListening
-                      ? 'bg-red-500 hover:bg-red-600 text-white'
-                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`p-2 rounded-lg transition-colors ${isListening
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                   aria-label={isListening ? "Stop listening" : "Start voice input"}
                 >
                   {isListening ? <MicOff size={18} /> : <Mic size={18} />}
