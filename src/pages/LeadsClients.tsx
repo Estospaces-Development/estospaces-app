@@ -158,8 +158,8 @@ const LeadsClients = () => {
         <div className="mb-4">
           <BackButton />
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Leads & Clients</h1>
-        <p className="text-gray-600">Manage your leads and clients relationships</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">Leads & Clients</h1>
+        <p className="text-gray-600 dark:text-gray-400">Manage your leads and clients relationships</p>
       </div>
 
       {/* Summary Cards */}
@@ -441,13 +441,13 @@ const LeadsClients = () => {
         const lead = leads.find(l => l.id === showViewModal);
         if (!lead) return null;
         return createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Lead Details</h3>
                 <button
                   onClick={() => setShowViewModal(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <Eye className="w-5 h-5" />
                 </button>
@@ -510,8 +510,8 @@ const LeadsClients = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Delete Lead</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete this lead? This action cannot be undone.
@@ -519,13 +519,13 @@ const LeadsClients = () => {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteLead(showDeleteConfirm)}
-                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-lg shadow-red-500/20"
               >
                 Delete
               </button>

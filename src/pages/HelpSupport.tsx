@@ -178,13 +178,13 @@ const HelpSupport = () => {
       {currentView === 'search' && (
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-6 transition-colors">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">How can we help you?</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">How can we help you?</h2>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search our knowledge base or guides"
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
           </div>
