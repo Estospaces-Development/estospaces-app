@@ -2,6 +2,9 @@ import { useState, ReactNode } from 'react';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
 // @ts-ignore
+import Footer from '../components/Footer';
+
+// @ts-ignore
 import LakshmiAssistant from '../components/Dashboard/LakshmiAssistant';
 // @ts-ignore
 import { PropertiesProvider } from '../contexts/PropertiesContext';
@@ -24,6 +27,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               {children}
             </div>
           </main>
+          <Footer />
         </div>
         <LakshmiAssistant />
       </div>

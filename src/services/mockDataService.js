@@ -945,6 +945,96 @@ export const MOCK_PAYMENTS = [
         property_title: 'Modern 2-Bedroom Apartment',
         date: subDays(NOW, 20).toISOString(),
         reference: 'FEE-2024-001'
+    },
+    // Utility Bills - Pending
+    {
+        id: 'pay-004',
+        type: 'electric',
+        amount: 85,
+        status: 'pending',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: addDays(NOW, 7).toISOString(),
+        reference: 'ELEC-2024-001',
+        provider: 'British Gas'
+    },
+    {
+        id: 'pay-005',
+        type: 'water',
+        amount: 45,
+        status: 'due_soon',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: addDays(NOW, 3).toISOString(),
+        reference: 'WAT-2024-001',
+        provider: 'Thames Water'
+    },
+    {
+        id: 'pay-006',
+        type: 'gas',
+        amount: 65,
+        status: 'pending',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: addDays(NOW, 10).toISOString(),
+        reference: 'GAS-2024-001',
+        provider: 'British Gas'
+    },
+    {
+        id: 'pay-007',
+        type: 'internet',
+        amount: 35,
+        status: 'due_soon',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: addDays(NOW, 2).toISOString(),
+        reference: 'NET-2024-001',
+        provider: 'BT Broadband'
+    },
+    // Utility Bills - Completed (History)
+    {
+        id: 'pay-008',
+        type: 'electric',
+        amount: 78,
+        status: 'completed',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: subDays(NOW, 25).toISOString(),
+        reference: 'ELEC-2023-012',
+        provider: 'British Gas'
+    },
+    {
+        id: 'pay-009',
+        type: 'water',
+        amount: 42,
+        status: 'completed',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: subDays(NOW, 28).toISOString(),
+        reference: 'WAT-2023-012',
+        provider: 'Thames Water'
+    },
+    {
+        id: 'pay-010',
+        type: 'gas',
+        amount: 72,
+        status: 'completed',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: subDays(NOW, 30).toISOString(),
+        reference: 'GAS-2023-012',
+        provider: 'British Gas'
+    },
+    {
+        id: 'pay-011',
+        type: 'council_tax',
+        amount: 150,
+        status: 'upcoming',
+        property_id: 'prop-004',
+        property_title: 'Luxury Studio Flat',
+        date: addDays(NOW, 15).toISOString(),
+        reference: 'TAX-2024-001',
+        provider: 'Kensington Council'
     }
 ];
 

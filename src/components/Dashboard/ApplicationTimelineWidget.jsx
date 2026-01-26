@@ -277,6 +277,50 @@ const TimelineEvent = ({ event }) => {
 };
 
 // ============================================================================
+// SKELETON LOADER
+// ============================================================================
+
+const TimelineSkeleton = () => {
+    return (
+        <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+                <div key={i} className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                    <div className="flex items-start gap-5">
+                        {/* Image Skeleton */}
+                        <div className="w-20 h-20 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+
+                        <div className="flex-1 min-w-0 space-y-3">
+                            {/* Title and Price */}
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-2">
+                                    <div className="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
+                                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+                                </div>
+                                <div className="space-y-2 text-right">
+                                    <div className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded ml-auto" />
+                                    <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded ml-auto" />
+                                </div>
+                            </div>
+
+                            {/* Stage Progress */}
+                            <div className="flex items-center gap-4 mt-4">
+                                <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700" />
+                                        <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
+                                    </div>
+                                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -285,6 +329,12 @@ const ApplicationTimelineWidget = () => {
     const [activeTab, setActiveTab] = useState('applications');
     const [expandedId, setExpandedId] = useState(null);
     const [showTimeline, setShowTimeline] = useState({});
+    const [loading, setLoading] = useState(true);
+
+    // Remove artificial delay
+    useEffect(() => {
+        setLoading(false);
+    }, []);
 
     const dataToShow = activeTab === 'applications' ? MOCK_APPLICATIONS : MOCK_LISTINGS;
 
@@ -304,7 +354,7 @@ const ApplicationTimelineWidget = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div id="realtime-tracking-widget" className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
             {/* Header */}
             <div className="px-8 py-8 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-50/50 to-transparent dark:from-orange-900/10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -369,7 +419,9 @@ const ApplicationTimelineWidget = () => {
 
             {/* Content */}
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {dataToShow.length === 0 ? (
+                {loading ? (
+                    <TimelineSkeleton />
+                ) : dataToShow.length === 0 ? (
                     <div className="py-16 text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
                             <FileText className="w-8 h-8 text-gray-400" />

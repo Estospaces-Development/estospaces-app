@@ -482,5 +482,5 @@ const PropertyCard = ({ property, onViewDetails }) => {
   );
 };
 
-export default PropertyCard;
+export default React.memo(PropertyCard);
 

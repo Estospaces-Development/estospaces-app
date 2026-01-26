@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, Home, Heart, FileText, Map as MapIcon,
@@ -9,18 +9,20 @@ import {
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
-import NearbyPropertiesMap from '../components/Dashboard/NearbyPropertiesMap';
+// Lazy load non-critical components
+const NearbyPropertiesMap = lazy(() => import('../components/Dashboard/NearbyPropertiesMap'));
+const BrokerRequestWidget = lazy(() => import('../components/Dashboard/BrokerRequestWidget'));
+const NearbyAgenciesList = lazy(() => import('../components/Dashboard/NearbyAgenciesList'));
+const ApplicationTimelineWidget = lazy(() => import('../components/Dashboard/ApplicationTimelineWidget'));
 import PropertyDiscoverySection from '../components/Dashboard/PropertyDiscoverySection';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import { useUserLocation } from '../contexts/LocationContext';
-import { useProperties } from '../contexts/PropertiesContext';
+import { useProperties } from '../contexts/PropertyContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
 import { MOCK_PROPERTIES } from '../services/mockDataService';
-import BrokerRequestWidget from '../components/Dashboard/BrokerRequestWidget';
-import NearbyAgenciesList from '../components/Dashboard/NearbyAgenciesList';
-import ApplicationTimelineWidget from '../components/Dashboard/ApplicationTimelineWidget';
 import ProfileCompletionCard from '../components/Dashboard/ProfileCompletionCard';
 import { useAppTour } from '../components/Tour/useAppTour';
 
@@ -31,7 +33,8 @@ const DashboardLocationBased = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { savedProperties } = useSavedProperties();
   const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useUserLocation();
-  const { currentUser, fetchProperties: fetchSupabaseProperties } = useProperties();
+  const { user: currentUser } = useAuth();
+  const { fetchProperties: fetchSupabaseProperties } = useProperties();
   const { activeTab, setActiveTab } = usePropertyFilter();
 
   // Redirect if URL has invalid path segments
@@ -78,27 +81,29 @@ const DashboardLocationBased = () => {
     }
   }, [searchParams]);
 
-  // Discovery sections state
-  const [discoveryProperties, setDiscoveryProperties] = useState([]);
-  const [mostViewedProperties, setMostViewedProperties] = useState([]);
-  const [trendingProperties, setTrendingProperties] = useState([]);
-  const [recentlyAddedProperties, setRecentlyAddedProperties] = useState([]);
-  const [highDemandProperties, setHighDemandProperties] = useState([]);
+  // Discovery sections state consolidated
+  const [discoveryState, setDiscoveryState] = useState({
+    discovery: [],
+    mostViewed: [],
+    trending: [],
+    recentlyAdded: [],
+    highDemand: [],
+    loading: {
+      all: false,
+      discovery: false,
+      mostViewed: false,
+      trending: false,
+      recentlyAdded: false,
+      highDemand: false
+    }
+  });
 
   // Filtered properties state (for when user applies filters)
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [showFilteredResults, setShowFilteredResults] = useState(false);
   const [filteredCount, setFilteredCount] = useState(0);
 
-  // Loading states for each section
-  const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false); // Separate loading state for search button
-  const [loadingDiscovery, setLoadingDiscovery] = useState(false);
-  const [loadingMostViewed, setLoadingMostViewed] = useState(false);
-  const [loadingTrending, setLoadingTrending] = useState(false);
-  const [loadingRecentlyAdded, setLoadingRecentlyAdded] = useState(false);
-  const [loadingHighDemand, setLoadingHighDemand] = useState(false);
-
   const [error, setError] = useState(null);
   const [locationMessage, setLocationMessage] = useState(null);
   const [stats, setStats] = useState({
@@ -110,12 +115,17 @@ const DashboardLocationBased = () => {
   // Fetch all discovery sections based on location
   const fetchAllDiscoverySections = useCallback(async (location, showLoading = true) => {
     if (showLoading) {
-      setLoading(true);
-      setLoadingDiscovery(true);
-      setLoadingMostViewed(true);
-      setLoadingTrending(true);
-      setLoadingRecentlyAdded(true);
-      setLoadingHighDemand(true);
+      setDiscoveryState(prev => ({
+        ...prev,
+        loading: {
+          all: true,
+          discovery: true,
+          mostViewed: true,
+          trending: true,
+          recentlyAdded: true,
+          highDemand: true
+        }
+      }));
     }
     setError(null);
     setLocationMessage(null);
@@ -124,25 +134,26 @@ const DashboardLocationBased = () => {
     const mockProps = MOCK_PROPERTIES;
 
     // Distribute mock properties across sections
-    setDiscoveryProperties(mockProps);
-    setMostViewedProperties(mockProps.slice(0, 4));
-    setTrendingProperties(mockProps.slice(2, 6));
-    setRecentlyAddedProperties(mockProps.slice(0, 3));
-    setHighDemandProperties(mockProps.slice(3, 7));
+    setDiscoveryState({
+      discovery: mockProps,
+      mostViewed: mockProps.slice(0, 4),
+      trending: mockProps.slice(2, 6),
+      recentlyAdded: mockProps.slice(0, 3),
+      highDemand: mockProps.slice(3, 7),
+      loading: {
+        all: false,
+        discovery: false,
+        mostViewed: false,
+        trending: false,
+        recentlyAdded: false,
+        highDemand: false
+      }
+    });
 
     setStats(prev => ({
       ...prev,
       totalProperties: mockProps.length,
     }));
-
-    if (showLoading) {
-      setLoading(false);
-      setLoadingDiscovery(false);
-      setLoadingMostViewed(false);
-      setLoadingTrending(false);
-      setLoadingRecentlyAdded(false);
-      setLoadingHighDemand(false);
-    }
   }, []);
 
   // State for filter dropdown
@@ -354,7 +365,7 @@ const DashboardLocationBased = () => {
   }, [handleLocationSearch]);
 
   // Transform property for PropertyCard
-  const transformPropertyForCard = (property) => {
+  const transformPropertyForCard = useCallback((property) => {
     if (!property) return null;
 
     let images = [];
@@ -398,28 +409,29 @@ const DashboardLocationBased = () => {
       listedDate: property.created_at ? new Date(property.created_at) : new Date(),
       featured: property.featured || false,
     };
-  };
+  }, []);
 
   // Combine all properties for map view
   const allProperties = useMemo(() => {
     try {
       const combined = [
-        ...(discoveryProperties || []),
-        ...(mostViewedProperties || []),
-        ...(trendingProperties || []),
-        ...(recentlyAddedProperties || []),
-        ...(highDemandProperties || []),
+        ...(discoveryState.discovery || []),
+        ...(discoveryState.mostViewed || []),
+        ...(discoveryState.trending || []),
+        ...(discoveryState.recentlyAdded || []),
+        ...(discoveryState.highDemand || []),
       ];
       // Remove duplicates by ID
       const unique = combined.filter((p, index, self) =>
         p && p.id && index === self.findIndex(prop => prop && prop.id === p.id)
       );
       return unique;
+      return unique;
     } catch (err) {
       console.error('Error combining properties:', err);
       return [];
     }
-  }, [discoveryProperties, mostViewedProperties, trendingProperties, recentlyAddedProperties, highDemandProperties]);
+  }, [discoveryState]);
 
   // Map properties for map view (formatted for map component)
   const mapProperties = useMemo(() => {
@@ -677,10 +689,14 @@ const DashboardLocationBased = () => {
           {/* PROMINENT: 10-Minute Broker Response - Full Width Banner */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div className="lg:col-span-2">
-              <BrokerRequestWidget />
+              <Suspense fallback={<div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />}>
+                <BrokerRequestWidget />
+              </Suspense>
             </div>
             <div>
-              <NearbyAgenciesList />
+              <Suspense fallback={<div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />}>
+                <NearbyAgenciesList />
+              </Suspense>
             </div>
           </div>
 
@@ -736,7 +752,9 @@ const DashboardLocationBased = () => {
           </div>
 
           {/* Real-Time Application Monitoring - Prominent Main Card */}
-          <ApplicationTimelineWidget />
+          <Suspense fallback={<div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />}>
+            <ApplicationTimelineWidget />
+          </Suspense>
         </>
       )}
 
@@ -891,7 +909,7 @@ const DashboardLocationBased = () => {
             </button>
           </div>
 
-          {loading || locationLoading ? (
+          {discoveryState.loading.all || locationLoading ? (
             <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
               <div className="h-[600px] lg:h-[700px] flex items-center justify-center">
                 <div className="text-center">

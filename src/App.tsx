@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
 import { PropertyProvider } from './contexts/PropertyContext';
 import { LeadProvider } from './contexts/LeadContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -16,7 +17,6 @@ import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
 import UserProtectedRoute from './components/Admin/UserProtectedRoute';
 import AdminProtectedRoute from './components/Admin/AdminProtectedRoute';
-
 // Manager Dashboard Pages
 import Dashboard from './pages/Dashboard';
 import ManagerVerificationSection from './components/Dashboard/ManagerVerificationSection';
@@ -44,23 +44,23 @@ import Billing from './pages/Billing';
 import Profile from './pages/Profile';
 import HelpSupport from './pages/HelpSupport';
 
-// User Dashboard Pages
+// User Dashboard Pages (Lazy Loaded)
 import DashboardLayout from './components/Dashboard/DashboardLayout';
-import DashboardLocationBased from './pages/DashboardLocationBased';
-import DashboardDiscover from './pages/DashboardDiscover';
-import DashboardMessages from './pages/DashboardMessages';
-import DashboardPayments from './pages/DashboardPayments';
-import DashboardProfile from './pages/DashboardProfile';
-import DashboardContracts from './pages/DashboardContracts';
-import DashboardApplications from './pages/DashboardApplications';
-import DashboardViewings from './pages/DashboardViewings';
-import DashboardReviews from './pages/DashboardReviews';
-import DashboardSaved from './pages/DashboardSaved';
-import DashboardSettings from './pages/DashboardSettings';
-import DashboardHelp from './pages/DashboardHelp';
-import DashboardNotifications from './pages/DashboardNotifications';
-import DashboardOverseas from './pages/DashboardOverseas';
-import PropertyDetail from './pages/PropertyDetail';
+const DashboardLocationBased = lazy(() => import('./pages/DashboardLocationBased'));
+const DashboardDiscover = lazy(() => import('./pages/DashboardDiscover'));
+const DashboardMessages = lazy(() => import('./pages/DashboardMessages'));
+const DashboardPayments = lazy(() => import('./pages/DashboardPayments'));
+const DashboardProfile = lazy(() => import('./pages/DashboardProfile'));
+const DashboardContracts = lazy(() => import('./pages/DashboardContracts'));
+const DashboardApplications = lazy(() => import('./pages/DashboardApplications'));
+const DashboardViewings = lazy(() => import('./pages/DashboardViewings'));
+const DashboardReviews = lazy(() => import('./pages/DashboardReviews'));
+const DashboardSaved = lazy(() => import('./pages/DashboardSaved'));
+const DashboardSettings = lazy(() => import('./pages/DashboardSettings'));
+const DashboardHelp = lazy(() => import('./pages/DashboardHelp'));
+const DashboardNotifications = lazy(() => import('./pages/DashboardNotifications'));
+const DashboardOverseas = lazy(() => import('./pages/DashboardOverseas'));
+const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
 
 // Auth Components
 import { Login, EmailLogin, Signup, ResetPassword, AuthCallback } from './components/auth';

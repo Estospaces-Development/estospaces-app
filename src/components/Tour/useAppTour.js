@@ -48,6 +48,24 @@ export const useAppTour = () => {
                     }
                 },
                 {
+                    element: '#broker-response-widget',
+                    popover: {
+                        title: '10-Minute Broker Response ⚡',
+                        description: 'Get connected to verified local brokers in under 10 minutes! Our fastest and most powerful feature for finding expert help.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#realtime-tracking-widget',
+                    popover: {
+                        title: 'Real-Time Tracking 📍',
+                        description: 'Track every step of your property journey live — from application submission to key handover.',
+                        side: "top",
+                        align: 'center'
+                    }
+                },
+                {
                     element: '#sidebar-nav',
                     popover: {
                         title: 'Navigation',

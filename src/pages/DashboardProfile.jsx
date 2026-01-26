@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, ArrowLeft, Shield, CheckCircle, Loader2, Home, Upload, X, Camera, Edit3 } from 'lucide-react';
 import * as postcodeService from '../services/postcodeService';
 import { supabase } from '../lib/supabase';
-import { useProperties } from '../contexts/PropertiesContext';
+import { useAuth } from '../contexts/AuthContext';
 import VerificationSection from '../components/Dashboard/VerificationSection';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import DocumentUpload from '../components/Dashboard/Applications/DocumentUpload';
 
 const DashboardProfile = () => {
   const navigate = useNavigate();
-  const { currentUser } = useProperties();
+  const { user: currentUser } = useAuth();
   const fileInputRef = useRef(null);
 
   // Refs for form field navigation

@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, Suspense } from 'react';
+import LoadingState from '../ui/LoadingState';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
@@ -37,7 +38,9 @@ const DashboardLayout = ({ children }) => {
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="h-full"
               >
-                {children}
+                <Suspense fallback={<div className="h-full" />}>
+                  {children}
+                </Suspense>
               </motion.div>
             </AnimatePresence>
           </main>
