@@ -2,7 +2,7 @@ import { useState, ReactNode } from 'react';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
 // @ts-ignore
-import Footer from '../components/Footer';
+import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 // @ts-ignore
 import LakshmiAssistant from '../components/Dashboard/LakshmiAssistant';
@@ -27,7 +27,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               {children}
             </div>
           </main>
-          <Footer />
+          <DashboardFooter />
         </div>
         <LakshmiAssistant />
       </div>
