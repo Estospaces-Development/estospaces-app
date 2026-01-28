@@ -179,13 +179,13 @@ const EmailLogin = () => {
                     password: 'Estospaces@123',
                     role: 'user',
                     redirectPath: '/user/dashboard',
-                    name: 'Regular User'
+                    name: 'User'
                 },
                 'user@estospaces.com': {
                     password: 'Estospaces@123',
                     role: 'user',
                     redirectPath: '/user/dashboard',
-                    name: 'Regular User'
+                    name: 'User'
                 }
             };
 

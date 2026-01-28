@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
-import { MapPin, Home, Building2, X } from 'lucide-react';
+import { MapPin, Home, Building2, X, Layers, Globe } from 'lucide-react';
 
 // Note: To use this component, install: npm install react-map-gl mapbox-gl
 // For MVP, this uses a placeholder. Uncomment the Mapbox code when ready.
 // Mapbox token: Replace 'YOUR_MAPBOX_TOKEN' with your actual token
 
 const MapView = ({ houses = [], agencies = [] }) => {
+  const [mapStyle, setMapStyle] = useState('standard'); // 'standard' | 'satellite'
   const [selectedMarker, setSelectedMarker] = useState(null);
+
+  // Map styles configuration
+  const mapStyles = {
+    standard: {
+      bg: 'bg-gradient-to-br from-blue-50 via-green-50 to-blue-50',
+      pattern: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)',
+      opacity: 0.2
+    },
+    satellite: {
+      bg: 'bg-gray-900',
+      pattern: 'radial-gradient(circle, #ffffff 1px, transparent 1px)',
+      opacity: 0.15,
+      overlay: 'linear-gradient(to bottom right, rgba(17, 24, 39, 0.9), rgba(31, 41, 55, 0.8))' // Dark overlay simulating terrain
+    }
+  };
+
+  const currentStyle = mapStyles[mapStyle];
 
   // Mock data if none provided
   const defaultHouses = houses.length > 0 ? houses : [
@@ -31,12 +49,46 @@ const MapView = ({ houses = [], agencies = [] }) => {
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
-      {/* Placeholder Map Background */}
-      <div className="relative w-full h-full bg-gradient-to-br from-blue-50 via-green-50 to-blue-50">
+      {/* View Toggle Control */}
+      <div className="absolute top-4 right-4 z-20 flex bg-white rounded-lg shadow-md border border-gray-200 p-1">
+        <button
+          onClick={() => setMapStyle('standard')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mapStyle === 'standard'
+            ? 'bg-blue-100 text-blue-700'
+            : 'text-gray-600 hover:bg-gray-100'
+            }`}
+        >
+          <Layers size={16} />
+          Standard
+        </button>
+        <button
+          onClick={() => setMapStyle('satellite')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mapStyle === 'satellite'
+            ? 'bg-gray-800 text-white'
+            : 'text-gray-600 hover:bg-gray-100'
+            }`}
+        >
+          <Globe size={16} />
+          Satellite
+        </button>
+      </div>
+
+      {/* Map Background */}
+      <div className={`relative w-full h-full transition-colors duration-500 ${currentStyle.bg}`}>
+        {/* Satellite Texture Overlay */}
+        {mapStyle === 'satellite' && (
+          <div
+            className="absolute inset-0 z-0 pointer-events-none bg-gray-900"
+            style={{
+              opacity: 0.6
+            }}
+          />
+        )}
+
         {/* Map Background Pattern */}
-        <div className="absolute inset-0 opacity-20">
+        <div className={`absolute inset-0 transition-opacity duration-300`} style={{ opacity: currentStyle.opacity }}>
           <div className="w-full h-full" style={{
-            backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)',
+            backgroundImage: currentStyle.pattern,
             backgroundSize: '40px 40px'
           }}></div>
         </div>

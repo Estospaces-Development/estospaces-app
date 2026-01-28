@@ -234,7 +234,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                         id: `mock-${parsedMockUser.email.replace(/[^a-z0-9]/gi, '-')}`,
                         app_metadata: { provider: 'email' },
                         user_metadata: {
-                            full_name: parsedMockUser.name || 'Demo User',
+                            full_name: (parsedMockUser.name === 'Regular User' ? 'User' : parsedMockUser.name) || 'Demo User',
                             role: parsedMockUser.role || 'user',
                             email: parsedMockUser.email
                         },
@@ -353,7 +353,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             id: `mock-${parsedMockUser.email.replace(/[^a-z0-9]/gi, '-')}`,
                             app_metadata: { provider: 'email' },
                             user_metadata: {
-                                full_name: parsedMockUser.name || 'Demo User',
+                                full_name: (parsedMockUser.name === 'Regular User' ? 'User' : parsedMockUser.name) || 'Demo User',
                                 role: parsedMockUser.role || 'user',
                                 email: parsedMockUser.email
                             },
