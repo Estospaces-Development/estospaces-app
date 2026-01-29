@@ -5,7 +5,8 @@ import {
   PhoneCall, Zap, Search, UserCheck,
   Headphones, CircleDot, ArrowRight, Shield, BadgeCheck,
   Home, Building2, Briefcase, TrendingUp,
-  ChevronLeft, ChevronRight, Sparkles, Timer, X
+  ChevronLeft, ChevronRight, Sparkles, Timer, X,
+  Trees, Store
 } from 'lucide-react';
 
 // ============================================================================
@@ -74,14 +75,14 @@ const PURPOSE_OPTIONS = [
   { id: 'buy', label: 'Buy a Property', icon: Home, description: 'Find your dream home' },
   { id: 'rent', label: 'Rent a Place', icon: Building2, description: 'Discover rentals' },
   { id: 'sell', label: 'Sell My Property', icon: TrendingUp, description: 'List your property' },
-  { id: 'invest', label: 'Investment', icon: Briefcase, description: 'Build your portfolio' }
+  { id: 'invest', label: 'Invest in Property', icon: Briefcase, description: 'Build your portfolio' }
 ];
 
 const PROPERTY_TYPES = [
-  { id: 'apartment', label: 'Apartment', icon: '🏢' },
-  { id: 'house', label: 'House', icon: '🏡' },
-  { id: 'commercial', label: 'Commercial', icon: '🏪' },
-  { id: 'land', label: 'Land', icon: '🌳' }
+  { id: 'apartment', label: 'Apartment', icon: Building2 },
+  { id: 'house', label: 'House', icon: Home },
+  { id: 'commercial', label: 'Commercial', icon: Store },
+  { id: 'land', label: 'Land', icon: Trees }
 ];
 
 const BUDGET_RANGES = [
@@ -391,26 +392,32 @@ const BrokerRequestWidget = () => {
           {/* Step 1: Purpose */}
           {intakeStep === 1 && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {PURPOSE_OPTIONS.map((option) => (
+              {PURPOSE_OPTIONS.map((option, idx) => (
                 <button
                   key={option.id}
                   onClick={() => setPreferences(p => ({ ...p, purpose: option.id }))}
-                  className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 text-center ${preferences.purpose === option.id
-                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-lg shadow-orange-500/20'
-                      : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                  className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 text-center animate-slideUp ${preferences.purpose === option.id
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-xl shadow-orange-500/20 scale-[1.02]'
+                    : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-lg hover:-translate-y-1'
                     }`}
                 >
-                  <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-colors ${preferences.purpose === option.id
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-white dark:bg-gray-700 text-gray-400 group-hover:text-orange-500'
+                  <div className={`w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center transition-all duration-300 ${preferences.purpose === option.id
+                    ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg transform scale-110'
+                    : 'bg-orange-50 dark:bg-gray-700 text-orange-500 dark:text-orange-400 group-hover:bg-orange-100 dark:group-hover:bg-gray-600 group-hover:scale-110'
                     }`}>
-                    <option.icon size={28} />
+                    <option.icon size={30} strokeWidth={1.5} />
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">{option.label}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{option.description}</p>
+                  <h3 className={`text-lg font-bold mb-2 transition-colors ${preferences.purpose === option.id ? 'text-orange-700 dark:text-orange-400' : 'text-gray-900 dark:text-white'}`}>
+                    {option.label}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-snug">{option.description}</p>
+
                   {preferences.purpose === option.id && (
-                    <div className="absolute top-3 right-3">
-                      <CheckCircle2 size={20} className="text-orange-500" />
+                    <div className="absolute top-4 right-4 animate-in zoom-in duration-300">
+                      <div className="bg-orange-500 text-white rounded-full p-1 shadow-md">
+                        <CheckCircle2 size={16} />
+                      </div>
                     </div>
                   )}
                 </button>
@@ -421,17 +428,29 @@ const BrokerRequestWidget = () => {
           {/* Step 2: Property Type */}
           {intakeStep === 2 && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {PROPERTY_TYPES.map((type) => (
+              {PROPERTY_TYPES.map((type, idx) => (
                 <button
                   key={type.id}
                   onClick={() => setPreferences(p => ({ ...p, propertyType: type.id }))}
-                  className={`group p-6 rounded-2xl border-2 transition-all duration-300 text-center ${preferences.propertyType === type.id
-                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-lg'
-                      : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200'
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                  className={`group p-6 rounded-2xl border-2 transition-all duration-300 text-center animate-slideUp ${preferences.propertyType === type.id
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-xl shadow-orange-500/20 scale-[1.02]'
+                    : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-lg hover:-translate-y-1'
                     }`}
                 >
-                  <span className="text-4xl mb-3 block">{type.icon}</span>
-                  <h3 className="font-bold text-gray-900 dark:text-white">{type.label}</h3>
+                  <div className={`w-20 h-20 mx-auto mb-5 rounded-2xl flex items-center justify-center transition-all duration-300 ${preferences.propertyType === type.id
+                    ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg transform scale-110'
+                    : 'bg-orange-50 dark:bg-gray-700 text-orange-500 dark:text-orange-400 group-hover:bg-orange-100 dark:group-hover:bg-gray-600 group-hover:scale-110'
+                    }`}>
+                    <type.icon size={40} strokeWidth={1.5} />
+                  </div>
+                  <h3 className={`text-lg font-bold transition-colors ${preferences.propertyType === type.id ? 'text-orange-700 dark:text-orange-400' : 'text-gray-900 dark:text-white'}`}>{type.label}</h3>
+
+                  {preferences.propertyType === type.id && (
+                    <div className="mt-2 text-orange-500 animate-in zoom-in duration-300">
+                      <CheckCircle2 size={24} className="mx-auto" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -448,8 +467,8 @@ const BrokerRequestWidget = () => {
                       key={range.id}
                       onClick={() => setPreferences(p => ({ ...p, budget: range.id }))}
                       className={`p-4 rounded-xl border-2 transition-all text-center font-medium ${preferences.budget === range.id
-                          ? 'bg-orange-500 text-white border-orange-500'
-                          : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-transparent hover:border-orange-200'
+                        ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 text-orange-700 dark:text-orange-400 font-bold shadow-sm'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-md'
                         }`}
                     >
                       {range.label}
@@ -466,13 +485,13 @@ const BrokerRequestWidget = () => {
                       key={option.id}
                       onClick={() => setPreferences(p => ({ ...p, urgency: option.id }))}
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${preferences.urgency === option.id
-                          ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500'
-                          : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200'
+                        ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-sm'
+                        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-md'
                         }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${option.color === 'orange' ? 'bg-orange-100 text-orange-600' :
-                          option.color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                            'bg-gray-100 text-gray-600'
+                        option.color === 'blue' ? 'bg-blue-100 text-blue-600' :
+                          'bg-gray-100 text-gray-600'
                         }`}>
                         <option.icon size={20} />
                       </div>
@@ -487,23 +506,24 @@ const BrokerRequestWidget = () => {
           {/* Step 4: Contact Method */}
           {intakeStep === 4 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-              {CONTACT_OPTIONS.map((option) => (
+              {CONTACT_OPTIONS.map((option, idx) => (
                 <button
                   key={option.id}
                   onClick={() => setPreferences(p => ({ ...p, contactMethod: option.id }))}
-                  className={`group p-6 rounded-2xl border-2 transition-all duration-300 text-center ${preferences.contactMethod === option.id
-                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-lg'
-                      : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200'
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                  className={`group p-6 rounded-2xl border-2 transition-all duration-300 text-center animate-slideUp ${preferences.contactMethod === option.id
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 shadow-xl shadow-orange-500/20 scale-[1.02]'
+                    : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-lg hover:-translate-y-1'
                     }`}
                 >
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-colors ${preferences.contactMethod === option.id
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-white dark:bg-gray-700 text-gray-400'
+                  <div className={`w-20 h-20 mx-auto mb-5 rounded-full flex items-center justify-center transition-all duration-300 ${preferences.contactMethod === option.id
+                    ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg transform scale-110'
+                    : 'bg-orange-50 dark:bg-gray-700 text-orange-500 dark:text-orange-400 group-hover:bg-orange-100 dark:group-hover:bg-gray-600 group-hover:scale-110'
                     }`}>
-                    <option.icon size={32} />
+                    <option.icon size={36} strokeWidth={1.5} />
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">{option.label}</h3>
-                  <p className="text-sm text-gray-500">{option.description}</p>
+                  <h3 className={`text-xl font-bold mb-2 transition-colors ${preferences.contactMethod === option.id ? 'text-orange-700 dark:text-orange-400' : 'text-gray-900 dark:text-white'}`}>{option.label}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
                 </button>
               ))}
             </div>
@@ -522,8 +542,8 @@ const BrokerRequestWidget = () => {
               onClick={handleNextStep}
               disabled={!canProceed()}
               className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all ${canProceed()
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
             >
               {intakeStep === 4 ? 'Find My Broker' : 'Continue'}
@@ -580,8 +600,8 @@ const BrokerRequestWidget = () => {
                 <div
                   key={broker.id}
                   className={`flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border-2 transition-all duration-500 animate-slideIn ${selectedBrokerId === broker.id
-                      ? 'border-orange-500 shadow-xl shadow-orange-500/20 scale-[1.02]'
-                      : 'border-gray-100 dark:border-gray-700'
+                    ? 'border-orange-500 shadow-xl shadow-orange-500/20 scale-[1.02]'
+                    : 'border-gray-100 dark:border-gray-700'
                     }`}
                   style={{ animationDelay: `${idx * 100}ms` }}
                 >
