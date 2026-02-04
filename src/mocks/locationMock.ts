@@ -25,7 +25,7 @@ export const locationMockData: PropertyLocation[] = [
         address: 'Whitefield Main Road, Bengaluru, Karnataka 560066',
         latitude: 12.9698,
         longitude: 77.7500,
-        streetViewUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3887.5!2d77.75!3d12.9698!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU4JzExLjMiTiA3N8KwNDUnMDAuMCJF!5e0!3m2!1sen!2sin!4v1705669200000',
+        streetViewUrl: 'https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d12.9698!2d77.7500!3f270!4f0!5f0.7820865974627469',
         nearbyLandmarks: [
             'Metro Station – 500m',
             'Phoenix Marketcity Mall – 1.2km',
@@ -42,7 +42,7 @@ export const locationMockData: PropertyLocation[] = [
         address: 'Koramangala 5th Block, Bengaluru, Karnataka 560095',
         latitude: 12.9352,
         longitude: 77.6245,
-        streetViewUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.0!2d77.6245!3d12.9352!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU2JzA2LjciTiA3N8KwMzcnMjguMiJF!5e0!3m2!1sen!2sin!4v1705669200000',
+        streetViewUrl: 'https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d12.9352!2d77.6245!3f270!4f0!5f0.7820865974627469',
         nearbyLandmarks: [
             'Forum Mall – 600m',
             'St. Johns Hospital – 1.5km',
@@ -60,7 +60,7 @@ export const locationMockData: PropertyLocation[] = [
         address: 'Indiranagar 100 Feet Road, Bengaluru, Karnataka 560038',
         latitude: 12.9784,
         longitude: 77.6408,
-        streetViewUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3887.8!2d77.6408!3d12.9784!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU4JzQyLjIiTiA3N8KwMzgnMjYuOSJF!5e0!3m2!1sen!2sin!4v1705669200000',
+        streetViewUrl: 'https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d12.9784!2d77.6408!3f270!4f0!5f0.7820865974627469',
         nearbyLandmarks: [
             'Indiranagar Metro Station – 300m',
             'CMH Road Shopping Area – 200m',
@@ -80,7 +80,7 @@ export const locationMockData: PropertyLocation[] = [
         address: 'Electronic City Phase 1, Bengaluru, Karnataka 560100',
         latitude: 12.8456,
         longitude: 77.6603,
-        streetViewUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3890.5!2d77.6603!3d12.8456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDUwJzQ0LjIiTiA3N8KwMzknMzcuMSJF!5e0!3m2!1sen!2sin!4v1705669200000',
+        streetViewUrl: 'https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d12.8456!2d77.6603!3f270!4f0!5f0.7820865974627469',
         nearbyLandmarks: [
             'Infosys Campus – 500m',
             'Wipro Campus – 800m',
@@ -104,13 +104,13 @@ export const getLocationOrDefault = (propertyId: string): PropertyLocation => {
     const location = getLocationByPropertyId(propertyId);
     if (location) return location;
 
-    // Return a default location with working map embed for MG Road, Bengaluru
+    // Return a default location with working street view instead of map embed
     return {
         propertyId,
         address: 'MG Road, Bengaluru, Karnataka 560001',
         latitude: 12.9716,
         longitude: 77.5946,
-        streetViewUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3887.9!2d77.5946!3d12.9716!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU4JzE3LjgiTiA3N8KwMzUnNDAuNiJF!5e0!3m2!1sen!2sin!4v1705669200000',
+        streetViewUrl: 'https://www.google.com/maps/embed?pb=!4v1614080000000!6m8!1m7!1sCAoSLEFGMVFpcE42WTI5c3l4LWd3eXl5aVE!2m2!1d12.9716!2d77.5946!3f270!4f0!5f0.7820865974627469',
         nearbyLandmarks: [
             'MG Road Metro Station – 200m',
             'Brigade Road – 500m',

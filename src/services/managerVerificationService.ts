@@ -11,22 +11,22 @@ import { supabase } from '../lib/supabase';
 
 export type ManagerProfileType = 'broker' | 'company';
 
-export type VerificationStatus = 
-  | 'incomplete' 
-  | 'submitted' 
-  | 'under_review' 
-  | 'approved' 
-  | 'rejected' 
+export type VerificationStatus =
+  | 'incomplete'
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'rejected'
   | 'verification_required';
 
-export type DocumentStatus = 
-  | 'pending' 
-  | 'under_review' 
-  | 'approved' 
-  | 'rejected' 
+export type DocumentStatus =
+  | 'pending'
+  | 'under_review'
+  | 'approved'
+  | 'rejected'
   | 'reupload_required';
 
-export type DocumentType = 
+export type DocumentType =
   | 'government_id'
   | 'broker_license'
   | 'company_registration'
@@ -121,6 +121,23 @@ const OPTIONAL_DOCUMENTS: Record<ManagerProfileType, DocumentType[]> = {
  */
 export const getManagerProfile = async (userId: string): Promise<{ data: ManagerProfile | null; error: string | null }> => {
   try {
+    // Check for mock user
+    if (userId.startsWith('mock-')) {
+      return {
+        data: {
+          id: userId,
+          profile_type: 'broker',
+          verification_status: 'approved',
+          license_number: 'RERA-2024-DEMO-001',
+          license_expiry_date: '2025-12-31',
+          association_membership_id: 'REAL-ESTATE-ASSOC-001',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as ManagerProfile,
+        error: null
+      };
+    }
+
     if (!supabase) {
       return { data: null, error: 'Supabase client not initialized' };
     }
@@ -161,10 +178,10 @@ export const createOrUpdateManagerProfile = async (
 
     // Sanitize the data - convert empty strings to null for database compatibility
     const sanitizedData: Record<string, unknown> = { ...profileData };
-    
+
     // Fields that are dates and need special handling
     const dateFields = ['license_expiry_date', 'submitted_at', 'approved_at'];
-    
+
     // Convert empty strings to null for all fields, especially date fields
     Object.keys(sanitizedData).forEach(key => {
       const value = sanitizedData[key];
@@ -408,14 +425,14 @@ export const submitForVerification = async (
 
     const requiredDocs = REQUIRED_DOCUMENTS[profile.profile_type];
     const { data: documents } = await getManagerDocuments(managerId);
-    
+
     const uploadedTypes = documents.map(d => d.document_type);
     const missingDocs = requiredDocs.filter(d => !uploadedTypes.includes(d));
 
     if (missingDocs.length > 0) {
-      return { 
-        data: null, 
-        error: `Missing required documents: ${missingDocs.join(', ')}` 
+      return {
+        data: null,
+        error: `Missing required documents: ${missingDocs.join(', ')}`
       };
     }
 
@@ -468,11 +485,11 @@ export const getManagerVerificationSummary = async (
 
     const profile = profileResult.data;
     const documents = documentsResult.data;
-    
-    const requiredDocuments = profile 
-      ? REQUIRED_DOCUMENTS[profile.profile_type] 
+
+    const requiredDocuments = profile
+      ? REQUIRED_DOCUMENTS[profile.profile_type]
       : [];
-    
+
     const uploadedTypes = documents.map(d => d.document_type);
     const missingDocuments = requiredDocuments.filter(
       d => !uploadedTypes.includes(d)
@@ -540,7 +557,7 @@ export const getPendingVerifications = async (
     // Get the user info from profiles table
     const userIds = managerProfiles.map(mp => mp.id);
     console.log('Fetching user profiles for manager IDs:', userIds);
-    
+
     const { data: userProfiles, error: usersError } = await supabase
       .from('profiles')
       .select('id, email, full_name')
@@ -564,11 +581,11 @@ export const getPendingVerifications = async (
         displayName = emailPart
           .replace(/[._-]/g, ' ')
           .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ');
       }
-      
-      userMap.set(up.id, { 
+
+      userMap.set(up.id, {
         email: up.email || null,
         full_name: displayName || null
       });
@@ -602,14 +619,14 @@ export const getPendingVerifications = async (
  */
 export const getManagerVerificationDetails = async (
   managerId: string
-): Promise<{ 
-  data: { 
-    profile: ManagerProfile | null; 
-    documents: ManagerDocument[]; 
+): Promise<{
+  data: {
+    profile: ManagerProfile | null;
+    documents: ManagerDocument[];
     auditLog: AuditLogEntry[];
     userInfo: { email?: string; full_name?: string } | null;
-  } | null; 
-  error: string | null 
+  } | null;
+  error: string | null
 }> => {
   try {
     if (!supabase) {
@@ -636,7 +653,7 @@ export const getManagerVerificationDetails = async (
         full_name: emailPart
           .replace(/[._-]/g, ' ')
           .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ')
       };
     }
@@ -846,11 +863,11 @@ export const revokeManagerApproval = async (
       console.error('Supabase update error:', error);
       // Provide more detailed error message
       const errorMessage = error.message || error.code || 'Unknown database error';
-      const detailedError = error.code === '42501' 
+      const detailedError = error.code === '42501'
         ? 'Permission denied. Please ensure you are logged in as an admin.'
         : error.code === 'PGRST116'
-        ? 'No rows found to update. The manager profile may not exist.'
-        : `Database error: ${errorMessage}`;
+          ? 'No rows found to update. The manager profile may not exist.'
+          : `Database error: ${errorMessage}`;
       return { data: null, error: detailedError };
     }
 
@@ -872,17 +889,17 @@ export const revokeManagerApproval = async (
     }
 
     // Log the revocation
-    const auditError = await logAuditEvent({
-      actionType: 'approval_revoked',
-      actorId: adminId,
-      actorRole: 'admin',
-      targetManagerId: managerId,
-      previousStatus: 'approved',
-      newStatus: 'rejected',
-      details: { reason, action: 'approval_revoked' },
-    });
-
-    if (auditError) {
+    try {
+      await logAuditEvent({
+        actionType: 'approval_revoked',
+        actorId: adminId,
+        actorRole: 'admin',
+        targetManagerId: managerId,
+        previousStatus: 'approved',
+        newStatus: 'rejected',
+        details: { reason, action: 'approval_revoked' },
+      });
+    } catch (auditError) {
       console.warn('Warning: Failed to log audit event:', auditError);
       // Don't fail the whole operation if audit logging fails
     }
@@ -891,11 +908,11 @@ export const revokeManagerApproval = async (
     return { data, error: null };
   } catch (error) {
     console.error('Error revoking manager approval:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : typeof error === 'string' 
-      ? error 
-      : 'An unexpected error occurred while revoking approval';
+    const errorMessage = error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : 'An unexpected error occurred while revoking approval';
     return { data: null, error: errorMessage };
   }
 };

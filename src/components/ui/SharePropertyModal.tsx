@@ -377,6 +377,8 @@ const SharePropertyModal = ({ isOpen, onClose, property, onShare }: SharePropert
 
       {/* Toast Notification */}
       <Toast
+        id="share-property-toast"
+        title={toast.type === 'success' ? 'Success' : 'Error'}
         message={toast.message}
         type={toast.type}
         isVisible={toast.visible}

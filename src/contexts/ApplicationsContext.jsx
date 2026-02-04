@@ -106,10 +106,10 @@ export const ApplicationsProvider = ({ children }) => {
       const transformedApplications = (data || []).map((item, index) => {
         const property = item.properties || {};
         const appData = item.application_data || {};
-        
+
         let images = [];
         try {
-          images = property.image_urls 
+          images = property.image_urls
             ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls))
             : [];
         } catch (e) {
@@ -150,8 +150,54 @@ export const ApplicationsProvider = ({ children }) => {
       setApplications(transformedApplications);
     } catch (err) {
       console.error('Error fetching applications:', err);
-      setError(err.message);
-      setApplications([]);
+      // In development, provide mock data if Supabase is unreachable
+      if (import.meta.env.DEV) {
+        const mockApplications = [
+          {
+            id: 'mock-app-1',
+            referenceId: 'APP-2026-001',
+            propertyId: 'mock-prop-1',
+            propertyTitle: 'Luxury 3-Bed Apartment in Kensington',
+            propertyAddress: '45 High Street, Kensington, London W8 5SF',
+            propertyImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400',
+            propertyType: 'apartment',
+            propertyPrice: 2500,
+            listingType: 'rent',
+            agentName: 'Sarah Mitchell',
+            agentAgency: 'Premier Estates',
+            agentEmail: 'sarah@premierestates.co.uk',
+            agentPhone: '+44 20 7123 4567',
+            status: 'under_review',
+            submittedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            lastUpdated: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+            requiresAction: false,
+          },
+          {
+            id: 'mock-app-2',
+            referenceId: 'APP-2026-002',
+            propertyId: 'mock-prop-2',
+            propertyTitle: 'Modern Studio near Tower Bridge',
+            propertyAddress: '12 Riverside Walk, London SE1 2UP',
+            propertyImage: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400',
+            propertyType: 'studio',
+            propertyPrice: 1800,
+            listingType: 'rent',
+            agentName: 'James Wilson',
+            agentAgency: 'City Living',
+            agentEmail: 'james@cityliving.co.uk',
+            agentPhone: '+44 20 7987 6543',
+            status: 'documents_requested',
+            submittedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            lastUpdated: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            requiresAction: true,
+          },
+        ];
+        setApplications(mockApplications);
+        setError(null); // Clear error since we have fallback data
+      } else {
+        setError(err.message);
+        setApplications([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -183,11 +229,11 @@ export const ApplicationsProvider = ({ children }) => {
             prev.map(app =>
               app.id === payload.new.id
                 ? {
-                    ...app,
-                    status: payload.new.status,
-                    lastUpdated: payload.new.updated_at || new Date().toISOString(),
-                    requiresAction: payload.new.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED,
-                  }
+                  ...app,
+                  status: payload.new.status,
+                  lastUpdated: payload.new.updated_at || new Date().toISOString(),
+                  requiresAction: payload.new.status === APPLICATION_STATUS.DOCUMENTS_REQUESTED,
+                }
                 : app
             )
           );
@@ -236,9 +282,38 @@ export const ApplicationsProvider = ({ children }) => {
 
       if (insertError) throw insertError;
 
+      // Notify the user
+      try {
+        const { notifyApplicationSubmitted } = await import('../services/notificationsService');
+        await notifyApplicationSubmitted(
+          user.id,
+          applicationData.property_title || 'Property',
+          applicationData.property_id || '',
+          data.id
+        );
+      } catch (notifyErr) {
+        console.log('Could not send user notification:', notifyErr);
+      }
+
+      // Notify all managers and admins
+      try {
+        const { notifyManagersApplicationSubmitted } = await import('../services/notificationsService');
+        const userName = applicationData.personal_info?.full_name || user.email?.split('@')[0] || 'User';
+        const userEmail = applicationData.personal_info?.email || user.email || '';
+        await notifyManagersApplicationSubmitted(
+          userName,
+          userEmail,
+          applicationData.property_title || 'Property',
+          applicationData.property_id || '',
+          data.id
+        );
+      } catch (notifyErr) {
+        console.log('Could not send manager notification:', notifyErr);
+      }
+
       // Refresh applications list
       await fetchApplications();
-      
+
       return { success: true, data };
     } catch (err) {
       console.error('Error creating application:', err);
@@ -255,18 +330,18 @@ export const ApplicationsProvider = ({ children }) => {
     try {
       const { error: updateError } = await supabase
         .from('applied_properties')
-        .update({ 
-          status: newStatus, 
-          updated_at: new Date().toISOString() 
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
         })
         .eq('id', applicationId);
 
       if (updateError) throw updateError;
 
       // Update local state
-      setApplications(prev => 
-        prev.map(app => 
-          app.id === applicationId 
+      setApplications(prev =>
+        prev.map(app =>
+          app.id === applicationId
             ? { ...app, status: newStatus, lastUpdated: new Date().toISOString() }
             : app
         )

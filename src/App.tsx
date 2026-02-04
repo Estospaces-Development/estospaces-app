@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
 import { PropertyProvider } from './contexts/PropertyContext';
 import { LeadProvider } from './contexts/LeadContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -9,12 +10,13 @@ import { SavedPropertiesProvider } from './contexts/SavedPropertiesContext';
 import { ApplicationsProvider } from './contexts/ApplicationsContext';
 import { LocationProvider } from './contexts/LocationContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { ManagerVerificationProvider } from './contexts/ManagerVerificationContext';
+import NotificationContainer from './components/ui/NotificationContainer';
 import MainLayout from './layouts/MainLayout';
 import ManagerProtectedRoute from './components/Admin/ManagerProtectedRoute';
 import UserProtectedRoute from './components/Admin/UserProtectedRoute';
 import AdminProtectedRoute from './components/Admin/AdminProtectedRoute';
-
 // Manager Dashboard Pages
 import Dashboard from './pages/Dashboard';
 import ManagerVerificationSection from './components/Dashboard/ManagerVerificationSection';
@@ -41,30 +43,29 @@ import Analytics from './pages/Analytics';
 import Billing from './pages/Billing';
 import Profile from './pages/Profile';
 import HelpSupport from './pages/HelpSupport';
-import Home from './pages/Home';
 
-// User Dashboard Pages
+// User Dashboard Pages (Lazy Loaded)
 import DashboardLayout from './components/Dashboard/DashboardLayout';
-import DashboardLocationBased from './pages/DashboardLocationBased';
-import DashboardDiscover from './pages/DashboardDiscover';
-import DashboardMessages from './pages/DashboardMessages';
-import DashboardPayments from './pages/DashboardPayments';
-import DashboardProfile from './pages/DashboardProfile';
-import DashboardContracts from './pages/DashboardContracts';
-import DashboardApplications from './pages/DashboardApplications';
-import DashboardViewings from './pages/DashboardViewings';
-import DashboardReviews from './pages/DashboardReviews';
-import DashboardSaved from './pages/DashboardSaved';
-import DashboardSettings from './pages/DashboardSettings';
-import DashboardHelp from './pages/DashboardHelp';
-import DashboardNotifications from './pages/DashboardNotifications';
-import PropertyDetail from './pages/PropertyDetail';
+const DashboardLocationBased = lazy(() => import('./pages/DashboardLocationBased'));
+const DashboardDiscover = lazy(() => import('./pages/DashboardDiscover'));
+const DashboardMessages = lazy(() => import('./pages/DashboardMessages'));
+const DashboardPayments = lazy(() => import('./pages/DashboardPayments'));
+const DashboardProfile = lazy(() => import('./pages/DashboardProfile'));
+const DashboardContracts = lazy(() => import('./pages/DashboardContracts'));
+const DashboardApplications = lazy(() => import('./pages/DashboardApplications'));
+const DashboardViewings = lazy(() => import('./pages/DashboardViewings'));
+const DashboardReviews = lazy(() => import('./pages/DashboardReviews'));
+const DashboardSaved = lazy(() => import('./pages/DashboardSaved'));
+const DashboardSettings = lazy(() => import('./pages/DashboardSettings'));
+const DashboardHelp = lazy(() => import('./pages/DashboardHelp'));
+const DashboardNotifications = lazy(() => import('./pages/DashboardNotifications'));
+const DashboardOverseas = lazy(() => import('./pages/DashboardOverseas'));
+const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
 
 // Auth Components
 import { Login, EmailLogin, Signup, ResetPassword, AuthCallback } from './components/auth';
 
 // Public Pages
-import PropertySearch from './pages/PropertySearch';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiePolicy from './pages/CookiePolicy';
 import TermsConditions from './pages/TermsConditions';
@@ -81,12 +82,13 @@ function App() {
               <SavedPropertiesProvider>
                 <ApplicationsProvider>
                   <NotificationsProvider>
-                    <Router>
+                    <ToastProvider>
                       <LocationProvider>
                         <PropertyFilterProvider>
+                          <NotificationContainer />
                           <Routes>
-                            {/* Landing Page */}
-                            <Route path="/" element={<Home />} />
+                            {/* Redirect root to auth or dashboard based on authentication */}
+                            <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
                             {/* Auth Routes */}
                             <Route path="/auth/login" element={<Login />} />
@@ -96,8 +98,11 @@ function App() {
                             <Route path="/auth/callback" element={<AuthCallback />} />
 
                             {/* Public Property Search */}
-                            <Route path="/properties/search" element={<PropertySearch />} />
                             <Route path="/property/:id" element={<PropertyDetail />} />
+
+                            {/* Dashboard redirect - redirects /dashboard to /user/dashboard */}
+                            <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+                            <Route path="/dashboard/*" element={<Navigate to="/user/dashboard" replace />} />
 
                             {/* Public Pages */}
                             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -233,6 +238,16 @@ function App() {
                                 <ManagerProtectedRoute>
                                   <MainLayout>
                                     <Analytics />
+                                  </MainLayout>
+                                </ManagerProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/manager/dashboard/notifications"
+                              element={
+                                <ManagerProtectedRoute>
+                                  <MainLayout>
+                                    <DashboardNotifications />
                                   </MainLayout>
                                 </ManagerProtectedRoute>
                               }
@@ -493,6 +508,17 @@ function App() {
                                 </UserProtectedRoute>
                               }
                             />
+                            <Route
+                              path="/user/dashboard/overseas"
+                              element={
+                                <UserProtectedRoute>
+                                  <DashboardLayout>
+                                    <DashboardOverseas />
+                                  </DashboardLayout>
+                                </UserProtectedRoute>
+                              }
+                            />
+
 
                             {/* Catch-all for /user/dashboard/* wildcard routes */}
                             <Route
@@ -508,7 +534,7 @@ function App() {
                           </Routes>
                         </PropertyFilterProvider>
                       </LocationProvider>
-                    </Router>
+                    </ToastProvider>
                   </NotificationsProvider>
                 </ApplicationsProvider>
               </SavedPropertiesProvider>

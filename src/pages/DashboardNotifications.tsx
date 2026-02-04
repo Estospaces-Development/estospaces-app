@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Bell,
   CheckCircle,
@@ -28,6 +28,7 @@ type CategoryType = 'all' | 'appointments' | 'applications' | 'messages' | 'syst
 
 const DashboardNotifications: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     notifications,
     unreadCount,
@@ -135,7 +136,7 @@ const DashboardNotifications: React.FC = () => {
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    
+
     return date.toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
@@ -185,7 +186,7 @@ const DashboardNotifications: React.FC = () => {
   // Group notifications by date
   const groupedNotifications = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    
+
     filteredNotifications.forEach((notification: any) => {
       const date = new Date(notification.created_at);
       const today = new Date();
@@ -223,7 +224,7 @@ const DashboardNotifications: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6">
           {/* Back Button */}
           <button
-            onClick={() => navigate('/user/dashboard')}
+            onClick={() => navigate(location.pathname.includes('/manager') ? '/manager/dashboard' : '/user/dashboard')}
             className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
           >
             <ArrowLeft size={20} />
@@ -455,11 +456,10 @@ const DashboardNotifications: React.FC = () => {
                     {groupNotifications.map((notification: any) => (
                       <div
                         key={notification.id}
-                        className={`bg-white dark:bg-gray-800 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
-                          !notification.read
-                            ? 'border-orange-200 dark:border-orange-800 bg-orange-50/30 dark:bg-orange-900/10'
-                            : 'border-gray-200 dark:border-gray-700'
-                        }`}
+                        className={`bg-white dark:bg-gray-800 rounded-xl border transition-all hover:shadow-md cursor-pointer ${!notification.read
+                          ? 'border-orange-200 dark:border-orange-800 bg-orange-50/30 dark:bg-orange-900/10'
+                          : 'border-gray-200 dark:border-gray-700'
+                          }`}
                       >
                         <div className="flex items-start gap-4 p-4">
                           {/* Checkbox */}
@@ -489,11 +489,10 @@ const DashboardNotifications: React.FC = () => {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <h4
-                                className={`font-semibold ${
-                                  !notification.read
-                                    ? 'text-gray-900 dark:text-white'
-                                    : 'text-gray-700 dark:text-gray-300'
-                                }`}
+                                className={`font-semibold ${!notification.read
+                                  ? 'text-gray-900 dark:text-white'
+                                  : 'text-gray-700 dark:text-gray-300'
+                                  }`}
                               >
                                 {notification.title}
                               </h4>

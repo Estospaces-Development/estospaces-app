@@ -80,6 +80,31 @@ console.log('✅ Supabase client initialized');
 console.log(`📍 Supabase URL: ${supabaseUrl.substring(0, 30)}...`);
 
 /**
+ * Authentication middleware for protected routes
+ */
+const authenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: { message: 'Unauthorized - No token provided' } });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return res.status(401).json({ error: { message: 'Invalid or expired token' } });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.status(500).json({ error: { message: 'Authentication failed' } });
+  }
+};
+
+/**
  * GET /api/properties
  * Global Property Listing API
  * 
@@ -1569,7 +1594,7 @@ function getProgressForListingStage(stage) {
 }
 
 // Start server
-app.listen(port, () => {
+app.listen(PORT, () => {
   console.log(`🚀 Property API Server running on http://localhost:${PORT}`);
   console.log(`📡 API Endpoint: http://localhost:${PORT}/api/properties`);
   console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);

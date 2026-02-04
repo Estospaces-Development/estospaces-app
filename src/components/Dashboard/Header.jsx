@@ -23,10 +23,10 @@ const Header = () => {
   const handleSignOut = async () => {
     setIsSigningOut(true);
     setUserMenuOpen(false);
-    
+
     // Create a timeout promise to ensure we redirect even if sign out hangs
     const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
-    
+
     const signOutPromise = (async () => {
       try {
         // Try to sign out via AuthContext first
@@ -40,17 +40,17 @@ const Header = () => {
         console.error('Error signing out:', error);
       }
     })();
-    
+
     // Wait for either sign out to complete or timeout (whichever comes first)
     await Promise.race([signOutPromise, timeoutPromise]);
-    
+
     // Clear ALL auth-related local storage data
     try {
       // Clear all possible Supabase auth keys
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('sb-yydtsteyknbpfpxjtlxe-auth-token');
       localStorage.removeItem('estospaces-auth-token');
-      
+
       // Clear any keys that contain 'supabase' or 'auth'
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -60,19 +60,19 @@ const Header = () => {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      
+
       // Clear session storage completely
       sessionStorage.clear();
     } catch (e) {
       // Ignore storage errors
     }
-    
+
     // Force redirect to landing page with full page reload
     window.location.href = '/';
   };
 
   return (
-    <header className="h-16 bg-primary sticky top-0 z-30 shadow-sm border-b border-primary/80">
+    <header className="h-16 gradient-header sticky top-0 z-30 shadow-lg shadow-primary/15 border-b border-primary/10">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
         {/* Left side - Logo - Clickable to go to dashboard */}
         <div className="flex items-center gap-6">
@@ -81,12 +81,12 @@ const Header = () => {
             className="flex items-center gap-1.5 hover:opacity-80 transition-opacity duration-200 cursor-pointer no-underline"
             aria-label="Navigate to dashboard"
           >
-            <img 
+            <img
               ref={logoRef}
-              src={logoIcon} 
-              alt="Estospaces Logo" 
+              src={logoIcon}
+              alt="Estospaces Logo"
               className="h-8 w-auto object-contain transition-all duration-300"
-              style={{ 
+              style={{
                 filter: 'brightness(0) invert(1)',
                 WebkitFilter: 'brightness(0) invert(1)'
               }}
@@ -134,10 +134,10 @@ const Header = () => {
                     <div className="font-semibold text-gray-900 dark:text-gray-100">{displayName}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{userEmail}</div>
                   </div>
-                  
+
                   {/* Menu Items */}
                   <div className="p-2">
-                    <button 
+                    <button
                       onClick={() => {
                         setUserMenuOpen(false);
                         navigate('/user/dashboard/settings');
@@ -147,7 +147,7 @@ const Header = () => {
                       <Settings size={18} className="text-gray-400" />
                       Account Settings
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setUserMenuOpen(false);
                         navigate('/user/dashboard/help');
@@ -158,10 +158,10 @@ const Header = () => {
                       Help & Support
                     </button>
                   </div>
-                  
+
                   {/* Sign Out */}
                   <div className="border-t border-gray-200 dark:border-gray-700 p-2">
-                    <button 
+                    <button
                       onClick={handleSignOut}
                       disabled={isSigningOut}
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

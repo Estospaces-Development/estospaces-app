@@ -184,13 +184,13 @@ const Analytics = () => {
                     const change = index > 0 ? ((item.value - prevValue) / prevValue) * 100 : 0;
 
                     return (
-                      <div key={index} className="flex-1 flex flex-col items-center group">
-                        <div className="w-full flex flex-col items-center mb-2 relative">
+                      <div key={index} className="flex-1 flex flex-col items-center justify-end h-full group">
+                        <div className="w-full flex-1 flex flex-col justify-end items-center mb-2 relative">
                           <div
                             className="w-full bg-primary rounded-t-lg transition-all hover:opacity-80 cursor-pointer relative"
                             style={{ height: `${height}%` }}
                           >
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
                               ${(item.value / 1000).toFixed(0)}k
                               {index > 0 && (
                                 <span className={`ml-1 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -199,8 +199,8 @@ const Analytics = () => {
                               )}
                             </div>
                           </div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-white mt-2">${(item.value / 1000).toFixed(0)}k</p>
                         </div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-white mb-1">${(item.value / 1000).toFixed(0)}k</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{item.month}</p>
                         {index > 0 && (
                           <p className={`text-xs mt-1 ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>

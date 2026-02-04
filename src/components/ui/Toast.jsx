@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, X } from 'lucide-react';
+import { CheckCircle, XCircle, X, AlertTriangle, Info } from 'lucide-react';
 
-const Toast = ({ message, type = 'success', isVisible, onClose, duration = 5000 }) => {
+const Toast = ({ id, message, title, type = 'success', isVisible, onClose, duration = 5000, position = 'top-right' }) => {
     useEffect(() => {
-        if (isVisible && duration) {
+        if (isVisible && duration > 0) {
             const timer = setTimeout(() => {
                 onClose();
             }, duration);
@@ -15,33 +15,65 @@ const Toast = ({ message, type = 'success', isVisible, onClose, duration = 5000 
     const styles = {
         success: {
             bg: 'bg-green-500',
+            border: 'border-green-600',
             icon: CheckCircle,
             iconColor: 'text-white',
         },
         error: {
             bg: 'bg-red-500',
+            border: 'border-red-600',
             icon: XCircle,
+            iconColor: 'text-white',
+        },
+        warning: {
+            bg: 'bg-yellow-500',
+            border: 'border-yellow-600',
+            icon: AlertTriangle,
+            iconColor: 'text-white',
+        },
+        info: {
+            bg: 'bg-blue-500',
+            border: 'border-blue-600',
+            icon: Info,
             iconColor: 'text-white',
         },
     };
 
+    const positionClasses = {
+        'top-right': 'top-4 right-4',
+        'top-left': 'top-4 left-4',
+        'top-center': 'top-4 left-1/2 -translate-x-1/2',
+        'bottom-right': 'bottom-4 right-4',
+        'bottom-left': 'bottom-4 left-4',
+        'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
+    };
+
     const currentStyle = styles[type] || styles.success;
     const Icon = currentStyle.icon;
+    const positionClass = positionClasses[position] || positionClasses['top-right'];
 
     return (
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    initial={{ opacity: 0, y: -50, x: '-50%' }}
-                    animate={{ opacity: 1, y: 0, x: '-50%' }}
-                    exit={{ opacity: 0, y: -50, x: '-50%' }}
-                    className={`fixed top-6 left-1/2 z-[100] ${currentStyle.bg} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px] max-w-[500px]`}
+                    key={id}
+                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className={`relative ${currentStyle.bg} ${currentStyle.border} border-2 text-white rounded-xl shadow-2xl flex items-start gap-3 min-w-[320px] max-w-[420px] p-4`}
                 >
-                    <Icon className={currentStyle.iconColor} size={24} />
-                    <p className="flex-1 font-medium">{message}</p>
+                    <Icon className={`${currentStyle.iconColor} flex-shrink-0 mt-0.5`} size={22} />
+                    <div className="flex-1 min-w-0">
+                        {title && (
+                            <h4 className="font-semibold text-sm mb-1">{title}</h4>
+                        )}
+                        <p className="text-sm font-medium leading-relaxed">{message}</p>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                        className="p-1 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
+                        aria-label="Close notification"
                     >
                         <X size={18} />
                     </button>

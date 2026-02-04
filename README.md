@@ -71,6 +71,12 @@ A comprehensive property management dashboard for property managers with tools t
   - Messaging interface
   - Communication management
 
+- **Verification & Security**
+  - **Manager Verification System**
+  - Multi-step verification flow: Email, Phone, and Identity/Business verification
+  - Document upload and review management
+  - Verification status badges and tracking
+
 - **Profile**
   - User profile management
   - Verification system (Email and Phone)
@@ -101,6 +107,14 @@ A modern, responsive property search and management dashboard for property seeke
   - Rent Property - Explore rental options
   - Saved Properties - View all saved properties with count
   - My Applications - Track application progress
+
+- **Agency & Support Services**
+  - **Nearby Agencies** - Discover top-rated local real estate agencies
+  - Contact agents directly via Chat or Phone
+  - Detailed agency profiles with specialties, ratings, and reviews
+  - Search and filter local agencies by name or address
+  - **10-Minute Broker Support** - Urgent assistance request with 10-minute response guarantee
+  - Real-time tracking of broker requests (Searching -> Broker Found)
 
 - **Property Management**
   - Saved/favorited properties with real-time sync
@@ -143,6 +157,18 @@ A modern, responsive property search and management dashboard for property seeke
   - Selected date/time confirmation card
   - Free cancellation notice
   - Success animation with redirect to My Applications
+
+- **Journey Tracking**
+  - **Track Your Journey Widget** - Granular lifecycle tracking for all applications
+  - Transition between Applications (Buy/Rent) and Listings (Sell)
+  - Real-time progress visualization with interactive timelines
+
+- **Overseas Properties**
+  - dedicated dashboard for international property investments
+  - Browse properties from multiple countries (Dubai, USA, etc.)
+  - Currency conversion rates and investment insights
+  - International property specific search filters
+  - Specialized support for overseas buying process
 
 - **Financial Management**
   - Digital contracts with e-signature functionality
@@ -371,6 +397,7 @@ All pages feature smart navigation that returns users to their previous location
 - **Settings**: `http://localhost:5173/user/dashboard/settings`
 - **Help & Support**: `http://localhost:5173/user/dashboard/help`
 - **Profile**: `http://localhost:5173/user/dashboard/profile`
+- **Overseas Properties**: `http://localhost:5173/user/dashboard/overseas`
 
 #### Legal & Support Pages
 - **Privacy Policy**: `http://localhost:5173/privacy`
@@ -595,6 +622,19 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 - **Improved Session Persistence**: Enhanced Supabase client with explicit localStorage storage configuration
 
 
+### Property Location & Visualization (January 2026)
+- **Satellite & Street View Toggle**:
+  - Integrated a new **Satellite View** mode in the property detail page using hybrid satellite imagery (satellite + labels).
+  - Added a responsive toggle to switch between **Satellite Map** and **Interactive Street View**.
+  - Enhanced the "Property Location" section with mode-specific descriptions and fullscreen shortcuts.
+
+### Overseas Properties (January 2026)
+- **International Market Access**: 
+  - New dedicated dashboard for overseas properties
+  - Support for multi-currency display and conversion
+  - Region-specific filtering and search
+  - Integrated mock data for international listings
+
 ### Real-Time Features (Late January 2026)
 
 - **End-to-End Lifecycle Tracking**:
@@ -604,12 +644,52 @@ The Supabase client includes fallback configuration to ensure reliable API conne
   - **Real-Time Polling**: Auto-updates status every 10 seconds
   - **Smart Fallback**: Displays educational empty states or mock data for demonstration
 
+### Global Real-Time Connectivity (January 2026)
+
 - **10-Minute Nearest Broker Response**:
   - **Emergency Request**: New "Request Broker Help" widget for urgent assistance
   - **Geolocation Integration**: Automatically detects user location to find nearest agents
   - **Countdown Timer**: 10-minute guarantee countdown visual
   - **Status States**: Real-time tracking of request status (Pending -> Searching -> Broker Found)
-  - **Mock Simulation**: Fully functional demo mode for testing the flow without live agents
+
+- **Nearby Agencies Integration**:
+  - Interactive list of highly-rated local agencies
+  - One-click communication (Call/Chat) options
+  - Verified agency details and performance metrics
+
+- **Manager Verification & Trust**:
+  - New verification framework for property managers
+  - Identity and professional document validation to ensure platform security
+
+### Overseas Property Investment (January 2026)
+
+- **Dedicated Overseas Dashboard**: New specialized dashboard (`/dashboard/overseas`) for international property investments.
+- **Interactive Globe UI**: Visually stunning 3D globe interface for selecting regions and exploring global markets.
+- **Investment-Focused Metrics**: specialized property cards featuring ROI estimates, yield projections, and currency conversion.
+- **Curated International Listings**: Access to premium properties in top global destinations (Dubai, New York, Bali, etc.).
+- **Smart Currency Handling**: Auto-conversion of prices to user's preferred currency.
+
+### Performance Optimizations (January 2026)
+
+- **Optimized Rendering**: Implemented lazy loading and suspense boundaries for heavy dashboard components.
+- **Efficient Data Handling**: Refactored mock data service to support pagination and reduce initial load times.
+- **Code Splitting**: Enhanced route-based code splitting to improve application startup performance.
+- **Asset Optimization**: improved handling of static assets and images for faster rendering.
+
+### Demo Mode & Mock Data (January 2026)
+
+- **Full Offline Capability**: The entire dashboard now functions seamlessly with a comprehensive Mock Data Service
+- **Mock Data Integration**:
+  - **Properties**: Realistic property listings with images, prices, and details
+  - **Virtual Tours**: Mock 360° virtual tour integration on property details
+  - **Street View**: Google Street View placeholders for property locations
+  - **Applications**: Full application lifecycle tracking with mock statuses
+  - **Viewings**: Scheduled viewing management with mock dates and agent details
+  - **Messages**: Interactive conversation threads with mock agents
+  - **Payments**: Transaction history and upcoming bills simulation
+  - **User Profile**: Pre-filled user data for instant testing
+- **Interactive Map**: "Nearby Properties" map fully populated with mock property locations
+- **Zero API Dependency**: All features work without requiring an active Supabase connection, ideal for demos and UI testing
 
 ### Notifications System (January 2026)
 
@@ -633,6 +713,16 @@ The Supabase client includes fallback configuration to ensure reliable API conne
 - **Enhanced Appointment Booking**: Redesigned modal with quick time slots, property card, and confirmation
 - **Document Verification Modal**: Upload modal with tips for identity and address verification
 - **Consistent Navigation**: All back buttons navigate to `/user/dashboard`
+
+### App Tour (Late January 2026)
+- **Interactive Onboarding**: New users are greeted with a comprehensive tour of the dashboard features.
+- **Guided Walkthrough**: Highlights key sections like "Discover", "Saved Properties", "Applications", and "Messages".
+- **Dismissible**: Users can skip the tour or revisit it later from the Help & Support section.
+
+### UI/UX Polish (Late January 2026)
+- **Expert Help Redesign**: Completely redesigned "Expert Help" widget with a premium, investor-ready look.
+- **Overseas Dashboard Refinements**: Enhanced visuals for the Overseas Dashboard, including a new hero image and refined property cards.
+- **Performance Optimizations**: General performance improvements across the dashboard for a smoother experience.
 
 ## 📊 Database Schema
 
@@ -678,5 +768,5 @@ For support:
 
 **Branch**: user-dahboard  
 **Repository**: https://github.com/Estospaces/estospaces-app  
-**Live Demo**: https://estospaces-app.vercel.app  
+**Deployment**: See `docs/REMOVE_VERCEL_AND_DEPLOYMENT_GUIDE.md` for deployment instructions  
 Built with ❤️ by the Estospaces team

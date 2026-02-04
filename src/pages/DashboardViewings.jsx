@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Home, Plus, ChevronRight, X, Loader2, CheckCircle, XCircle, AlertCircle, Search, ArrowLeft } from 'lucide-react';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import { MOCK_VIEWINGS } from '../services/mockDataService';
 import { useAuth } from '../contexts/AuthContext';
 import { notifyViewingCancelled } from '../services/notificationsService';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
@@ -14,95 +15,30 @@ const DashboardViewings = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [filter, setFilter] = useState('all'); // all, upcoming, past, cancelled
 
-  // Fetch viewings from Supabase with timeout
+  // Fetch viewings (mock)
   const fetchViewings = useCallback(async () => {
-    // Quick exit if no user or Supabase not available
-    if (!user?.id || !isSupabaseAvailable()) {
-      setViewings([]);
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
-    try {
-      // Set a timeout for the fetch
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 5000)
-      );
+    // Use mock viewings directly without delay
+    const rawViewings = MOCK_VIEWINGS;
 
-      const fetchPromise = supabase
-        .from('viewings')
-        .select(`
-          id,
-          property_id,
-          viewing_date,
-          viewing_time,
-          status,
-          notes,
-          created_at,
-          properties (
-            id,
-            title,
-            address_line_1,
-            city,
-            postcode,
-            price,
-            listing_type,
-            image_urls,
-            contact_name,
-            contact_phone
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('viewing_date', { ascending: true });
+    // Map the nested structure to the flat structure expected by the component
+    const mappedViewings = rawViewings.map(viewing => ({
+      ...viewing,
+      date: viewing.scheduled_date,
+      time: viewing.scheduled_time,
+      propertyImage: viewing.property?.image_urls?.[0] || null,
+      propertyTitle: viewing.property?.title || 'Unknown Property',
+      propertyAddress: viewing.property?.address_line_1 || 'Address not available',
+      propertyPrice: viewing.property?.price || 0,
+      listingType: viewing.property?.listing_type || 'sale',
+      agentName: viewing.agent?.name || 'Agent',
+      agentPhone: viewing.agent?.phone || ''
+    }));
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
-
-      if (error) {
-        // Table might not exist - show empty state
-        console.log('Viewings table may not exist:', error.message);
-        setViewings([]);
-        setLoading(false);
-        return;
-      }
-
-      // Transform data
-      const transformedViewings = (data || []).map(item => {
-        const property = item.properties || {};
-        let images = [];
-        try {
-          images = property.image_urls 
-            ? (Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls))
-            : [];
-        } catch (e) {
-          images = [];
-        }
-
-        return {
-          id: item.id,
-          propertyId: item.property_id,
-          propertyTitle: property.title || 'Property',
-          propertyAddress: property.address_line_1 || `${property.city || ''} ${property.postcode || ''}`.trim(),
-          propertyImage: images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
-          propertyPrice: property.price,
-          listingType: property.listing_type,
-          agentName: property.contact_name || 'Agent',
-          agentPhone: property.contact_phone || '',
-          date: item.viewing_date,
-          time: item.viewing_time,
-          status: item.status,
-          notes: item.notes,
-        };
-      });
-
-      setViewings(transformedViewings);
-    } catch (err) {
-      console.error('Error fetching viewings:', err);
-      // On any error (including timeout), show empty state
-      setViewings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
+    setViewings(mappedViewings);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     fetchViewings();
@@ -126,30 +62,23 @@ const DashboardViewings = () => {
     }
   });
 
-  // Cancel viewing
+  // Cancel viewing (mock)
   const handleCancelViewing = async (viewingId) => {
-    if (!isSupabaseAvailable() || !user?.id) return;
+    // Optimistic update
+    setViewings(prev => prev.map(v =>
+      v.id === viewingId ? { ...v, status: 'cancelled' } : v
+    ));
 
-    try {
-      const { error } = await supabase
-        .from('viewings')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('id', viewingId);
-
-      if (error) throw error;
-
+    // Simulate API call
+    setTimeout(() => {
       // Find the viewing to get property details for notification
       const viewing = viewings.find(v => v.id === viewingId);
-      
-      setViewings(prev => prev.map(v => 
-        v.id === viewingId ? { ...v, status: 'cancelled' } : v
-      ));
 
       // Send cancellation notification
       if (viewing) {
         try {
-          await notifyViewingCancelled(
-            user.id,
+          notifyViewingCancelled(
+            user?.id || 'mock-user-id',
             viewing.propertyTitle,
             viewing.propertyId,
             viewing.date,
@@ -160,9 +89,7 @@ const DashboardViewings = () => {
           console.log('⚠️ Could not send notification:', notifyErr);
         }
       }
-    } catch (err) {
-      console.error('Error cancelling viewing:', err);
-    }
+    }, 500);
   };
 
   const getStatusBadge = (status) => {
@@ -300,11 +227,10 @@ const DashboardViewings = () => {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-              filter === f
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${filter === f
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -319,7 +245,7 @@ const DashboardViewings = () => {
             {filter === 'all' ? 'No viewings scheduled' : `No ${filter} viewings`}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {filter === 'all' 
+            {filter === 'all'
               ? 'Schedule a viewing for properties you\'re interested in'
               : `You don't have any ${filter} viewings at the moment`
             }
@@ -328,9 +254,9 @@ const DashboardViewings = () => {
             onClick={() => navigate('/user/dashboard/discover')}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
           >
-          Browse Properties
-        </button>
-      </div>
+            Browse Properties
+          </button>
+        </div>
       ) : (
         <div className="space-y-4">
           {filteredViewings.map((viewing) => (
@@ -358,7 +284,7 @@ const DashboardViewings = () => {
                         </h3>
                         {getStatusBadge(viewing.status)}
                       </div>
-                      
+
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
                         <MapPin size={14} />
                         <span>{viewing.propertyAddress}</span>

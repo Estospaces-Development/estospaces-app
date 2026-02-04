@@ -1,11 +1,11 @@
 import React from 'react';
-import { 
-  FileText, 
-  Search, 
-  FileCheck, 
-  UserCheck, 
-  CheckCircle, 
-  XCircle, 
+import {
+  FileText,
+  Search,
+  FileCheck,
+  UserCheck,
+  CheckCircle,
+  XCircle,
   Clock,
   AlertCircle,
   Home,
@@ -34,8 +34,8 @@ const StatusTracker = ({ status, listingType = 'sale' }) => {
       {
         id: 'verification',
         label: listingType === 'rent' ? 'Tenant Verification' : 'Buyer Verification',
-        description: listingType === 'rent' 
-          ? 'Background & credit check in progress' 
+        description: listingType === 'rent'
+          ? 'Background & credit check in progress'
           : 'Financial verification in progress',
         icon: UserCheck,
         statuses: [APPLICATION_STATUS.DOCUMENTS_REQUESTED]
@@ -50,27 +50,27 @@ const StatusTracker = ({ status, listingType = 'sale' }) => {
       {
         id: 'decision',
         label: 'Final Decision',
-        description: status === APPLICATION_STATUS.APPROVED 
-          ? 'Congratulations! Your application is approved' 
+        description: status === APPLICATION_STATUS.APPROVED || status === APPLICATION_STATUS.COMPLETED
+          ? 'Congratulations! Your application is approved'
           : status === APPLICATION_STATUS.REJECTED
-          ? 'Application was not approved'
-          : 'Awaiting final decision',
-        icon: status === APPLICATION_STATUS.APPROVED ? CheckCircle : 
-              status === APPLICATION_STATUS.REJECTED ? XCircle : Clock,
-        statuses: [APPLICATION_STATUS.APPROVED, APPLICATION_STATUS.REJECTED]
+            ? 'Application was not approved'
+            : 'Awaiting final decision',
+        icon: (status === APPLICATION_STATUS.APPROVED || status === APPLICATION_STATUS.COMPLETED) ? CheckCircle :
+          status === APPLICATION_STATUS.REJECTED ? XCircle : Clock,
+        statuses: [APPLICATION_STATUS.APPROVED, APPLICATION_STATUS.REJECTED, APPLICATION_STATUS.COMPLETED]
       }
     ];
 
-    // Add completion stage for approved applications
-    if (status === APPLICATION_STATUS.APPROVED) {
+    // Add completion stage for approved/completed applications
+    if (status === APPLICATION_STATUS.APPROVED || status === APPLICATION_STATUS.COMPLETED) {
       baseStages.push({
         id: 'completion',
-        label: listingType === 'rent' ? 'Move In Ready' : 'Ready to Complete',
-        description: listingType === 'rent' 
-          ? 'Prepare for your move-in date' 
-          : 'Proceed to contract signing',
+        label: listingType === 'rent' ? 'Move In Ready' : 'Key Handover',
+        description: status === APPLICATION_STATUS.COMPLETED
+          ? (listingType === 'rent' ? 'Keys collected & moved in' : 'Keys handed over & completed')
+          : (listingType === 'rent' ? 'Prepare for your move-in date' : 'Proceed to contract signing'),
         icon: listingType === 'rent' ? Key : Home,
-        statuses: []
+        statuses: [APPLICATION_STATUS.COMPLETED]
       });
     }
 
@@ -82,8 +82,9 @@ const StatusTracker = ({ status, listingType = 'sale' }) => {
   // Determine current stage index
   const getCurrentStageIndex = () => {
     if (status === APPLICATION_STATUS.WITHDRAWN) return -1;
-    if (status === APPLICATION_STATUS.REJECTED) return stages.length - 2;
-    if (status === APPLICATION_STATUS.APPROVED) return stages.length - 1;
+    if (status === APPLICATION_STATUS.REJECTED) return stages.length - 2; // Decision stage
+    if (status === APPLICATION_STATUS.COMPLETED) return stages.length - 1; // Completion stage
+    if (status === APPLICATION_STATUS.APPROVED) return stages.length - 1; // Also completion stage (but typically shows as current)
     if (status === APPLICATION_STATUS.DOCUMENTS_REQUESTED) return 2;
     if (status === APPLICATION_STATUS.UNDER_REVIEW) return 1;
     return 0;
@@ -174,30 +175,28 @@ const StatusTracker = ({ status, listingType = 'sale' }) => {
             const isCurrent = index === currentStageIndex;
             const isPending = index > currentStageIndex;
             const isRejected = status === APPLICATION_STATUS.REJECTED && index === currentStageIndex;
-            
+
             return (
               <div key={stage.id} className="relative flex items-start pb-8 last:pb-0">
                 {/* Connecting Line */}
                 {index < stages.length - 1 && (
-                  <div 
-                    className={`absolute left-6 top-12 w-0.5 h-full -ml-px ${
-                      isCompleted ? 'bg-green-500' : 
-                      isCurrent && !isRejected ? 'bg-orange-300' : 
-                      'bg-gray-200 dark:bg-gray-700'
-                    }`}
+                  <div
+                    className={`absolute left-6 top-12 w-0.5 h-full -ml-px ${isCompleted ? 'bg-green-500' :
+                        isCurrent && !isRejected ? 'bg-orange-300' :
+                          'bg-gray-200 dark:bg-gray-700'
+                      }`}
                   />
                 )}
-                
+
                 {/* Stage Icon */}
-                <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
-                  isCompleted 
-                    ? 'bg-green-500 border-green-500 text-white' 
+                <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${isCompleted
+                    ? 'bg-green-500 border-green-500 text-white'
                     : isCurrent && !isRejected
-                    ? 'bg-orange-500 border-orange-500 text-white animate-pulse'
-                    : isRejected
-                    ? 'bg-red-500 border-red-500 text-white'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400'
-                }`}>
+                      ? 'bg-orange-500 border-orange-500 text-white animate-pulse'
+                      : isRejected
+                        ? 'bg-red-500 border-red-500 text-white'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400'
+                  }`}>
                   {isCompleted ? (
                     <CheckCircle className="w-6 h-6" />
                   ) : isRejected ? (
@@ -206,15 +205,14 @@ const StatusTracker = ({ status, listingType = 'sale' }) => {
                     <Icon className="w-5 h-5" />
                   )}
                 </div>
-                
+
                 {/* Stage Content */}
                 <div className="ml-4 flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className={`font-semibold ${
-                      isCompleted || isCurrent 
-                        ? 'text-gray-900 dark:text-white' 
+                    <h4 className={`font-semibold ${isCompleted || isCurrent
+                        ? 'text-gray-900 dark:text-white'
                         : 'text-gray-400 dark:text-gray-500'
-                    }`}>
+                      }`}>
                       {stage.label}
                     </h4>
                     {isCurrent && !isRejected && (
@@ -224,14 +222,13 @@ const StatusTracker = ({ status, listingType = 'sale' }) => {
                       </span>
                     )}
                   </div>
-                  <p className={`text-sm mt-1 ${
-                    isCompleted || isCurrent 
-                      ? 'text-gray-600 dark:text-gray-400' 
+                  <p className={`text-sm mt-1 ${isCompleted || isCurrent
+                      ? 'text-gray-600 dark:text-gray-400'
                       : 'text-gray-400 dark:text-gray-600'
-                  }`}>
+                    }`}>
                     {stage.description}
                   </p>
-                  
+
                   {/* Action prompt for current stage */}
                   {isCurrent && status === APPLICATION_STATUS.DOCUMENTS_REQUESTED && (
                     <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">

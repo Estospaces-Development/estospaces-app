@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Bell, 
-  Lock, 
-  CreditCard, 
-  Globe, 
-  ArrowLeft, 
-  Save, 
+import {
+  Bell,
+  Lock,
+  CreditCard,
+  Globe,
+  ArrowLeft,
+  Save,
   Loader2,
   Mail,
   Smartphone,
@@ -17,16 +17,17 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  getNotificationPreferences, 
-  updateNotificationPreferences 
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences
 } from '../services/notificationsService';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardSettings = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
+  // Initialize loading to false for immediate render (optimistic UI)
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('notifications');
@@ -111,16 +112,14 @@ const DashboardSettings = () => {
     <button
       onClick={onChange}
       disabled={disabled}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked 
-          ? 'bg-orange-500' 
-          : 'bg-gray-300 dark:bg-gray-600'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked
+        ? 'bg-orange-500'
+        : 'bg-gray-300 dark:bg-gray-600'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          checked ? 'translate-x-6' : 'translate-x-1'
-        }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'
+          }`}
       />
     </button>
   );
@@ -132,6 +131,8 @@ const DashboardSettings = () => {
     { id: 'preferences', label: 'Preferences', icon: Globe },
   ];
 
+  // Removed blocking loading state
+  /* 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -142,6 +143,7 @@ const DashboardSettings = () => {
       </div>
     );
   }
+  */
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900">
@@ -186,11 +188,10 @@ const DashboardSettings = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
               >
                 <tab.icon size={16} />
                 {tab.label}

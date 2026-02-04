@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { PostTag, PostVisibility } from '../../mocks/communityPosts';
 
@@ -52,8 +53,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    return createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -85,8 +86,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
                             placeholder="Share updates, deals, or important information with the community..."
                             rows={6}
                             className={`w-full px-4 py-3 rounded-lg border ${errors.content
-                                    ? 'border-red-500'
-                                    : 'border-gray-300 dark:border-gray-600'
+                                ? 'border-red-500'
+                                : 'border-gray-300 dark:border-gray-600'
                                 } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary`}
                         />
                         {errors.content && (
@@ -114,8 +115,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
                                     type="button"
                                     onClick={() => setTag(tagOption.value as PostTag)}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${tag === tagOption.value
-                                            ? 'bg-primary text-white shadow-md'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                        ? 'bg-primary text-white shadow-md'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                         }`}
                                 >
                                     {tagOption.label}
@@ -165,7 +166,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
