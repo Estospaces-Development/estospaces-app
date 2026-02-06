@@ -61,6 +61,44 @@ Fast-track plan to launch a functional MVP in 2 months with core features only.
 
 ---
 
+#### [MIGRATION_EXECUTION_GUIDE.md](./MIGRATION_EXECUTION_GUIDE.md)
+**Practical Step-by-Step Migration Guide** ⭐
+
+Complete execution guide for migrating from current to target tech stack.
+
+**Current Stack**:
+- Frontend: React + Vite (Mixed JS/TS)
+- Backend: Express monolith (1,602 lines)
+- Database: Supabase PostgreSQL
+
+**Target Stack**:
+- Frontend: Next.js + TypeScript
+- Backend: Go microservices
+- Database: Cloud SQL (GCP)
+- Infrastructure: GKE (Kubernetes)
+
+**Migration Strategy**: Strangler Fig Pattern (Incremental)
+
+**Includes**:
+- ✅ Three migration strategies compared (Big Bang, Parallel, Strangler Fig)
+- ✅ Recommended: Strangler Fig pattern (lowest risk)
+- ✅ Phase-by-phase migration plan (18 weeks conservative, 12 weeks aggressive)
+- ✅ Complete code examples (Express → Go)
+- ✅ Real authentication service migration example
+- ✅ Traffic migration strategy (10% → 25% → 50% → 100%)
+- ✅ Parallel running infrastructure
+- ✅ Database sync strategies (dual-write, batch sync)
+- ✅ Feature flags implementation
+- ✅ Testing during migration (unit, integration, E2E, load, shadow)
+- ✅ Rollback plans (Level 1-3 with time estimates)
+- ✅ Complete migration checklist
+
+**When to use**: When you're ready to start the actual migration from old to new stack
+
+**Timeline**: 12-18 weeks depending on team size and aggressiveness
+
+---
+
 ### Analysis & Migration
 
 #### [CURRENT_CODE_ANALYSIS.md](./CURRENT_CODE_ANALYSIS.md)
