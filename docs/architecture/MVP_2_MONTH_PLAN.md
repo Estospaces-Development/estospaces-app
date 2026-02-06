@@ -773,45 +773,6 @@ main (production)
 
 ---
 
-## Budget Considerations (8 Weeks)
-
-### Development Team
-
-```
-Team Lead:         $10,000 - $15,000 / month × 2 = $20,000 - $30,000
-Frontend Dev (2):  $8,000 - $12,000 / month × 2 × 2 = $32,000 - $48,000
-Backend Dev (1):   $8,000 - $12,000 / month × 2 = $16,000 - $24,000
-Full-Stack (1):    $8,000 - $12,000 / month × 2 = $16,000 - $24,000
-
-Total Team Cost: $84,000 - $126,000 (8 weeks)
-```
-
-### Infrastructure (8 Weeks)
-
-```
-GKE Cluster:       $150/month × 2 = $300 (small cluster, 3 nodes)
-Cloud SQL:         $100/month × 2 = $200 (db-f1-micro + storage)
-Cloud Storage:     $10/month × 2 = $20 (50GB + bandwidth)
-Load Balancer:     $20/month × 2 = $40
-Cloud Build:       Free tier = $0 (first 120 min/day)
-Secret Manager:    $0.06 per secret/month = ~$5
-Cloud Logging:     Free tier (first 50GB) = $0
-Cloud Monitoring:  Free tier = $0
-Domain:            $15/year = $15
-Artifact Registry: $0.10/GB = ~$10
-
-Total Infrastructure: ~$590 (8 weeks)
-```
-
-### Total MVP Cost
-
-**Conservative**: $84,000 + $590 = ~$84,590
-**High End**: $126,000 + $590 = ~$126,590
-
-**Average**: ~$105,500 for 8-week MVP
-
----
-
 ## Key Dependencies & Assumptions
 
 ### Assumptions
