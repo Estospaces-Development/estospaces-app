@@ -71,16 +71,17 @@ Runtime:             Node.js (Latest LTS)
 Framework:           Express 4.22.1
 Language:            JavaScript (ES Modules)
 Architecture:        Monolithic (Single server.js - 1,602 lines)
-Database Client:     @supabase/supabase-js 2.89.0
-Database:            Supabase PostgreSQL (Cloud-hosted)
-Authentication:      Supabase Auth (JWT-based)
-Storage:             Supabase Storage (S3-compatible)
-Real-time:           Supabase Realtime (WebSocket-based)
+Database Client:     pg (node-postgres) or Prisma
+Database:            Cloud SQL PostgreSQL (GCP-hosted)
+Authentication:      Custom JWT-based auth
+Storage:             Google Cloud Storage (GCS)
+Real-time:           Custom WebSocket implementation
 API Style:           REST API
 Middleware:          CORS 2.8.5, Express built-in
 Environment:         dotenv 16.6.1
 Server Port:         3002
 Development:         Concurrent dev (Vite + Express)
+Deployment:          Docker + GKE
 ```
 
 **Server Architecture** (server.js - 1,602 lines):
@@ -110,19 +111,20 @@ server.js
 - ❌ **No API Documentation**: No OpenAPI/Swagger spec
 - ❌ **Limited Error Handling**: Basic try-catch blocks
 - ❌ **No Request Validation**: Vulnerable to malformed requests
-- ❌ **Supabase Lock-in**: Tightly coupled to Supabase
+- ❌ **No Containerization**: Difficult to deploy consistently
 
 ### 💾 Current Database Stack
 
 ```yaml
-Database:            Supabase (Managed PostgreSQL)
+Database:            Cloud SQL (Managed PostgreSQL on GCP)
 Version:             PostgreSQL 15+
-ORM:                 None (Direct Supabase client queries)
-Migrations:          SQL files in root directory
-Schema:              Multiple tables with RLS policies
-Real-time:           Supabase Realtime subscriptions
-File Storage:        Supabase Storage buckets
-Auth:                Supabase Auth (built-in)
+ORM:                 None (Direct SQL queries via pg/node-postgres)
+Migrations:          SQL files in root directory (to be organized)
+Schema:              Multiple tables (no RLS - app-level security)
+Real-time:           Custom WebSocket server (to be built)
+File Storage:        Google Cloud Storage (GCS) buckets
+Auth:                Custom JWT implementation (to be migrated)
+Connection:          Cloud SQL Proxy for secure connections
 ```
 
 **Database Files**:
@@ -143,8 +145,8 @@ Root directory SQL files:
 - ❌ **No Migration Tool**: Manual SQL file execution
 - ❌ **No Versioning**: Hard to track schema changes
 - ❌ **No ORM**: Raw SQL queries everywhere
-- ❌ **RLS Complexity**: Row Level Security policies scattered
-- ❌ **Vendor Lock-in**: Heavily dependent on Supabase features
+- ❌ **App-Level Security Needed**: Will need to implement authorization in application layer
+- ❌ **Migration from Supabase**: Need to migrate auth, storage, realtime
 
 ### 🏗️ Current Infrastructure
 
@@ -156,9 +158,10 @@ Development:
   Proxy:             Vite proxy for /api and /supabase
 
 Production:
-  Hosting:           Unknown (likely Vercel or similar)
-  Database:          Supabase Cloud (production instance)
-  CDN:               Unknown
+  Hosting:           GKE (Google Kubernetes Engine)
+  Database:          Cloud SQL (production instance with HA)
+  CDN:               Cloud CDN + Load Balancer
+  Storage:           Google Cloud Storage (GCS)
 
 DevOps:
   CI/CD:             Unknown (no .github/workflows visible)
@@ -259,8 +262,8 @@ Framework:           Axum or Actix-web
 
 ```yaml
 Primary Database:    PostgreSQL 16+ (Self-hosted or RDS)
-  - Not Supabase-specific
-  - Portable to any cloud
+  - Cloud SQL (GCP managed PostgreSQL)
+  - Portable to any Postgres-compatible database
 
 ORM/Query Builder:
   - Go:              GORM or sqlx

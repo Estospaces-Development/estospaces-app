@@ -70,12 +70,13 @@ This document provides an **aggressive 8-week plan** to deliver a functional MVP
 
 | Decision | Rationale | Post-MVP Path |
 |----------|-----------|---------------|
-| **Keep Supabase** | Already set up, works | Migrate to self-hosted PostgreSQL later |
+| **GCP Cloud SQL** | Managed PostgreSQL on GCP | Optimize and scale as needed |
 | **Single Backend** | Faster than microservices | Split into services in Phase 2 |
+| **GKE Deployment** | Kubernetes from day one | Scale with GKE autoscaling |
 | **Next.js Only** | Skip mobile app | Build React Native app later |
 | **Minimal Testing** | Manual testing for MVP | Add automated tests post-MVP |
 | **Basic UI** | Reuse existing components | Polish UI in Phase 2 |
-| **No CI/CD** | Manual deployment initially | Set up pipelines post-MVP |
+| **Basic CI/CD** | Simple GCP Build triggers | Full Cloud Build pipelines post-MVP |
 | **Monolithic** | Single codebase, faster dev | Refactor to microservices later |
 
 ### MVP Tech Stack (Simplified)
@@ -90,20 +91,31 @@ Frontend:
   UI:            Shadcn/ui (quick to set up)
 
 Backend:
-  Option A (Fastest): Keep existing Express + Supabase
-  Option B (Better):  Single Go service + Supabase
+  Language:      Go 1.23+ (or Node.js/TypeScript if faster for team)
+  Framework:     Fiber (Go) or Express (Node.js)
+  Authentication: JWT-based custom auth
+  API:           RESTful APIs
 
-  Recommended: Option A for MVP, migrate to B in parallel
+  Recommended: Go + Fiber for better performance and scalability
 
 Database:
-  Primary:       Supabase PostgreSQL (keep existing)
-  Cache:         Skip for MVP (add later)
+  Primary:       Cloud SQL (PostgreSQL 15+) - GCP managed
+  Connection:    Cloud SQL Proxy for secure connections
+  Cache:         Redis (Memorystore) - add in Week 5-6 if needed
 
-Infrastructure:
-  Hosting:       Vercel (frontend) + Existing backend
-  Database:      Supabase (existing)
-  Storage:       Supabase Storage (existing)
-  Monitoring:    Basic logging only
+Storage:
+  Files/Images:  Google Cloud Storage (GCS)
+  Buckets:       Organized by environment (dev, staging, prod)
+
+Infrastructure (All GCP):
+  Cluster:       GKE (Google Kubernetes Engine)
+  Container:     Docker containers
+  Registry:      Artifact Registry (GCP)
+  Networking:    Cloud Load Balancing
+  DNS:           Cloud DNS
+  Secrets:       Secret Manager
+  Monitoring:    Cloud Logging + Cloud Monitoring (basic)
+  CI/CD:         Cloud Build (simple triggers)
 ```
 
 ---
@@ -118,13 +130,19 @@ Infrastructure:
 
 **Monday - Wednesday**: Infrastructure Setup
 - [ ] Create `estospaces-web` repository (Next.js)
+- [ ] Set up GCP project and enable required APIs
+- [ ] Create GKE cluster (dev environment)
+- [ ] Set up Cloud SQL (PostgreSQL) instance
+- [ ] Configure Cloud Storage buckets
+- [ ] Set up Secret Manager for credentials
 - [ ] Set up Next.js 14 project with TypeScript
 - [ ] Configure Tailwind CSS
 - [ ] Install Shadcn/ui components
 - [ ] Set up Zustand stores structure
 - [ ] Set up React Query
 - [ ] Configure environment variables
-- [ ] Set up Vercel deployment (dev environment)
+- [ ] Create Dockerfile for Next.js app
+- [ ] Deploy to GKE (dev namespace)
 
 **Thursday - Friday**: Analysis & Planning
 - [ ] Audit current codebase (demo branch)
@@ -135,7 +153,9 @@ Infrastructure:
 - [ ] Define API contracts for frontend-backend
 
 **Deliverables**:
-- ✅ Next.js project initialized and deployed to Vercel (dev)
+- ✅ GCP project configured with GKE cluster
+- ✅ Cloud SQL and GCS set up
+- ✅ Next.js project initialized and deployed to GKE (dev)
 - ✅ Development environment working
 - ✅ Migration checklist created
 - ✅ Team aligned on MVP scope
@@ -153,10 +173,13 @@ Infrastructure:
 
 **Wednesday - Friday**: Authentication Implementation
 - [ ] Build authentication pages (login, signup)
+- [ ] Implement JWT-based authentication (backend)
+- [ ] Create auth API endpoints (register, login, refresh)
 - [ ] Implement auth store (Zustand)
-- [ ] Connect to Supabase Auth
+- [ ] Connect frontend to auth APIs
 - [ ] Create protected route wrapper
 - [ ] Build basic profile page
+- [ ] Store tokens securely (httpOnly cookies)
 - [ ] Test authentication flow
 
 **Deliverables**:
@@ -219,10 +242,10 @@ Infrastructure:
 
 **Wednesday - Thursday**: Contact & Inquiries
 - [ ] Build contact form component
-- [ ] Implement inquiry submission
+- [ ] Implement inquiry submission API
 - [ ] Show inquiry status
 - [ ] Add inquiry history page
-- [ ] Email notifications (basic - Supabase trigger)
+- [ ] Email notifications (SendGrid or Cloud Functions)
 
 **Friday**: User Dashboard Polish
 - [ ] Build user dashboard home (overview)
@@ -259,9 +282,10 @@ Infrastructure:
 
 **Wednesday - Thursday**: Add/Edit Property
 - [ ] Build add property form (multi-step if needed)
-- [ ] Implement image upload (Supabase Storage)
-- [ ] Add form validation
+- [ ] Implement image upload to GCS (signed URLs)
+- [ ] Add form validation (Zod schemas)
 - [ ] Create property edit functionality
+- [ ] Optimize image uploads (compress before upload)
 - [ ] Test create/update flow
 
 **Friday**: Property Management Polish
@@ -364,16 +388,19 @@ Infrastructure:
 **Tuesday**: Security & Data
 - [ ] Security audit (basic)
 - [ ] Fix security vulnerabilities
-- [ ] Set up production database backup
-- [ ] Configure Supabase RLS policies
-- [ ] Test authentication security
+- [ ] Set up Cloud SQL automated backups
+- [ ] Configure database firewall rules
+- [ ] Test authentication security (JWT validation)
+- [ ] Review IAM permissions
 
 **Wednesday**: Production Setup
-- [ ] Set up production environment (Vercel)
-- [ ] Configure production environment variables
-- [ ] Set up custom domain (if ready)
-- [ ] Configure SSL/HTTPS
-- [ ] Set up basic error tracking (Sentry or similar)
+- [ ] Set up production GKE cluster
+- [ ] Create production Cloud SQL instance
+- [ ] Set up production GCS buckets
+- [ ] Configure production environment variables (Secret Manager)
+- [ ] Set up custom domain with Cloud DNS
+- [ ] Configure SSL/HTTPS (Load Balancer with managed certs)
+- [ ] Set up error tracking (Cloud Error Reporting or Sentry)
 
 **Thursday**: Testing & QA
 - [ ] Full regression testing
@@ -418,14 +445,15 @@ Infrastructure:
 **Backend Developer (1)**
 - API endpoint development
 - Database schema updates
-- Supabase integration
+- Cloud SQL integration
+- GCS integration for file uploads
 - Backend bug fixes
 - 80% coding, 20% planning
 
 **Full-Stack Developer (1)**
 - Frontend and backend as needed
 - Testing and QA
-- DevOps setup (Vercel, monitoring)
+- DevOps setup (GKE, Cloud Build, monitoring)
 - Documentation
 - 70% coding, 30% testing/ops
 
@@ -435,20 +463,20 @@ Infrastructure:
 Week 1-2: Setup
 ├── Lead (1): Architecture, planning
 ├── Frontend (2): Next.js setup, shared code
-├── Backend (1): API preparation, database
-└── Full-Stack (1): DevOps, tooling
+├── Backend (1): API preparation, Cloud SQL setup
+└── Full-Stack (1): GKE cluster setup, CI/CD
 
 Week 3-4: User Dashboard
 ├── Lead (1): Code review, critical features
 ├── Frontend (2): Property pages, UI
-├── Backend (1): Property APIs
-└── Full-Stack (1): Integration, testing
+├── Backend (1): Property APIs, GCS integration
+└── Full-Stack (1): Integration, testing, monitoring
 
 Week 5-6: Manager Dashboard
 ├── Lead (1): Manager dashboard oversight
 ├── Frontend (2): Manager UI, forms
 ├── Backend (1): Manager APIs, inquiries
-└── Full-Stack (1): File upload, testing
+└── Full-Stack (1): GCS upload optimization, testing
 
 Week 7: Admin & Integration
 ├── Lead (1): Integration testing
@@ -532,7 +560,7 @@ Week 8: Launch
 | **Technical Debt** | High | Medium | Document all shortcuts, plan cleanup post-MVP |
 | **Team Burnout** | Medium | High | Realistic deadlines, no weekend work (avoid crunch) |
 | **Critical Bug** | Medium | High | Daily testing, prioritize stability over features |
-| **Supabase Limits** | Low | Medium | Monitor usage, have upgrade plan ready |
+| **GCP Quota Limits** | Low | Medium | Monitor quotas, request increases if needed |
 | **Key Person Risk** | Medium | High | Knowledge sharing, documentation, pair programming |
 | **Timeline Slip** | High | High | Weekly adjustments, cut scope if needed |
 
@@ -585,20 +613,21 @@ Week 8: Launch
 - Virtual tours
 
 **Technical Improvements**:
-- Migrate to Go backend
-- Set up CI/CD
-- Comprehensive testing
-- Monitoring and alerts
-- Database optimization
+- Optimize Go backend
+- Enhanced CI/CD (Cloud Build + Cloud Deploy)
+- Comprehensive testing (unit + integration)
+- Advanced monitoring (Cloud Trace, Profiler)
+- Database optimization (Cloud SQL insights)
+- Add Redis (Memorystore) caching
 
 ### Phase 3 (Month 5-6) - Microservices
 
 **Architecture Migration**:
-- Split backend into microservices
-- Set up Kubernetes
-- Migrate from Supabase to self-hosted PostgreSQL
-- Implement caching (Redis)
-- Advanced search (Elasticsearch)
+- Split backend into microservices (GKE)
+- Implement service mesh (Istio or Anthos Service Mesh)
+- Scale Cloud SQL (read replicas, high availability)
+- Implement caching (Memorystore Redis)
+- Advanced search (Elasticsearch on GKE or Vertex AI Search)
 
 ---
 
@@ -608,8 +637,9 @@ Week 8: Launch
 
 **Access**:
 - [ ] GitHub repository access
-- [ ] Supabase project access
-- [ ] Vercel project access
+- [ ] GCP project access (with appropriate IAM roles)
+- [ ] GKE cluster access (kubectl configured)
+- [ ] Cloud SQL access
 - [ ] Slack/communication channel
 - [ ] Project management tool (Jira/GitHub Projects)
 
@@ -759,21 +789,26 @@ Total Team Cost: $84,000 - $126,000 (8 weeks)
 ### Infrastructure (8 Weeks)
 
 ```
-Vercel:            $20/month × 2 = $40
-Supabase:          $25/month × 2 = $50 (Pro plan)
+GKE Cluster:       $150/month × 2 = $300 (small cluster, 3 nodes)
+Cloud SQL:         $100/month × 2 = $200 (db-f1-micro + storage)
+Cloud Storage:     $10/month × 2 = $20 (50GB + bandwidth)
+Load Balancer:     $20/month × 2 = $40
+Cloud Build:       Free tier = $0 (first 120 min/day)
+Secret Manager:    $0.06 per secret/month = ~$5
+Cloud Logging:     Free tier (first 50GB) = $0
+Cloud Monitoring:  Free tier = $0
 Domain:            $15/year = $15
-Sentry (errors):   Free tier = $0
-Analytics:         Free tier (GA) = $0
+Artifact Registry: $0.10/GB = ~$10
 
-Total Infrastructure: ~$105 (8 weeks)
+Total Infrastructure: ~$590 (8 weeks)
 ```
 
 ### Total MVP Cost
 
-**Conservative**: $84,000 + $105 = ~$84,105
-**High End**: $126,000 + $105 = ~$126,105
+**Conservative**: $84,000 + $590 = ~$84,590
+**High End**: $126,000 + $590 = ~$126,590
 
-**Average**: ~$105,000 for 8-week MVP
+**Average**: ~$105,500 for 8-week MVP
 
 ---
 

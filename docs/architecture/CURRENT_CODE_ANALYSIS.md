@@ -640,7 +640,7 @@ services/propertiesService  → internal/properties/
 Supabase SQL migrations     → migrations/
 ```
 
-**Tech Stack**: Go 1.23+, Fiber, PostgreSQL, Supabase
+**Tech Stack**: Go 1.23+, Fiber, Cloud SQL (PostgreSQL), GCS
 
 **Structure**:
 ```

@@ -233,7 +233,7 @@ estospaces-web/
 
 **Repository**: `estospaces-web`
 **Tech**: Next.js 15, React 19, TypeScript, Tailwind CSS
-**Deployment**: Vercel / AWS Amplify / Self-hosted
+**Deployment**: GKE (Google Kubernetes Engine) / Self-hosted K8s
 
 ---
 
@@ -1082,8 +1082,8 @@ CMD ["./server"]
 - **Developer Experience**: Best-in-class DX with Turbopack
 - **SEO**: Server-side rendering for optimal SEO
 - **Ecosystem**: React 19, largest ecosystem
-- **Deployment**: Seamless deployment with Vercel
-- **Future-Proof**: Backed by Vercel, continuous innovation
+- **Deployment**: Container-based deployment with GKE
+- **Future-Proof**: Cloud-native, portable across any Kubernetes platform
 
 ### Why Native Mobile (Swift/Kotlin)?
 
