@@ -104,9 +104,9 @@ Requests → Old System (read/write)
 ```
 Day 1:  [Old 100%]
 Week 1: [Old 90%, New 10%] (Auth migrated)
-Week 4: [Old 70%, New 30%] (Auth + Properties)
-Week 8: [Old 30%, New 70%] (Most features)
-Week 12: [Old 0%, New 100%] (Complete)
+Week 3: [Old 70%, New 30%] (Auth + Properties)
+Week 5: [Old 30%, New 70%] (Most features)
+Week 8: [Old 0%, New 100%] (Complete)
 ```
 
 **Pros**:
@@ -159,33 +159,41 @@ Named after the strangler fig tree that gradually grows around and replaces its 
 └──────────────┘        └──────────────┘
 ```
 
-### Feature-by-Feature Migration
+### Feature-by-Feature Migration (8 Weeks)
 
-**Week 1-2**: Infrastructure Setup
+**Week 1**: Infrastructure Setup
 - Deploy GKE cluster
 - Set up Cloud SQL
 - Deploy API Gateway with routing rules
 
-**Week 3-4**: Authentication Migration
+**Week 2-3**: Authentication Migration
 - Build Go auth service
 - Deploy alongside Express
 - Route `/auth/*` to Go service
 - Keep user sessions compatible
 
-**Week 5-6**: Properties Service
+**Week 4**: Properties Service
 - Build Go properties service
 - Migrate property CRUD endpoints
 - Route `/api/properties/*` to Go
 
-**Week 7-8**: Remaining Services
-- Migrate booking, payment, etc.
+**Week 5-6**: Remaining Backend Services
+- Migrate booking, payment, platform services
 - Gradually shift traffic
+
+**Week 7**: Frontend Migration
+- Deploy Next.js alongside React
+- Migrate key pages
+
+**Week 8**: Final Testing & Decommission
+- Complete traffic migration
+- Decommission old system
 
 ---
 
 ## Phase-by-Phase Migration Plan
 
-### Phase 0: Preparation (Week 1-2)
+### Phase 0: Preparation (Week 1)
 
 #### Infrastructure Setup
 
@@ -267,7 +275,7 @@ data:
 
 ---
 
-### Phase 1: Backend Migration (Week 3-8)
+### Phase 1: Backend Migration (Week 2-6)
 
 #### Step 1: Migrate Authentication Service
 
@@ -731,7 +739,7 @@ func (s *Service) GetAll(ctx context.Context, filters PropertyFilters) ([]Proper
 
 ---
 
-### Phase 2: Frontend Migration (Week 9-12)
+### Phase 2: Frontend Migration (Week 7)
 
 #### Parallel Frontend Deployment
 
@@ -797,18 +805,18 @@ spec:
               number: 80
 ```
 
-**4. Migrate pages incrementally**
+**4. Migrate pages incrementally (Week 7)**
 
-Week 9: Property listing page
-Week 10: Property detail page
-Week 11: User dashboard
-Week 12: Manager dashboard
+Day 1-2: Property listing page
+Day 3: Property detail page
+Day 4-5: User dashboard
+Day 6-7: Manager dashboard
 
 **5. Update DNS when complete**
 
 ---
 
-### Phase 3: Database Migration (Parallel to Backend Migration)
+### Phase 3: Database Migration (Week 1-6, Parallel to Backend Migration)
 
 #### Data Synchronization Strategy
 
@@ -1123,31 +1131,39 @@ gcloud sql backups restore [BACKUP_ID] \
 
 ## Timeline Summary
 
-### Conservative Timeline (18 weeks)
+### 8-Week Migration Plan (2 Months)
 
 ```
-Week 1-2:   Infrastructure setup
-Week 3-4:   Auth service migration
-Week 5-6:   Properties service migration
-Week 7-8:   Booking service migration
-Week 9-10:  Payment service migration
-Week 11-12: Platform service migration
-Week 13-14: Frontend migration
-Week 15-16: Testing and optimization
-Week 17-18: Decommission old system
+Week 1:    Infrastructure setup (GKE, Cloud SQL, API Gateway)
+Week 2-3:  Auth service migration (Go service, gradual traffic rollout)
+Week 4:    Properties service migration (Go service, CRUD endpoints)
+Week 5:    Booking + Payment services migration
+Week 6:    Platform service + remaining backend APIs
+Week 7:    Frontend migration (Next.js deployment, page migration)
+Week 8:    Final testing, traffic cutover, decommission old system
 ```
 
-### Aggressive Timeline (12 weeks)
+### Daily Breakdown for Critical Weeks
 
-```
-Week 1:     Infrastructure setup
-Week 2-3:   Auth + Properties services
-Week 4-5:   Booking + Payment services
-Week 6-7:   Platform service + Frontend start
-Week 8-9:   Frontend migration complete
-Week 10-11: Testing and traffic migration
-Week 12:    Decommission old system
-```
+**Week 1 (Infrastructure)**:
+- Day 1-2: GCP project setup, enable APIs
+- Day 3-4: GKE cluster creation, Cloud SQL setup
+- Day 5: API Gateway deployment, routing rules
+- Day 6-7: Testing and verification
+
+**Week 2-3 (Auth Service)**:
+- Week 2 Day 1-3: Build Go auth service
+- Week 2 Day 4-5: Deploy to GKE, integration testing
+- Week 2 Day 6-7: 10% traffic rollout
+- Week 3 Day 1-2: Monitor, 25% traffic
+- Week 3 Day 3-4: 50% traffic
+- Week 3 Day 5-7: 100% traffic, monitoring
+
+**Week 8 (Final Migration)**:
+- Day 1-2: Complete traffic cutover (100% to new system)
+- Day 3-4: Monitor and stabilize
+- Day 5-6: Decommission old Express server
+- Day 7: Post-migration review, documentation
 
 ---
 

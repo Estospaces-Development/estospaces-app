@@ -95,7 +95,7 @@ Complete execution guide for migrating from current to target tech stack.
 
 **When to use**: When you're ready to start the actual migration from old to new stack
 
-**Timeline**: 12-18 weeks depending on team size and aggressiveness
+**Timeline**: 8 weeks (2 months aggressive plan)
 
 ---
 
