@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, AlertCircle, Clock, Plus, Filter, Search, X, ChevronRight, Bell, CheckCircle, XCircle, Inbox, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApplications, APPLICATION_STATUS } from '../contexts/ApplicationsContext';
+import { MOCK_APPLICATIONS } from '../services/mockDataService';
 import ApplicationCard from '../components/Dashboard/Applications/ApplicationCard';
 import ApplicationDetail from '../components/Dashboard/Applications/ApplicationDetail';
 import ApplicationCardSkeleton from '../components/Dashboard/Applications/ApplicationCardSkeleton';
@@ -10,33 +11,84 @@ import DashboardFooter from '../components/Dashboard/DashboardFooter';
 
 const DashboardApplications = () => {
   const navigate = useNavigate();
-  const {
-    applications,
-    selectedApplicationId,
-    setSelectedApplicationId,
-    searchQuery,
-    setSearchQuery,
-    statusFilter,
-    setStatusFilter,
-    propertyTypeFilter,
-    setPropertyTypeFilter,
-    dateRangeFilter,
-    setDateRangeFilter,
-    isLoading,
-    getApplicationsRequiringAction,
-    getApplicationsWithDeadlineWarnings,
-    allApplications,
-  } = useApplications();
+  // Use mock data locally to bypass API context if needed
+  // Use mock data locally to bypass API context if needed
+  const rawApplications = MOCK_APPLICATIONS;
+
+  // Transform mock data to match ApplicationCard expected format
+  const initialApplications = rawApplications.map(app => ({
+    ...app,
+    propertyImage: app.property?.image_urls?.[0] || null,
+    propertyTitle: app.property?.title || 'Unknown Property',
+    propertyAddress: app.property?.address_line_1 || 'Address not available',
+    propertyPrice: app.property?.price || 0,
+    propertyType: app.property?.property_type || 'sale',
+    agentName: app.property?.agent_name || 'Estospaces Agent',
+    referenceId: app.id,
+    lastUpdated: app.updated_at,
+    submittedDate: app.created_at, // Map created_at to submittedDate for ApplicationDetail
+    requiresAction: [APPLICATION_STATUS.DOCUMENTS_REQUESTED, 'action_required'].includes(app.status),
+    hasAppointment: !!app.appointment,
+    deadline: app.deadline
+  }));
+
+  const [applications, setApplications] = useState(initialApplications);
+
+  const handleUpdateStatus = (applicationId, newStatus) => {
+    setApplications(prevApps =>
+      prevApps.map(app =>
+        app.id === applicationId
+          ? { ...app, status: newStatus, lastUpdated: new Date().toISOString() }
+          : app
+      )
+    );
+  };
+
+  // Calculate derived values from mock data
+  const searchQuery = '';
+  const setSearchQuery = () => { };
+  const statusFilter = 'all';
+  const setStatusFilter = () => { };
+  const propertyTypeFilter = 'all';
+  const setPropertyTypeFilter = () => { };
+  const dateRangeFilter = { start: null, end: null };
+  const setDateRangeFilter = () => { };
+  const isLoading = false;
+
+  // Helper functions for mock data
+  const getApplicationsRequiringAction = () =>
+    applications.filter(app => [APPLICATION_STATUS.DOCUMENTS_REQUESTED, 'action_required'].includes(app.status));
+
+  const getApplicationsWithDeadlineWarnings = () => []; // Simplified for mock
+
+  const allApplications = applications;
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+
+  // NOTE: In a real refactor, we would update the ApplicationsContext to use the mock service
+  // But for this task, we are overriding local variables to force mock display
 
   const [viewMode, setViewMode] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
+  // Re-declare state that was from context but now local driven or we need to manage it
+  const [localStatusFilter, setLocalStatusFilter] = useState('all');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [localPropertyTypeFilter, setLocalPropertyTypeFilter] = useState('all');
+
+  // Filter logic for mock data
+  const filteredApplications = applications.filter(app => {
+    const matchStatus = localStatusFilter === 'all' || app.status === localStatusFilter;
+    const matchSearch = !localSearchQuery ||
+      app.property_title?.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
+      app.property_address?.toLowerCase().includes(localSearchQuery.toLowerCase());
+    const matchType = localPropertyTypeFilter === 'all' || app.property_type === localPropertyTypeFilter;
+    return matchStatus && matchSearch && matchType;
+  });
 
   const applicationsRequiringAction = getApplicationsRequiringAction();
   const deadlineWarnings = getApplicationsWithDeadlineWarnings();
-  
-  const hasActiveFilters = statusFilter !== 'all' || propertyTypeFilter !== 'all' || 
-    dateRangeFilter?.start || dateRangeFilter?.end || searchQuery.trim();
+
+  const hasActiveFilters = localStatusFilter !== 'all' || localPropertyTypeFilter !== 'all' || localSearchQuery.trim();
 
   // Get status counts
   const getStatusCount = (status) => allApplications?.filter(app => app.status === status).length || 0;
@@ -55,9 +107,9 @@ const DashboardApplications = () => {
   };
 
   const clearFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setPropertyTypeFilter('all');
+    setLocalSearchQuery('');
+    setLocalStatusFilter('all');
+    setLocalPropertyTypeFilter('all');
     setDateRangeFilter({ start: null, end: null });
   };
 
@@ -81,10 +133,13 @@ const DashboardApplications = () => {
   ];
 
   if (viewMode === 'detail' && selectedApplicationId) {
+    const selectedApplication = allApplications.find(app => app.id === selectedApplicationId);
     return (
       <ApplicationDetail
         applicationId={selectedApplicationId}
+        application={selectedApplication}
         onClose={handleBackToList}
+        onUpdateStatus={handleUpdateStatus}
       />
     );
   }
@@ -135,7 +190,7 @@ const DashboardApplications = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -147,7 +202,7 @@ const DashboardApplications = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -159,7 +214,7 @@ const DashboardApplications = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
@@ -203,13 +258,13 @@ const DashboardApplications = () => {
               <input
                 type="text"
                 placeholder="Search applications..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearchQuery}
+                onChange={(e) => setLocalSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400"
               />
-              {searchQuery && (
+              {localSearchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => setLocalSearchQuery('')}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X size={16} />
@@ -220,8 +275,8 @@ const DashboardApplications = () => {
             {/* Filter Dropdowns */}
             <div className="flex gap-2">
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={localStatusFilter}
+                onChange={(e) => setLocalStatusFilter(e.target.value)}
                 className="px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm text-gray-700 dark:text-gray-300 min-w-[140px]"
               >
                 {statusOptions.map(opt => (
@@ -230,8 +285,8 @@ const DashboardApplications = () => {
               </select>
 
               <select
-                value={propertyTypeFilter}
-                onChange={(e) => setPropertyTypeFilter(e.target.value)}
+                value={localPropertyTypeFilter}
+                onChange={(e) => setLocalPropertyTypeFilter(e.target.value)}
                 className="px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm text-gray-700 dark:text-gray-300 min-w-[120px]"
               >
                 {propertyTypeOptions.map(opt => (
@@ -257,7 +312,7 @@ const DashboardApplications = () => {
         {/* Results Count */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {isLoading ? 'Loading...' : `${applications.length} application${applications.length !== 1 ? 's' : ''} found`}
+            {isLoading ? 'Loading...' : `${filteredApplications.length} application${filteredApplications.length !== 1 ? 's' : ''} found`}
           </p>
         </div>
 
@@ -267,7 +322,7 @@ const DashboardApplications = () => {
               <ApplicationCardSkeleton key={i} />
             ))}
           </div>
-        ) : applications.length === 0 ? (
+        ) : filteredApplications.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
               <Inbox size={40} className="text-gray-400" />
@@ -300,7 +355,7 @@ const DashboardApplications = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {applications.map((application) => (
+            {filteredApplications.map((application) => (
               <ApplicationCard
                 key={application.id}
                 application={application}

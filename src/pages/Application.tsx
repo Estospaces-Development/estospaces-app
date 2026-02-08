@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import SummaryCard from '../components/ui/SummaryCard';
 import BackButton from '../components/ui/BackButton';
@@ -6,20 +7,20 @@ import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { 
-  notifyApplicationApproved, 
+import {
+  notifyApplicationApproved,
   notifyApplicationRejected,
   notifyApplicationSubmitted,
   notifyDocumentsRequested
 } from '../services/notificationsService';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  FileCheck, 
-  Plus, 
-  Filter, 
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  FileCheck,
+  Plus,
+  Filter,
   Search,
   Eye,
   Edit,
@@ -82,7 +83,143 @@ const Application = () => {
       return;
     }
 
-    if (!isSupabaseAvailable()) {
+    if (!isSupabaseAvailable() || user?.id?.startsWith('mock-')) {
+      // Use mock data when Supabase is not available
+      const mockApplications: Application[] = [
+        {
+          id: 'mock-1',
+          name: 'Sarah Johnson',
+          email: 'sarah.johnson@email.com',
+          phone: '+44 7700 900123',
+          propertyInterested: 'Modern 2BR Flat in Canary Wharf',
+          status: 'New Application',
+          score: 92,
+          budget: '£2,200/mo',
+          lastContact: '2 hours ago',
+        },
+        {
+          id: 'mock-2',
+          name: 'Michael Chen',
+          email: 'michael.chen@email.com',
+          phone: '+44 7700 900456',
+          propertyInterested: 'Luxury 3BR Apartment in Shoreditch',
+          status: 'In Review',
+          score: 88,
+          budget: '£3,500/mo',
+          lastContact: '1 day ago',
+        },
+        {
+          id: 'mock-3',
+          name: 'Emma Williams',
+          email: 'emma.williams@email.com',
+          phone: '+44 7700 900789',
+          propertyInterested: 'Spacious Studio in Camden',
+          status: 'Appointment Booked',
+          score: 85,
+          budget: '£1,800/mo',
+          lastContact: '3 hours ago',
+        },
+        {
+          id: 'mock-4',
+          name: 'David Brown',
+          email: 'david.brown@email.com',
+          phone: '+44 7700 900321',
+          propertyInterested: 'Family Home in Islington',
+          status: 'Approved',
+          score: 95,
+          budget: '£4,200/mo',
+          lastContact: '5 days ago',
+        },
+        {
+          id: 'mock-5',
+          name: 'Sophie Anderson',
+          email: 'sophie.anderson@email.com',
+          phone: '+44 7700 900654',
+          propertyInterested: 'Penthouse in Mayfair',
+          status: 'Viewing Scheduled',
+          score: 90,
+          budget: '£6,500/mo',
+          lastContact: '1 day ago',
+        },
+        {
+          id: 'mock-6',
+          name: 'James Taylor',
+          email: 'james.taylor@email.com',
+          phone: '+44 7700 900987',
+          propertyInterested: '2BR Flat in Notting Hill',
+          status: 'Documents Required',
+          score: 78,
+          budget: '£2,800/mo',
+          lastContact: '2 days ago',
+        },
+        {
+          id: 'mock-7',
+          name: 'Olivia Martinez',
+          email: 'olivia.martinez@email.com',
+          phone: '+44 7700 900147',
+          propertyInterested: '1BR Apartment in Kensington',
+          status: 'New Application',
+          score: 82,
+          budget: '£2,100/mo',
+          lastContact: '4 hours ago',
+        },
+        {
+          id: 'mock-8',
+          name: 'Robert Wilson',
+          email: 'robert.wilson@email.com',
+          phone: '+44 7700 900258',
+          propertyInterested: '3BR House in Hampstead',
+          status: 'Verification',
+          score: 87,
+          budget: '£5,200/mo',
+          lastContact: '3 days ago',
+        },
+        {
+          id: 'mock-9',
+          name: 'Isabella Garcia',
+          email: 'isabella.garcia@email.com',
+          phone: '+44 7700 900369',
+          propertyInterested: 'Studio in Covent Garden',
+          status: 'In Review',
+          score: 80,
+          budget: '£1,950/mo',
+          lastContact: '1 day ago',
+        },
+        {
+          id: 'mock-10',
+          name: 'Thomas Lee',
+          email: 'thomas.lee@email.com',
+          phone: '+44 7700 900741',
+          propertyInterested: '2BR Flat in Greenwich',
+          status: 'Approved',
+          score: 91,
+          budget: '£2,400/mo',
+          lastContact: '6 days ago',
+        },
+        {
+          id: 'mock-11',
+          name: 'Charlotte White',
+          email: 'charlotte.white@email.com',
+          phone: '+44 7700 900852',
+          propertyInterested: 'Luxury 4BR in Chelsea',
+          status: 'Viewing Completed',
+          score: 94,
+          budget: '£7,800/mo',
+          lastContact: '2 days ago',
+        },
+        {
+          id: 'mock-12',
+          name: 'Daniel Harris',
+          email: 'daniel.harris@email.com',
+          phone: '+44 7700 900963',
+          propertyInterested: '1BR Apartment in Clapham',
+          status: 'New Application',
+          score: 76,
+          budget: '£1,700/mo',
+          lastContact: 'Just now',
+        },
+      ];
+      setApplications(mockApplications);
       setIsLoading(false);
       return;
     }
@@ -134,12 +271,12 @@ const Application = () => {
         const appData = item.application_data || {};
         const personalInfo = appData.personal_info || {};
         const property = item.properties || {};
-        
+
         // Use application data for applicant information
         const applicantName = personalInfo.full_name || 'Unknown Applicant';
         const applicantEmail = personalInfo.email || 'No email provided';
         const applicantPhone = personalInfo.phone || '';
-        
+
         // Calculate time since last update
         const lastUpdate = new Date(item.updated_at || item.created_at);
         const now = new Date();
@@ -185,7 +322,7 @@ const Application = () => {
           propertyId: item.property_id,
           status: statusMap[item.status] || 'New Application',
           score: Math.min(score, 100),
-          budget: property.price 
+          budget: property.price
             ? `£${property.price.toLocaleString()}${property.listing_type === 'rent' ? '/mo' : ''}`
             : 'Not specified',
           lastContact,
@@ -208,6 +345,7 @@ const Application = () => {
         duration: 5000,
       });
       setApplications([]); // Set empty array on error
+
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
@@ -259,24 +397,24 @@ const Application = () => {
   }, [user?.id]); // Only re-subscribe when user.id changes
 
   const filteredApplications = applications.filter((app) => {
-    const matchesSearch = 
+    const matchesSearch =
       app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.propertyInterested.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-    
-    const matchesScore = scoreFilter === 'all' || 
+
+    const matchesScore = scoreFilter === 'all' ||
       (scoreFilter === 'high' && app.score >= 90) ||
       (scoreFilter === 'medium' && app.score >= 70 && app.score < 90) ||
       (scoreFilter === 'low' && app.score < 70);
-    
+
     return matchesSearch && matchesStatus && matchesScore;
   });
 
   const handleAddApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // For managers: Create application in database
     // Note: This creates an application but requires a user_id
     // In a real scenario, managers would convert leads to applications
@@ -320,7 +458,7 @@ const Application = () => {
 
       // Refresh applications list
       await fetchApplications();
-      
+
       setShowAddModal(false);
       setNewApplication({ name: '', email: '', propertyInterested: '', budget: '', notes: '' });
     } catch (err: any) {
@@ -350,8 +488,8 @@ const Application = () => {
 
     if (!isSupabaseAvailable()) {
       // Fallback to local state update if database not available
-      setApplications(applications.map(app => 
-        app.id === editingApplication.id 
+      setApplications(applications.map(app =>
+        app.id === editingApplication.id
           ? { ...app, name: newApplication.name, email: newApplication.email, propertyInterested: newApplication.propertyInterested, budget: newApplication.budget }
           : app
       ));
@@ -407,8 +545,8 @@ const Application = () => {
 
   const handleDeleteApplication = async (id: string) => {
     if (!isSupabaseAvailable()) {
-    setApplications(applications.filter(app => app.id !== id));
-    setShowDeleteConfirm(null);
+      setApplications(applications.filter(app => app.id !== id));
+      setShowDeleteConfirm(null);
       return;
     }
 
@@ -419,10 +557,10 @@ const Application = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       // Refresh applications list
       await fetchApplications();
-      
+
       toast.success('Application deleted successfully', {
         title: 'Deleted',
         duration: 3000,
@@ -457,7 +595,7 @@ const Application = () => {
     const dbStatus = statusMap[newStatus] || 'pending';
 
     if (!isSupabaseAvailable()) {
-      setApplications(applications.map(app => 
+      setApplications(applications.map(app =>
         app.id === id ? { ...app, status: newStatus } : app
       ));
       return;
@@ -466,14 +604,14 @@ const Application = () => {
     try {
       // First get the application to get the user_id
       const application = applications.find(app => app.id === id);
-      
+
       const { error } = await supabase
         .from('applied_properties')
         .update({ status: dbStatus, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
-      
+
       // Refresh applications list
       await fetchApplications();
 
@@ -615,7 +753,7 @@ const Application = () => {
   }
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Page Header */}
       <div>
         <div className="mb-4">
@@ -626,7 +764,7 @@ const Application = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <SummaryCard
           title="New Applications"
           value={applications.filter(a => a.status === 'New Application').length}
@@ -661,7 +799,7 @@ const Application = () => {
 
       {/* Search and Actions */}
       <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row flex-wrap gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -808,30 +946,29 @@ const Application = () => {
                       className="rounded border-gray-300 text-primary focus:ring-primary"
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-normal min-w-[200px]">
                     <div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">{app.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{app.email}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 break-all">{app.email}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-normal min-w-[250px]">
                     <div className="text-sm text-gray-900 dark:text-white">{app.propertyInterested}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <select
                       value={app.status}
                       onChange={(e) => handleUpdateStatus(app.id, e.target.value)}
-                      className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${
-                        app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                      className={`px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
                         app.status === 'Appointment Booked' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400' :
-                        app.status === 'Viewing Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400' :
-                        app.status === 'Viewing Completed' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400' :
-                        app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                        app.status === 'Verification' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
-                        app.status === 'Approved' || app.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                        app.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                      }`}
+                          app.status === 'Viewing Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400' :
+                            app.status === 'Viewing Completed' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400' :
+                              app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                                app.status === 'Verification' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                                  app.status === 'Approved' || app.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                    app.status === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
+                                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                        }`}
                     >
                       <option value="New Application">New Application</option>
                       <option value="Appointment Booked">Appointment Booked</option>
@@ -909,9 +1046,9 @@ const Application = () => {
       </div>
 
       {/* Add New Application Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      {showAddModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scaleIn">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Add New Application</h3>
               <button
@@ -1007,13 +1144,14 @@ const Application = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Application Modal */}
-      {showEditModal && editingApplication && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      {showEditModal && editingApplication && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scaleIn">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Edit Application</h3>
               <button
@@ -1097,16 +1235,17 @@ const Application = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* View Application Modal */}
       {showViewModal && (() => {
         const app = applications.find(a => a.id === showViewModal);
         if (!app) return null;
-        return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+        return createPortal(
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-2xl animate-scaleIn">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Application Details</h3>
                 <button
@@ -1131,12 +1270,11 @@ const Application = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                    app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${app.status === 'New Application' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
                     app.status === 'In Review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                    app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                    'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                  }`}>
+                      app.status === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                        'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                    }`}>
                     {app.status}
                   </span>
                 </div>
@@ -1162,14 +1300,15 @@ const Application = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+      {showDeleteConfirm && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-2xl animate-scaleIn">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Delete Application</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete this application? This action cannot be undone.
@@ -1189,7 +1328,8 @@ const Application = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

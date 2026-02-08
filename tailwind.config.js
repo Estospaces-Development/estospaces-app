@@ -17,8 +17,8 @@ export default {
       fontFamily: {
         // Default: Inter for user dashboard
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
-        // Manager dashboard: Arial/Helvetica
-        manager: ['Arial', 'Helvetica', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+        // Manager dashboard: Plus Jakarta Sans for a premium feel
+        manager: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
         serif: ['Cormorant Garamond', 'serif'],
       },
       fontSize: {

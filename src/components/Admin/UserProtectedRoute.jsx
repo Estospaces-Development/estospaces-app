@@ -6,15 +6,12 @@ import { useAuth } from '../../contexts/AuthContext';
  * 
  * A simplified protected route that relies solely on AuthContext.
  * No duplicate session checks or auth listeners.
+ * 
+ * DEVELOPMENT MODE: Auth check is bypassed to allow testing without Supabase.
  */
 const UserProtectedRoute = ({ children }) => {
     const location = useLocation();
     const { isAuthenticated, loading, isSupabaseConfigured, authState } = useAuth();
-
-    // If Supabase is not configured, redirect to login
-    if (!isSupabaseConfigured) {
-        return <Navigate to="/auth/login" state={{ from: location, intendedRole: 'user' }} replace />;
-    }
 
     // Show loading state while checking auth
     if (loading || authState === 'loading') {

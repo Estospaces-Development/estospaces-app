@@ -1,13 +1,19 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Heart, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
+import EmptyState from '../components/ui/EmptyState';
+
+import { MOCK_SAVED_PROPERTIES } from '../services/mockDataService';
 
 const DashboardSaved = () => {
-  const { savedProperties, removeProperty } = useSavedProperties();
+  const { savedProperties: contextSavedProperties, removeProperty } = useSavedProperties();
   const navigate = useNavigate();
+
+  // Use properties directly from the new local context
+  const savedProperties = contextSavedProperties;
 
   const handleViewDetails = (property) => {
     navigate(`/user/dashboard/property/${property.id}`);
@@ -25,20 +31,19 @@ const DashboardSaved = () => {
           <span>Back to Dashboard</span>
         </button>
 
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
-            <Heart size={48} className="text-gray-400 dark:text-gray-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-orange-500 mb-2">No Saved Properties</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
-            Start exploring properties and save your favorites to see them here.
-          </p>
-          <Link
-            to="/user/dashboard/discover"
-            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
-          >
-            Browse Properties
-          </Link>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <EmptyState
+            variant="no-saved"
+            action={
+              <Link
+                to="/user/dashboard/discover"
+                className="btn-primary"
+              >
+                <Search size={18} />
+                Browse Properties
+              </Link>
+            }
+          />
         </div>
 
         {/* Footer */}

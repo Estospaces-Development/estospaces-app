@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, Home, User, Briefcase, DollarSign, Calendar, Phone, Mail, Building2, FileText, CheckCircle, Search, ArrowRight, ArrowLeft, Sparkles, MapPin, Bed, Bath, Edit2 } from 'lucide-react';
 import { supabase, isSupabaseAvailable } from '../../../lib/supabase';
 import { useApplications } from '../../../contexts/ApplicationsContext';
@@ -321,8 +322,8 @@ const NewApplicationModal = ({ isOpen, onClose, preSelectedProperty = null }) =>
 
   const stepLabels = ['Select Property', 'Your Details', 'Review & Submit'];
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fadeIn">
       <div 
         className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
         style={{ animation: 'scaleIn 0.2s ease-out' }}
@@ -937,7 +938,8 @@ const NewApplicationModal = ({ isOpen, onClose, preSelectedProperty = null }) =>
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

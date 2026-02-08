@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Heart, 
-  Bookmark, 
-  Bed, 
-  Bath, 
-  Maximize, 
-  MapPin, 
-  Star, 
+import {
+  Heart,
+  Bookmark,
+  Bed,
+  Bath,
+  Maximize,
+  MapPin,
+  Star,
   Share2,
   ChevronLeft,
   ChevronRight,
@@ -37,7 +37,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
   const createApplication = applicationsContext?.createApplication;
   const allApplications = applicationsContext?.allApplications || [];
   const navigate = useNavigate();
-  
+
   // Check saved status from SavedPropertiesContext (source of truth)
   const isSaved = isPropertySaved(property.id);
   // Check if already applied to this property
@@ -62,25 +62,25 @@ const PropertyCard = ({ property, onViewDetails }) => {
   const handleSave = async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     console.log('[PropertyCard] Save button clicked for property:', property.id, property.title);
     console.log('[PropertyCard] Current isSaved status:', isSaved);
-    
+
     const wasAlreadySaved = isSaved;
     setIsSaving(true);
-    
+
     try {
       // Toggle property in SavedPropertiesContext (handles both local and Supabase)
       console.log('[PropertyCard] Calling toggleProperty...');
       await toggleProperty(property);
       console.log('[PropertyCard] toggleProperty completed');
-      
+
       // Show toast notification
       const message = wasAlreadySaved ? 'Property removed from saved' : 'Property saved successfully!';
       console.log('[PropertyCard] Showing toast:', message);
       setSaveToastMessage(message);
       setShowSaveToast(true);
-      
+
       // Auto-hide toast after 3 seconds
       setTimeout(() => {
         setShowSaveToast(false);
@@ -126,7 +126,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
       };
 
       const result = await createApplication(applicationData);
-      
+
       if (result.success) {
         setShowApplySuccess(true);
         // Navigate to applications after brief delay
@@ -146,11 +146,12 @@ const PropertyCard = ({ property, onViewDetails }) => {
   // Handle images - support multiple field name variations from database
   // Priority: images (array) -> image (single) -> image_url -> thumbnail_url -> photo
   const getPropertyImages = () => {
-    // If images array exists and is not empty
-    if (property.images && Array.isArray(property.images) && property.images.length > 0) {
-      return property.images.slice(0, 4);
+    // If images array exists and is not empty (support both images and image_urls)
+    const imagesList = property.images || property.image_urls;
+    if (imagesList && Array.isArray(imagesList) && imagesList.length > 0) {
+      return imagesList.slice(0, 4);
     }
-    
+
     // If images is a JSON string, parse it
     if (typeof property.images === 'string') {
       try {
@@ -165,29 +166,29 @@ const PropertyCard = ({ property, onViewDetails }) => {
         }
       }
     }
-    
+
     // Fallback to other possible field names
-    const singleImage = property.image || property.image_url || property.thumbnail_url || 
-                        property.photo || property.main_image;
-    
+    const singleImage = property.image || property.image_url || property.thumbnail_url ||
+      property.photo || property.main_image;
+
     if (singleImage) {
       return [singleImage].filter(Boolean);
     }
-    
+
     return [];
   };
-  
+
   const images = getPropertyImages();
   const hasMultipleImages = images.length > 1;
 
   const nextImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   const formatPrice = (price) => {
@@ -215,18 +216,17 @@ const PropertyCard = ({ property, onViewDetails }) => {
   // Toast component to be rendered via portal
   const ToastNotification = () => {
     if (!showSaveToast) return null;
-    
+
     return ReactDOM.createPortal(
-      <div 
+      <div
         className="fixed bottom-8 left-1/2 z-[99999] pointer-events-auto"
         style={{ transform: 'translateX(-50%)' }}
       >
-        <div 
-          className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl ${
-            saveToastMessage.includes('removed') || saveToastMessage.includes('Failed')
-              ? 'bg-gray-900 text-white'
-              : 'bg-green-500 text-white'
-          }`}
+        <div
+          className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl ${saveToastMessage.includes('removed') || saveToastMessage.includes('Failed')
+            ? 'bg-gray-900 text-white'
+            : 'bg-green-500 text-white'
+            }`}
           style={{
             animation: 'slideUp 0.3s ease-out',
             boxShadow: '0 25px 50px rgba(0,0,0,0.4)'
@@ -260,13 +260,13 @@ const PropertyCard = ({ property, onViewDetails }) => {
       {/* Save Toast Notification - Rendered via Portal */}
       <ToastNotification />
 
-      <div className="bg-white dark:bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 hover:-translate-y-1.5 hover:border-orange-200 dark:hover:border-orange-500/30 transition-all duration-300 group cursor-pointer">
         {/* Image Carousel */}
-        <div className="relative h-56 bg-gray-200 overflow-hidden">
-          {validImages.length > 0 ? (
+        <div className="relative h-56 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+          {images.length > 0 ? (
             <>
               <img
-                src={validImages[currentImageIndex]}
+                src={images[currentImageIndex]}
                 alt={property.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
@@ -275,7 +275,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                   e.target.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
                 }}
               />
-              
+
               {/* Image Navigation */}
               {hasMultipleImages && (
                 <>
@@ -291,21 +291,20 @@ const PropertyCard = ({ property, onViewDetails }) => {
                   >
                     <ChevronRight size={16} className="text-gray-700" />
                   </button>
-                  
+
                   {/* Image Dots */}
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {validImages.map((_, index) => (
+                    {images.map((_, index) => (
                       <button
                         key={index}
                         onClick={(e) => {
                           e.stopPropagation();
                           setCurrentImageIndex(index);
                         }}
-                        className={`h-1.5 rounded-full transition-all ${
-                          index === currentImageIndex
-                            ? 'bg-white w-4'
-                            : 'bg-white/50 w-1.5 hover:bg-white/75'
-                        }`}
+                        className={`h-1.5 rounded-full transition-all ${index === currentImageIndex
+                          ? 'bg-white w-4'
+                          : 'bg-white/50 w-1.5 hover:bg-white/75'
+                          }`}
                       />
                     ))}
                   </div>
@@ -314,20 +313,19 @@ const PropertyCard = ({ property, onViewDetails }) => {
             </>
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-              <span className="text-gray-500">No Image</span>
+              <span className="text-gray-500 font-manager font-medium">No Image</span>
             </div>
           )}
 
           {/* Property Type Badge */}
           {property.type && (
             <div className="absolute top-3 left-3">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${
-                property.type?.toLowerCase() === 'rent' 
-                  ? 'bg-blue-500 text-white' 
-                  : property.type?.toLowerCase() === 'sale' 
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white/95 backdrop-blur-sm text-gray-800'
-              }`}>
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-manager font-bold shadow-sm ${property.type?.toLowerCase() === 'rent'
+                ? 'bg-blue-500 text-white'
+                : property.type?.toLowerCase() === 'sale'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white/95 backdrop-blur-sm text-gray-800'
+                }`}>
                 {property.type === 'Sale' ? 'For Sale' : property.type === 'Rent' ? 'For Rent' : property.type}
               </span>
             </div>
@@ -338,11 +336,10 @@ const PropertyCard = ({ property, onViewDetails }) => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className={`p-2 rounded-full backdrop-blur-sm transition-all ${
-                isSaved
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white/90 dark:bg-white/90 text-gray-700 dark:text-gray-800 hover:bg-white dark:hover:bg-white'
-              } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`p-2 rounded-full backdrop-blur-sm transition-all ${isSaved
+                ? 'bg-red-500 text-white'
+                : 'bg-white/90 dark:bg-white/90 text-gray-700 dark:text-gray-800 hover:bg-white dark:hover:bg-white'
+                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label={isSaved ? 'Remove from saved' : 'Save property'}
               title={isSaved ? 'Saved' : 'Save property'}
             >
@@ -366,7 +363,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
           {/* Price */}
           <div className="absolute bottom-3 left-3">
-            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-semibold text-lg">
+            <span className="bg-white/95 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-md font-manager font-bold text-lg">
               {formatPrice(property.price)}
             </span>
           </div>
@@ -374,29 +371,29 @@ const PropertyCard = ({ property, onViewDetails }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-900 mb-1 line-clamp-1">{property.title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-700 mb-3 flex items-center gap-1">
-            <MapPin size={14} className="text-gray-400 dark:text-gray-600" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{property.title}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+            <MapPin size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
             <span className="line-clamp-1">{property.location}</span>
           </p>
 
           {/* Specs */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-700 mb-3">
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
             {property.beds && (
               <div className="flex items-center gap-1">
-                <Bed size={16} className="text-gray-400 dark:text-gray-600" />
+                <Bed size={16} className="text-gray-400 dark:text-gray-500" />
                 <span>{property.beds} Bed{property.beds > 1 ? 's' : ''}</span>
               </div>
             )}
             {property.baths && (
               <div className="flex items-center gap-1">
-                <Bath size={16} className="text-gray-400 dark:text-gray-600" />
-                <span>{property.baths} Bath{property.baths > 1 ? 'room' : ''}</span>
+                <Bath size={16} className="text-gray-400 dark:text-gray-500" />
+                <span>{property.baths} Bath{property.baths > 1 ? 's' : ''}</span>
               </div>
             )}
             {property.area && (
               <div className="flex items-center gap-1">
-                <Maximize size={16} className="text-gray-400 dark:text-gray-600" />
+                <Maximize size={16} className="text-gray-400 dark:text-gray-500" />
                 <span>{property.area} sqft</span>
               </div>
             )}
@@ -438,17 +435,17 @@ const PropertyCard = ({ property, onViewDetails }) => {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleViewDetails}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+              className="flex-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
             >
               View Details
             </button>
-            
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowVirtualTour(true);
               }}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-700 dark:text-gray-800 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-all duration-200"
             >
               Virtual Tour
             </button>
@@ -457,7 +454,7 @@ const PropertyCard = ({ property, onViewDetails }) => {
                 e.stopPropagation();
                 setShowShareModal(true);
               }}
-              className="p-2 border border-gray-300 dark:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-700 dark:text-gray-800 rounded-lg transition-colors"
+              className="p-2.5 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl transition-all duration-200"
               title="Share property"
             >
               <Share2 size={16} />
@@ -485,5 +482,5 @@ const PropertyCard = ({ property, onViewDetails }) => {
   );
 };
 
-export default PropertyCard;
+export default React.memo(PropertyCard);
 

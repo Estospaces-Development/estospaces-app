@@ -20,12 +20,12 @@ interface ProfileData {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { 
-    user, 
-    profile, 
-    loading, 
-    profileLoading, 
-    error, 
+  const {
+    user,
+    profile,
+    loading,
+    profileLoading,
+    error,
     isAuthenticated,
     isSupabaseConfigured,
     updateProfile,
@@ -110,7 +110,36 @@ const Profile = () => {
   };
 
   const handleAvatarUpload = async () => {
-    if (!selectedAvatarFile || !user || !isSupabaseAvailable() || !supabase) {
+    if (!selectedAvatarFile || !user) {
+      return;
+    }
+
+    // Handle mock user avatar upload
+    if (user.id.startsWith('mock-')) {
+      setUploadingAvatar(true);
+      try {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Use the data URL as the avatar URL for mock users
+        if (avatarPreview) {
+          const updateResult = await updateProfile({ avatar_url: avatarPreview });
+          if (!updateResult.error) {
+            setFormData(prev => ({ ...prev, avatar_url: avatarPreview }));
+            setSelectedAvatarFile(null);
+          } else {
+            setSaveError(updateResult.error || 'Failed to update mock profile');
+          }
+        }
+      } catch (err) {
+        setSaveError('Failed to upload mock avatar');
+      } finally {
+        setUploadingAvatar(false);
+      }
+      return;
+    }
+
+    if (!isSupabaseAvailable() || !supabase) {
       return;
     }
 
@@ -183,7 +212,7 @@ const Profile = () => {
           role: user.user_metadata?.role || 'manager',
           avatar_url: formData.avatar_url,
         });
-        
+
         if (createResult && 'error' in createResult && createResult.error) {
           setSaveError(createResult.error);
           setSaving(false);
@@ -213,7 +242,7 @@ const Profile = () => {
             role: user?.user_metadata?.role || 'manager',
             avatar_url: formData.avatar_url,
           });
-          
+
           if (createResult && 'error' in createResult && createResult.error) {
             setSaveError(createResult.error);
           } else {
@@ -402,7 +431,9 @@ const Profile = () => {
   }
 
   // Show Supabase not configured warning
-  if (!isSupabaseConfigured) {
+  // Bypass check for mock users
+  const isMockUser = user?.id?.startsWith('mock-');
+  if (!isSupabaseConfigured && !isMockUser) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center max-w-md">
@@ -450,15 +481,15 @@ const Profile = () => {
             <div className="relative">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center overflow-hidden">
                 {avatarPreview ? (
-                  <img 
-                    src={avatarPreview} 
-                    alt={getDisplayName()} 
+                  <img
+                    src={avatarPreview}
+                    alt={getDisplayName()}
                     className="w-full h-full object-cover"
                   />
                 ) : getAvatarUrl() ? (
-                  <img 
-                    src={getAvatarUrl() || undefined} 
-                    alt={getDisplayName()} 
+                  <img
+                    src={getAvatarUrl() || undefined}
+                    alt={getDisplayName()}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -576,7 +607,7 @@ const Profile = () => {
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Personal Information</h3>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name
@@ -642,7 +673,7 @@ const Profile = () => {
               {/* Additional Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Additional Information</h3>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Location
@@ -742,11 +773,10 @@ const Profile = () => {
             </div>
             <button
               onClick={handleToggle2FA}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                twoFactorEnabled
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg transition-colors ${twoFactorEnabled
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
             >
               {twoFactorEnabled ? 'Disable' : 'Enable'}
             </button>
@@ -952,13 +982,13 @@ const Profile = () => {
                       // For now, we'll sign the user out and show a message
                       // In production, this would call a server function or admin API
                       await signOut();
-                      
+
                       // Clear all local data
                       localStorage.clear();
-                      
+
                       // Show success message briefly
                       alert('Account deletion requested. Please contact support for account removal.');
-                      
+
                       // Navigate to home
                       navigate('/');
                       window.location.href = '/';

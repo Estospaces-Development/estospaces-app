@@ -245,7 +245,7 @@ const AddressSection = ({
       setLoadingStates(false);
       
       // If we have a stateId, load cities for that state
-      if (value.stateId && data?.length > 0) {
+      if (value.stateId && (data?.length ?? 0) > 0) {
         const { data: citiesData, error: citiesError } = await getCitiesByState(value.stateId);
         if (!citiesError && citiesData) {
           setCities(citiesData);

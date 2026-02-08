@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import logoIcon from '../../assets/logo-icon.png';
 import {
   LayoutDashboard,
   Building2,
@@ -18,7 +19,9 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import * as managerVerificationService from '../../services/managerVerificationService';
@@ -33,11 +36,11 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, getDisplayName, signOut } = useAuth();
-  
+
   // Get user display name and email
   const displayName = getDisplayName ? getDisplayName() : (user?.email?.split('@')[0] || 'Property Manager');
   const userEmail = user?.email || profile?.email || '';
-  
+
   // Manager verification status
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
   const [verificationLoading, setVerificationLoading] = useState(true);
@@ -50,7 +53,14 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         setVerificationLoading(false);
         return;
       }
-      
+
+      // Check for mock user
+      if (user.id.startsWith('mock-')) {
+        setVerificationStatus('approved');
+        setVerificationLoading(false);
+        return;
+      }
+
       try {
         const result = await managerVerificationService.getManagerProfile(user.id);
         if (result.data) {
@@ -62,7 +72,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
         setVerificationLoading(false);
       }
     };
-    
+
     fetchVerificationStatus();
   }, [user?.id]);
 
@@ -95,6 +105,9 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/manager/dashboard' },
+    { icon: Zap, label: 'Fast Track 24h', path: '/manager/dashboard/fast-track' },
+    { icon: Activity, label: 'Monitoring', path: '/manager/dashboard/monitoring' },
+    { icon: Users, label: 'Brokers Community', path: '/manager/dashboard/brokers-community' },
     { icon: Building2, label: 'Properties', path: '/manager/dashboard/properties' },
     { icon: Users, label: 'Leads & Clients', path: '/manager/dashboard/leads' },
     { icon: FileText, label: 'Applications', path: '/manager/dashboard/application' },
@@ -114,17 +127,25 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
     <div className={`fixed left-0 top-0 h-full bg-white dark:bg-black shadow-lg transition-all duration-300 z-50 font-sans ${isOpen ? 'w-64' : 'w-20'}`}>
       <div className="flex flex-col h-full">
         {/* Logo Section */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-lg">E</span>
+        {/* Logo Section */}
+        <div className="p-6 border-b border-gray-100 dark:border-gray-800 transition-colors duration-300">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm group-hover:shadow-md group-hover:border-primary/20 dark:group-hover:border-primary/30 transition-all duration-300">
+              <img
+                src={logoIcon}
+                alt="Estospaces Logo"
+                className="w-7 h-7 object-contain flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+              />
             </div>
+
             {isOpen && (
-              <div>
-                <h1 className="text-xl font-bold text-gray-800 dark:text-white transition-colors duration-300">Estospaces</h1>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-colors duration-300 group-hover:text-primary dark:group-hover:text-primary">
+                  Estospaces
+                </h1>
               </div>
             )}
-          </div>
+          </Link>
         </div>
 
         {/* User Profile */}
@@ -164,8 +185,8 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                   <Link
                     to={item.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
                       }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
@@ -188,8 +209,8 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
                   <Link
                     to={item.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white hover:scale-[1.02] hover:shadow-sm hover:brightness-105 dark:hover:brightness-110'
                       }`}
                   >
                     <Icon className={`w-5 h-5 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
@@ -221,7 +242,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
 // Inline verification status badge for sidebar
 const VerificationStatusBadgeInline = ({ status }: { status: VerificationStatus | null }) => {
   const navigate = useNavigate();
-  
+
   const getConfig = () => {
     switch (status) {
       case 'submitted':
@@ -255,10 +276,10 @@ const VerificationStatusBadgeInline = ({ status }: { status: VerificationStatus 
         };
     }
   };
-  
+
   const config = getConfig();
   const Icon = config.icon;
-  
+
   return (
     <button
       onClick={() => navigate('/manager/dashboard/verification')}
