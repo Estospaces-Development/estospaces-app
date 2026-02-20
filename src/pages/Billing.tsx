@@ -55,19 +55,19 @@ const Billing = () => {
   ];
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Page Header */}
       <div>
         <div className="mb-4">
           <BackButton />
         </div>
-        <h1 className="page-title text-gray-800 dark:text-white mb-1">Billing & Payments</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">Billing & Payments</h1>
       </div>
 
       {/* Revenue Overview */}
       <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h2 className="section-heading text-gray-800 dark:text-white">Revenue Overview</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Revenue Overview</h2>
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -117,7 +117,7 @@ const Billing = () => {
       {/* Invoices */}
       <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <h2 className="section-heading text-gray-800 dark:text-white">Invoices ({invoices.length})</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Invoices ({invoices.length})</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -148,13 +148,12 @@ const Billing = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        invoice.status === 'Paid'
-                          ? 'bg-green-100 text-green-800'
-                          : invoice.status === 'Pending'
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${invoice.status === 'Paid'
+                        ? 'bg-green-100 text-green-800'
+                        : invoice.status === 'Pending'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
-                      }`}
+                        }`}
                     >
                       {invoice.status}
                     </span>

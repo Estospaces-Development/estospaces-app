@@ -4,16 +4,16 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { 
-  Shield, 
-  Upload, 
-  CheckCircle, 
-  Clock, 
-  XCircle, 
-  FileText, 
-  Building2, 
+import {
+  Shield,
+  Upload,
+  CheckCircle,
+  Clock,
+  XCircle,
+  FileText,
+  Building2,
   User,
-  AlertCircle, 
+  AlertCircle,
   Loader2,
   Eye,
   Trash2,
@@ -23,8 +23,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useManagerVerification } from '../../contexts/ManagerVerificationContext';
-import { 
-  getDocumentTypeName, 
+import {
+  getDocumentTypeName,
   getStatusDisplayName,
   type DocumentType,
   type ManagerProfileType,
@@ -54,12 +54,12 @@ const ManagerVerificationSection: React.FC = () => {
     getDocumentByType,
     getDocumentStatus,
   } = useManagerVerification();
-  
+
   const [activeStep, setActiveStep] = useState<'type' | 'info' | 'documents' | 'review'>('type');
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
-  
+
   // Determine current step based on profile state
   React.useEffect(() => {
     if (!managerProfile) {
@@ -72,7 +72,7 @@ const ManagerVerificationSection: React.FC = () => {
       setActiveStep('review');
     }
   }, [managerProfile, verificationStatus, missingDocuments, isComplete]);
-  
+
   // Loading state
   if (isLoading) {
     return (
@@ -84,7 +84,7 @@ const ManagerVerificationSection: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,15 +100,15 @@ const ManagerVerificationSection: React.FC = () => {
             </p>
           </div>
         </div>
-        
+
         {/* Progress Steps */}
-        <ProgressSteps 
-          currentStep={activeStep} 
+        <ProgressSteps
+          currentStep={activeStep}
           profileType={managerProfile?.profile_type}
           status={verificationStatus}
         />
       </div>
-      
+
       {/* Error/Success Messages */}
       {(error || submitError) && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
@@ -118,7 +118,7 @@ const ManagerVerificationSection: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {submitSuccess && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-start gap-3">
           <CheckCircle className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" size={20} />
@@ -127,7 +127,7 @@ const ManagerVerificationSection: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Rejection Notice */}
       {verificationStatus === 'rejected' && managerProfile?.rejection_reason && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -147,10 +147,10 @@ const ManagerVerificationSection: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Step Content */}
       {!managerProfile ? (
-        <ProfileTypeSelection 
+        <ProfileTypeSelection
           onSelect={async (type) => {
             const result = await createProfile(type);
             if (result.error) {
@@ -161,12 +161,12 @@ const ManagerVerificationSection: React.FC = () => {
       ) : (
         <>
           {/* Profile Info Section */}
-          <ProfileInfoSection 
+          <ProfileInfoSection
             profile={managerProfile}
             onUpdate={updateProfile}
             disabled={verificationStatus === 'under_review' || verificationStatus === 'approved'}
           />
-          
+
           {/* Documents Section */}
           <DocumentsSection
             profileType={managerProfile.profile_type}
@@ -203,7 +203,7 @@ const ManagerVerificationSection: React.FC = () => {
             getDocumentByType={getDocumentByType}
             getDocumentStatus={getDocumentStatus}
           />
-          
+
           {/* Submit Section */}
           <SubmitSection
             status={verificationStatus}
@@ -241,27 +241,27 @@ const ProgressSteps: React.FC<{
     { id: 'documents', label: 'Documents', icon: Upload },
     { id: 'review', label: 'Review', icon: CheckCircle },
   ];
-  
+
   const getStepStatus = (stepId: string) => {
     if (status === 'approved') return 'completed';
     if (status === 'submitted' || status === 'under_review') {
       return stepId === 'review' ? 'current' : 'completed';
     }
-    
+
     const stepIndex = steps.findIndex(s => s.id === stepId);
     const currentIndex = steps.findIndex(s => s.id === currentStep);
-    
+
     if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'current';
     return 'upcoming';
   };
-  
+
   return (
     <div className="flex items-center justify-between mt-6">
       {steps.map((step, index) => {
         const stepStatus = getStepStatus(step.id);
         const Icon = step.icon;
-        
+
         return (
           <React.Fragment key={step.id}>
             <div className="flex items-center gap-2">
@@ -277,20 +277,18 @@ const ProgressSteps: React.FC<{
                   <Icon size={16} />
                 )}
               </div>
-              <span className={`text-sm font-medium hidden sm:block ${
-                stepStatus === 'current' ? 'text-orange-600 dark:text-orange-400' : 
-                stepStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
-                'text-gray-500 dark:text-gray-400'
-              }`}>
+              <span className={`text-sm font-medium hidden sm:block ${stepStatus === 'current' ? 'text-orange-600 dark:text-orange-400' :
+                  stepStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
+                    'text-gray-500 dark:text-gray-400'
+                }`}>
                 {step.label}
               </span>
             </div>
             {index < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-2 ${
-                getStepStatus(steps[index + 1].id) === 'upcoming' 
-                  ? 'bg-gray-200 dark:bg-gray-700' 
+              <div className={`flex-1 h-0.5 mx-2 ${getStepStatus(steps[index + 1].id) === 'upcoming'
+                  ? 'bg-gray-200 dark:bg-gray-700'
                   : 'bg-green-500'
-              }`} />
+                }`} />
             )}
           </React.Fragment>
         );
@@ -307,13 +305,13 @@ const ProfileTypeSelection: React.FC<{
   onSelect: (type: ManagerProfileType) => void;
 }> = ({ onSelect }) => {
   const [loading, setLoading] = useState<ManagerProfileType | null>(null);
-  
+
   const handleSelect = async (type: ManagerProfileType) => {
     setLoading(type);
     await onSelect(type);
     setLoading(null);
   };
-  
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -322,7 +320,7 @@ const ProfileTypeSelection: React.FC<{
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
         Choose the type of manager profile that best describes you. This determines what documents you'll need to provide.
       </p>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Broker Option */}
         <button
@@ -330,7 +328,7 @@ const ProfileTypeSelection: React.FC<{
           disabled={loading !== null}
           className={`
             p-6 rounded-lg border-2 text-left transition-all
-            ${loading === 'broker' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 
+            ${loading === 'broker' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' :
               'border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700'}
             disabled:opacity-50 disabled:cursor-not-allowed
           `}
@@ -361,14 +359,14 @@ const ProfileTypeSelection: React.FC<{
             )}
           </div>
         </button>
-        
+
         {/* Company Option */}
         <button
           onClick={() => handleSelect('company')}
           disabled={loading !== null}
           className={`
             p-6 rounded-lg border-2 text-left transition-all
-            ${loading === 'company' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 
+            ${loading === 'company' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' :
               'border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700'}
             disabled:opacity-50 disabled:cursor-not-allowed
           `}
@@ -427,26 +425,26 @@ const ProfileInfoSection: React.FC<{
     authorized_representative_email: profile.authorized_representative_email || '',
   });
   const [saving, setSaving] = useState(false);
-  
+
   const handleSave = async () => {
     setSaving(true);
-    
+
     // Convert empty strings to null for database compatibility
     const cleanedData: Record<string, unknown> = {};
     Object.entries(formData).forEach(([key, value]) => {
       // Convert empty strings to null, especially for date fields
       cleanedData[key] = value === '' ? null : value;
     });
-    
+
     const result = await onUpdate(cleanedData);
     setSaving(false);
     if (!result.error) {
       setIsEditing(false);
     }
   };
-  
+
   const isBroker = profile.profile_type === 'broker';
-  
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -474,7 +472,7 @@ const ProfileInfoSection: React.FC<{
           </button>
         )}
       </div>
-      
+
       {isEditing ? (
         <div className="space-y-4">
           {isBroker ? (
@@ -591,7 +589,7 @@ const ProfileInfoSection: React.FC<{
               </div>
             </>
           )}
-          
+
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSave}
@@ -632,10 +630,10 @@ const ProfileInfoSection: React.FC<{
   );
 };
 
-const InfoField: React.FC<{ label: string; value?: string | null; fullWidth?: boolean }> = ({ 
-  label, 
+const InfoField: React.FC<{ label: string; value?: string | null; fullWidth?: boolean }> = ({
+  label,
   value,
-  fullWidth 
+  fullWidth
 }) => (
   <div className={fullWidth ? 'md:col-span-2' : ''}>
     <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
@@ -659,73 +657,73 @@ const DocumentsSection: React.FC<{
   disabled: boolean;
   getDocumentByType: (type: DocumentType) => ReturnType<typeof useManagerVerification>['documents'][0] | undefined;
   getDocumentStatus: (type: DocumentType) => string;
-}> = ({ 
-  profileType, 
-  requiredDocuments, 
-  onUpload, 
-  onDelete, 
-  uploading, 
+}> = ({
+  profileType,
+  requiredDocuments,
+  onUpload,
+  onDelete,
+  uploading,
   disabled,
   getDocumentByType,
   getDocumentStatus,
 }) => {
-  const optionalDocuments: DocumentType[] = ['address_proof'];
-  
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <FileText className="text-orange-600 dark:text-orange-400" size={24} />
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Required Documents
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Upload clear, legible copies of the following documents
-          </p>
+    const optionalDocuments: DocumentType[] = ['address_proof'];
+
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <FileText className="text-orange-600 dark:text-orange-400" size={24} />
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Required Documents
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Upload clear, legible copies of the following documents
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {requiredDocuments.map(docType => (
+            <DocumentUploadCard
+              key={docType}
+              documentType={docType}
+              document={getDocumentByType(docType)}
+              status={getDocumentStatus(docType)}
+              onUpload={onUpload}
+              onDelete={onDelete}
+              uploading={uploading[docType]}
+              disabled={disabled}
+              required
+            />
+          ))}
+
+          {optionalDocuments.length > 0 && (
+            <>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                  Optional Documents
+                </p>
+              </div>
+              {optionalDocuments.map(docType => (
+                <DocumentUploadCard
+                  key={docType}
+                  documentType={docType}
+                  document={getDocumentByType(docType)}
+                  status={getDocumentStatus(docType)}
+                  onUpload={onUpload}
+                  onDelete={onDelete}
+                  uploading={uploading[docType]}
+                  disabled={disabled}
+                  required={false}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
-      
-      <div className="space-y-4">
-        {requiredDocuments.map(docType => (
-          <DocumentUploadCard
-            key={docType}
-            documentType={docType}
-            document={getDocumentByType(docType)}
-            status={getDocumentStatus(docType)}
-            onUpload={onUpload}
-            onDelete={onDelete}
-            uploading={uploading[docType]}
-            disabled={disabled}
-            required
-          />
-        ))}
-        
-        {optionalDocuments.length > 0 && (
-          <>
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                Optional Documents
-              </p>
-            </div>
-            {optionalDocuments.map(docType => (
-              <DocumentUploadCard
-                key={docType}
-                documentType={docType}
-                document={getDocumentByType(docType)}
-                status={getDocumentStatus(docType)}
-                onUpload={onUpload}
-                onDelete={onDelete}
-                uploading={uploading[docType]}
-                disabled={disabled}
-                required={false}
-              />
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
 // ============================================================================
 // Document Upload Card
@@ -740,141 +738,184 @@ const DocumentUploadCard: React.FC<{
   uploading?: boolean;
   disabled: boolean;
   required: boolean;
-}> = ({ 
-  documentType, 
-  document, 
-  status, 
-  onUpload, 
-  onDelete, 
-  uploading, 
+}> = ({
+  documentType,
+  document,
+  status,
+  onUpload,
+  onDelete,
+  uploading,
   disabled,
-  required 
+  required
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showMetadata, setShowMetadata] = useState(false);
-  const [metadata, setMetadata] = useState({ documentNumber: '', expiryDate: '' });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
-  const statusConfig = getStatusConfig(status);
-  const needsExpiry = ['broker_license', 'business_license'].includes(documentType);
-  
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Store the file in state to persist across re-renders
-    setSelectedFile(file);
-    
-    if (needsExpiry && !metadata.expiryDate) {
-      setShowMetadata(true);
-      return;
-    }
-    
-    // If no metadata needed, upload directly
-    await onUpload(file, documentType, metadata);
-    setSelectedFile(null);
-    setMetadata({ documentNumber: '', expiryDate: '' });
-    setShowMetadata(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
-  const handleUploadWithMetadata = async () => {
-    // Use the stored file from state instead of file input
-    if (!selectedFile) {
-      console.error('No file selected');
-      return;
-    }
-    
-    await onUpload(selectedFile, documentType, metadata);
-    setSelectedFile(null);
-    setMetadata({ documentNumber: '', expiryDate: '' });
-    setShowMetadata(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
-  return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-lg ${statusConfig.bgColor}`}>
-            <statusConfig.icon className={statusConfig.textColor} size={20} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                {getDocumentTypeName(documentType)}
-              </h3>
-              {required && (
-                <span className="text-xs text-red-500">*Required</span>
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showMetadata, setShowMetadata] = useState(false);
+    const [metadata, setMetadata] = useState({ documentNumber: '', expiryDate: '' });
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+    const statusConfig = getStatusConfig(status);
+    const needsExpiry = ['broker_license', 'business_license'].includes(documentType);
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Store the file in state to persist across re-renders
+      setSelectedFile(file);
+
+      if (needsExpiry && !metadata.expiryDate) {
+        setShowMetadata(true);
+        return;
+      }
+
+      // If no metadata needed, upload directly
+      await onUpload(file, documentType, metadata);
+      setSelectedFile(null);
+      setMetadata({ documentNumber: '', expiryDate: '' });
+      setShowMetadata(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+
+    const handleUploadWithMetadata = async () => {
+      // Use the stored file from state instead of file input
+      if (!selectedFile) {
+        console.error('No file selected');
+        return;
+      }
+
+      await onUpload(selectedFile, documentType, metadata);
+      setSelectedFile(null);
+      setMetadata({ documentNumber: '', expiryDate: '' });
+      setShowMetadata(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+
+    return (
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-lg ${statusConfig.bgColor}`}>
+              <statusConfig.icon className={statusConfig.textColor} size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-manager font-medium text-gray-900 dark:text-gray-100">
+                  {getDocumentTypeName(documentType)}
+                </h3>
+                {required && (
+                  <span className="text-xs text-red-500">*Required</span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {getDocumentDescription(documentType)}
+              </p>
+              {document && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Uploaded: {new Date(document.submitted_at).toLocaleDateString()}
+                  {document.expiry_date && ` · Expires: ${new Date(document.expiry_date).toLocaleDateString()}`}
+                </p>
+              )}
+              {document?.rejection_reason && (
+                <p className="text-xs text-red-500 mt-1">
+                  Reason: {document.rejection_reason}
+                </p>
               )}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {getDocumentDescription(documentType)}
-            </p>
-            {document && (
-              <p className="text-xs text-gray-400 mt-1">
-                Uploaded: {new Date(document.submitted_at).toLocaleDateString()}
-                {document.expiry_date && ` · Expires: ${new Date(document.expiry_date).toLocaleDateString()}`}
-              </p>
-            )}
-            {document?.rejection_reason && (
-              <p className="text-xs text-red-500 mt-1">
-                Reason: {document.rejection_reason}
-              </p>
-            )}
+          </div>
+
+          <div className={`px-2 py-1 rounded text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
+            {statusConfig.label}
           </div>
         </div>
-        
-        <div className={`px-2 py-1 rounded text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
-          {statusConfig.label}
-        </div>
-      </div>
-      
-      {/* Metadata form for documents that need expiry dates */}
-      {showMetadata && (
-        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
-          {/* Show selected file name */}
-          {selectedFile && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <FileText size={16} />
-              <span className="truncate">{selectedFile.name}</span>
-              <span className="text-gray-400">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
-            </div>
-          )}
-          {needsExpiry && (
+
+        {/* Metadata form for documents that need expiry dates */}
+        {showMetadata && (
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
+            {/* Show selected file name */}
+            {selectedFile && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <FileText size={16} />
+                <span className="truncate">{selectedFile.name}</span>
+                <span className="text-gray-400">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+              </div>
+            )}
+            {needsExpiry && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Expiry Date *
+                </label>
+                <input
+                  type="date"
+                  value={metadata.expiryDate}
+                  onChange={(e) => setMetadata(prev => ({ ...prev, expiryDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Expiry Date *
+                Document Number (Optional)
               </label>
               <input
-                type="date"
-                value={metadata.expiryDate}
-                onChange={(e) => setMetadata(prev => ({ ...prev, expiryDate: e.target.value }))}
+                type="text"
+                value={metadata.documentNumber}
+                onChange={(e) => setMetadata(prev => ({ ...prev, documentNumber: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                placeholder="Enter document number"
               />
             </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Document Number (Optional)
-            </label>
-            <input
-              type="text"
-              value={metadata.documentNumber}
-              onChange={(e) => setMetadata(prev => ({ ...prev, documentNumber: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              placeholder="Enter document number"
-            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleUploadWithMetadata}
+                disabled={(needsExpiry && !metadata.expiryDate) || !selectedFile || uploading}
+                className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={14} />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload size={14} />
+                    Upload
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowMetadata(false);
+                  setSelectedFile(null);
+                  setMetadata({ documentNumber: '', expiryDate: '' });
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                disabled={uploading}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
+        )}
+
+        {/* Actions */}
+        {!disabled && status !== 'approved' && !showMetadata && (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
             <button
-              onClick={handleUploadWithMetadata}
-              disabled={(needsExpiry && !metadata.expiryDate) || !selectedFile || uploading}
-              className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50"
             >
               {uploading ? (
                 <>
@@ -884,96 +925,53 @@ const DocumentUploadCard: React.FC<{
               ) : (
                 <>
                   <Upload size={14} />
-                  Upload
+                  {document ? 'Replace' : 'Upload'}
                 </>
               )}
             </button>
-            <button
-              onClick={() => {
-                setShowMetadata(false);
-                setSelectedFile(null);
-                setMetadata({ documentNumber: '', expiryDate: '' });
-                if (fileInputRef.current) fileInputRef.current.value = '';
-              }}
-              disabled={uploading}
-              className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {/* Actions */}
-      {!disabled && status !== 'approved' && !showMetadata && (
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50"
-          >
-            {uploading ? (
+
+            {document && (
               <>
-                <Loader2 className="animate-spin" size={14} />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload size={14} />
-                {document ? 'Replace' : 'Upload'}
+                <a
+                  href={document.document_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <Eye size={14} />
+                  View
+                </a>
+                {status !== 'under_review' && (
+                  <button
+                    onClick={() => onDelete(documentType)}
+                    disabled={uploading}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                )}
               </>
             )}
-          </button>
-          
-          {document && (
-            <>
-              <a
-                href={document.document_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <Eye size={14} />
-                View
-              </a>
-              {status !== 'under_review' && (
-                <button
-                  onClick={() => onDelete(documentType)}
-                  disabled={uploading}
-                  className="flex items-center gap-1 px-3 py-1.5 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      )}
-      
-      {status === 'approved' && document && (
-        <div className="mt-3">
-          <a
-            href={document.document_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:underline"
-          >
-            <Eye size={14} />
-            View Document
-          </a>
-        </div>
-      )}
-    </div>
-  );
-};
+          </div>
+        )}
+
+        {status === 'approved' && document && (
+          <div className="mt-3">
+            <a
+              href={document.document_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:underline"
+            >
+              <Eye size={14} />
+              View Document
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  };
 
 // ============================================================================
 // Submit Section
@@ -987,13 +985,13 @@ const SubmitSection: React.FC<{
   onSubmit: () => Promise<void>;
 }> = ({ status, canSubmit, isComplete, missingDocuments, onSubmit }) => {
   const [submitting, setSubmitting] = useState(false);
-  
+
   const handleSubmit = async () => {
     setSubmitting(true);
     await onSubmit();
     setSubmitting(false);
   };
-  
+
   // Already submitted or approved
   if (status === 'submitted' || status === 'under_review') {
     return (
@@ -1012,7 +1010,7 @@ const SubmitSection: React.FC<{
       </div>
     );
   }
-  
+
   if (status === 'approved') {
     return (
       <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
@@ -1030,13 +1028,13 @@ const SubmitSection: React.FC<{
       </div>
     );
   }
-  
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
         Submit for Verification
       </h2>
-      
+
       {!isComplete && missingDocuments.length > 0 && (
         <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
           <div className="flex items-start gap-2">
@@ -1054,11 +1052,11 @@ const SubmitSection: React.FC<{
           </div>
         </div>
       )}
-      
+
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         Once you submit, your documents will be reviewed by our team. You won't be able to edit your documents during the review process.
       </p>
-      
+
       <button
         onClick={handleSubmit}
         disabled={!canSubmit || submitting}

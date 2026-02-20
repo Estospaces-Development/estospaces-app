@@ -117,9 +117,6 @@ const Dashboard = () => {
     };
 
     fetchStats();
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch leads from API
@@ -144,9 +141,6 @@ const Dashboard = () => {
     };
 
     fetchLeads();
-    // Refresh leads every 30 seconds
-    const interval = setInterval(fetchLeads, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch analytics data
@@ -197,9 +191,6 @@ const Dashboard = () => {
     };
 
     fetchApplications();
-    // Refresh applications every 30 seconds
-    const interval = setInterval(fetchApplications, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Filter applications based on search and status
@@ -414,7 +405,7 @@ const Dashboard = () => {
 
 
   return (
-    <div className="space-y-6 font-sans relative">
+    <div className="space-y-4 font-sans relative">
       {/* Chatbot Toggle Button */}
       {!isChatbotOpen && (
         <button
@@ -423,7 +414,7 @@ const Dashboard = () => {
           title="Ask Lakshmi"
         >
           <Bot className="w-5 h-5" />
-          <span className="btn-primary">Ask Lakshmi</span>
+          <span className="font-medium">Ask Lakshmi</span>
         </button>
       )}
 
@@ -870,10 +861,10 @@ const Dashboard = () => {
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">All Status</option>
-                  <option value="Available">Available</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Sold">Sold</option>
-                  <option value="Rented">Rented</option>
+                  <option value="available">Available</option>
+                  <option value="pending">Pending</option>
+                  <option value="sold">Sold</option>
+                  <option value="rented">Rented</option>
                 </select>
                 <div className="relative">
                   <button

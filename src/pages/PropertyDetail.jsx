@@ -45,7 +45,7 @@ import { useAuth } from '../contexts/AuthContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
 import { supabase, isSupabaseAvailable } from '../lib/supabase';
-import { notifyViewingBooked } from '../services/notificationsService';
+import { notifyViewingBooked, notifyManagersAppointmentBooked } from '../services/notificationsService';
 import ShareModal from '../components/Dashboard/ShareModal';
 import VirtualTourViewer from '../components/virtual-tour/VirtualTourViewer';
 import { defaultVirtualTour } from '../mocks/virtualTourMock';
@@ -74,8 +74,9 @@ const PropertyDetail = () => {
   const [viewingError, setViewingError] = useState(null);
   const { user } = useAuth();
   const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const [viewMode, setViewMode] = useState('map'); // 'map' or 'street'
 
-  // Fetch real property data
+  // Fetch mock property data
   useEffect(() => {
     const fetchProperty = async () => {
       if (!id) {
@@ -88,30 +89,26 @@ const PropertyDetail = () => {
       setError(null);
 
       try {
-        const result = await propertyDataService.getPropertyById(id, currentUser?.id);
+        // Use Mock Data Service
+        // Import dynamically to avoid circular dependencies if any
+        const { getPropertyById } = await import('../services/mockDataService');
+        const mockProperty = getPropertyById(id);
 
-        if (result.error) {
-          setError(result.error.message || 'Failed to load property');
-          setLoading(false);
-          return;
-        }
-
-        if (result.data) {
-          setProperty(result.data);
-          // Track view is already handled in getPropertyById
+        if (mockProperty) {
+          setProperty(mockProperty);
         } else {
           setError('Property not found');
         }
       } catch (err) {
         console.error('Error fetching property:', err);
-        setError(err.message || 'Failed to load property');
+        setError('Failed to load property');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperty();
-  }, [id, currentUser]);
+  }, [id]);
 
   // Check if purchase action is requested
   useEffect(() => {
@@ -213,7 +210,7 @@ const PropertyDetail = () => {
   };
 
   const handlePurchase = () => {
-    if (!currentUser) {
+    if (!user) {
       // Show login prompt or navigate to login
       navigate('/user/dashboard/profile');
       return;
@@ -222,13 +219,13 @@ const PropertyDetail = () => {
   };
 
   const handleApplySubmit = async () => {
-    if (!currentUser || !property) return;
+    if (!user || !property) return;
 
     setIsApplying(true);
     setApplicationError(null);
 
     try {
-      const result = await propertiesService.applyToProperty(property.id, currentUser.id, {
+      const result = await propertiesService.applyToProperty(property.id, user.id, {
         property_title: property.title,
         property_price: property.price,
         listing_type: property.listing_type || property.property_type,
@@ -255,8 +252,11 @@ const PropertyDetail = () => {
   };
 
   const handleScheduleViewing = async () => {
+    // UPDATED: Check for user (mock auth) instead of Supabase user
     if (!user) {
       setViewingError('You must be logged in to book an appointment');
+      // Optionally redirect to login if you want
+      // navigate('/login');
       return;
     }
     if (!property || !viewingDate || !viewingTime) {
@@ -268,88 +268,13 @@ const PropertyDetail = () => {
     setViewingError(null);
 
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const accessToken = sessionData?.session?.access_token;
-      if (!accessToken) {
-        setViewingError('You must be logged in to book an appointment');
-        return;
-      }
+      // MOCK: Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Get property images
-      let propertyImage = null;
-      try {
-        if (property.image_urls) {
-          const images = Array.isArray(property.image_urls) ? property.image_urls : JSON.parse(property.image_urls || '[]');
-          propertyImage = images[0] || null;
-
-          // Sanity check: if image URL is too long (likely base64), truncate or ignore it to prevent payload issues
-          if (propertyImage && propertyImage.length > 2000) {
-            console.warn('Property image URL too long, skipping image in application data');
-            propertyImage = null;
-          }
-        }
-      } catch (e) {
-        console.warn('Error parsing property images:', e);
-        propertyImage = null;
-      }
-
-      // Create application data
-      const applicationData = {
-        property_title: property.title,
-        property_address: property.address_line_1 || `${property.city || ''} ${property.postcode || ''}`.trim(),
-        property_price: property.price,
-        property_type: property.property_type,
-        listing_type: property.listing_type,
-        property_image: propertyImage,
-        agent_name: property.contact_name,
-        agent_email: property.contact_email,
-        agent_phone: property.contact_phone,
-        agent_company: property.company,
-        appointment: {
-          date: viewingDate,
-          time: viewingTime,
-          notes: viewingNotes,
-          type: 'viewing',
-        },
-        personal_info: {
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-          email: user.email,
-        },
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      let response;
-
-      try {
-        response = await fetch('/api/appointments/book', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            property_id: property.id,
-            viewing_date: viewingDate,
-            viewing_time: viewingTime,
-            notes: viewingNotes,
-            application_data: applicationData,
-          }),
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error?.message || 'Failed to book appointment. Please try again.');
-      }
-
+      // Simulate success unconditionally for the demo
       setViewingSuccess(true);
 
-      // Send notification for viewing booked
+      // Send notification (Mock)
       try {
         const formattedDate = new Date(viewingDate).toLocaleDateString('en-GB', {
           weekday: 'short',
@@ -357,6 +282,8 @@ const PropertyDetail = () => {
           month: 'short',
           year: 'numeric',
         });
+        
+        // Notify the user who booked
         await notifyViewingBooked(
           user.id,
           property.title,
@@ -364,7 +291,19 @@ const PropertyDetail = () => {
           formattedDate,
           viewingTime
         );
-        console.log('🔔 Viewing booked notification sent');
+        
+        // Notify all managers and admins
+        const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+        await notifyManagersAppointmentBooked(
+          userName,
+          user.email || '',
+          property.title,
+          property.id,
+          formattedDate,
+          viewingTime
+        );
+        
+        console.log('🔔 Viewing booked notifications sent');
       } catch (notifyErr) {
         console.log('⚠️ Could not send notification:', notifyErr);
       }
@@ -378,13 +317,10 @@ const PropertyDetail = () => {
         // Navigate to My Applications so user can track
         navigate('/user/dashboard/applications');
       }, 2500);
+
     } catch (err) {
       console.error('Booking error:', err);
-      if (err?.name === 'AbortError') {
-        setViewingError('Request timed out. Please try again.');
-      } else {
-        setViewingError(err.message || 'Failed to book appointment. Please try again.');
-      }
+      setViewingError(err.message || 'Failed to book appointment. Please try again.');
     } finally {
       setIsSchedulingViewing(false);
     }
@@ -724,6 +660,214 @@ const PropertyDetail = () => {
                 <p className="text-gray-500 dark:text-gray-400">Virtual tour not available for this property</p>
               </div>
             )}
+          </div>
+
+          {/* Property Location Section (formerly Google Street View) */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-orange-500 flex items-center gap-2">
+                <MapPin size={22} className="text-orange-500" />
+                Property Location
+              </h2>
+
+              {/* View Toggle */}
+              <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg inline-flex">
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'map'
+                    ? 'bg-white dark:bg-gray-600 text-orange-600 dark:text-orange-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                >
+                  Satellite Map
+                </button>
+                <button
+                  onClick={() => setViewMode('street')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'street'
+                    ? 'bg-white dark:bg-gray-600 text-orange-600 dark:text-orange-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                >
+                  Street View
+                </button>
+              </div>
+            </div>
+
+            {/* View Description */}
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              {viewMode === 'map'
+                ? 'View the property location and surrounding area from above.'
+                : 'Explore the neighborhood from street level. Use controls to navigate.'}
+            </p>
+
+            {/* Map/Street View Container */}
+            <div className="w-full h-72 md:h-96 bg-gray-900 rounded-xl overflow-hidden relative group">
+              {viewMode === 'map' ? (
+                /* Satellite Map - Mock Image */
+                <div className="absolute inset-0">
+                  <img
+                    src="/images/satellite_view_mock.png"
+                    alt="Satellite view of property location"
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Interactive overlay with zoom controls */}
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button className="p-2 bg-white/90 hover:bg-white rounded-lg shadow-lg transition-all">
+                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                    </button>
+                    <button className="p-2 bg-white/90 hover:bg-white rounded-lg shadow-lg transition-all">
+                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                      </svg>
+                    </button>
+                  </div>
+                  {/* Directions badge */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                    <div className="px-3 py-1.5 bg-white/90 rounded-lg shadow-lg text-sm">
+                      <span className="font-medium text-gray-700">{property.street_view_lat?.toFixed(6) || '51.501364'}°N {Math.abs(property.street_view_lng || -0.14189).toFixed(6)}°W</span>
+                    </div>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg text-sm font-medium flex items-center gap-1 transition-colors"
+                    >
+                      <MapPin size={14} />
+                      Directions
+                    </a>
+                  </div>
+                  {/* View larger map link */}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-16 left-4 text-xs text-blue-600 hover:text-blue-700 underline"
+                  >
+                    View larger map
+                  </a>
+                  {/* Property marker */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <div className="relative">
+                      <MapPin size={32} className="text-red-500 drop-shadow-lg" fill="currentColor" />
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Street View - Mock Image */
+                <div className="absolute inset-0">
+                  <img
+                    src="/images/street_view_mock.png"
+                    alt="Street view of property location"
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Street view compass */}
+                  <div className="absolute top-4 right-4 w-12 h-12 bg-white/90 rounded-full shadow-lg flex items-center justify-center">
+                    <div className="relative w-8 h-8">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-bold text-gray-700">N</span>
+                      </div>
+                      <svg className="absolute inset-0" viewBox="0 0 32 32">
+                        <polygon points="16,4 20,16 16,14 12,16" fill="#EA4335" />
+                        <polygon points="16,28 12,16 16,18 20,16" fill="#9CA3AF" />
+                      </svg>
+                    </div>
+                  </div>
+                  {/* Street name overlay */}
+                  <div className="absolute top-4 left-4 px-3 py-2 bg-white/90 rounded-lg shadow-lg">
+                    <p className="text-sm font-medium text-gray-800">{property.address_line_1 || 'Kensington Gardens'}</p>
+                    <p className="text-xs text-gray-600">{property.city || 'London'}</p>
+                  </div>
+                  {/* Navigation arrows */}
+                  <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+                    <div className="flex items-center gap-4">
+                      <button className="p-3 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110">
+                        <ChevronLeft size={20} className="text-gray-700" />
+                      </button>
+                      <div className="w-12 h-12 bg-orange-500/80 rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-orange-500 transition-colors">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+                      <button className="p-3 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110">
+                        <ChevronRight size={20} className="text-gray-700" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Overlay Controls (only show relevant controls based on mode) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+
+              {/* Navigation Controls (Street View only) */}
+              {viewMode === 'street' && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button className="p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110">
+                    <ChevronLeft size={18} className="text-gray-700" />
+                  </button>
+                  <div className="px-4 py-2 bg-white/90 rounded-full shadow-lg">
+                    <span className="text-sm font-medium text-gray-700">Drag to explore</span>
+                  </div>
+                  <button className="p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110">
+                    <ChevronRight size={18} className="text-gray-700" />
+                  </button>
+                </div>
+              )}
+
+              {/* Open Fullscreen Button */}
+              <a
+                href={viewMode === 'map'
+                  ? `https://www.google.com/maps/search/?api=1&query=${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189}`
+                  : `https://www.google.com/maps/@${property.street_view_lat || 51.501364},${property.street_view_lng || -0.14189},3a,75y,210h,90t/data=!3m6!1e1!3m4!1s!2e0!7i16384!8i8192`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-4 right-4 p-2.5 bg-white/90 hover:bg-white rounded-lg shadow-lg transition-all hover:scale-105 flex items-center gap-2 opacity-0 group-hover:opacity-100"
+              >
+                <Maximize size={16} className="text-gray-700" />
+                <span className="text-sm font-medium text-gray-700">Fullscreen</span>
+              </a>
+
+              {/* Location Badge */}
+              <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg shadow-lg">
+                <MapPin size={14} />
+                <span className="text-sm font-medium">{property.city || property.postcode || 'UK'}</span>
+              </div>
+            </div>
+
+            {/* Street View Quick Info */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <MapPin size={16} className="text-orange-600 dark:text-orange-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Street Level</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-lg font-bold text-orange-600 dark:text-orange-400">360°</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Panoramic</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <ExternalLink size={16} className="text-orange-600 dark:text-orange-400" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Google Maps</p>
+              </div>
+            </div>
+
+            {/* Open in Google Maps Button */}
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address_line_1 || property.address || `${property.city || ''} ${property.postcode || ''}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-700 dark:text-white rounded-xl font-medium transition-all border border-gray-300 dark:border-gray-600"
+            >
+              <ExternalLink size={18} />
+              Open Full Map in Google Maps
+            </a>
           </div>
 
 
@@ -1102,6 +1246,30 @@ const PropertyDetail = () => {
                 </div>
               ) : (
                 <>
+                  {/* Agent/Broker Info */}
+                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl flex items-center gap-4 border border-gray-100 dark:border-gray-600">
+                    <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-sm flex-shrink-0">
+                      {(property.contact_name || property.agent_name || 'A').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white">
+                        {property.contact_name || property.agent_name || 'Property Agent'}
+                      </h4>
+                      {property.company && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                          <Building2 size={12} />
+                          {property.company}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full flex items-center gap-1">
+                          <CheckCircle size={10} />
+                          Verified Agent
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Property Card */}
                   <div className="flex gap-4 mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
                     <div className="relative">

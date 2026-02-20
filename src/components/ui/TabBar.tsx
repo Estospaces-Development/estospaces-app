@@ -15,22 +15,22 @@ const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
   ];
 
   return (
-    <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-2 mb-6">
-      <div className="flex items-center gap-2">
+    <div className="mb-8">
+      <div className="inline-flex p-1.5 bg-gray-100/80 dark:bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-inner">
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-primary text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
-              }`}
+              className={`relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${isActive
+                  ? 'bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-500 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
             >
-              <Icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{tab.label}</span>
+              <Icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+              <span>{tab.label}</span>
             </button>
           );
         })}

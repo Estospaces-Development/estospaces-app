@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, Home, Heart, FileText, Map as MapIcon,
@@ -9,23 +9,32 @@ import {
 import { usePropertyFilter } from '../contexts/PropertyFilterContext';
 import PropertyCard from '../components/Dashboard/PropertyCard';
 import PropertyCardSkeleton from '../components/Dashboard/PropertyCardSkeleton';
-import NearbyPropertiesMap from '../components/Dashboard/NearbyPropertiesMap';
+// Lazy load non-critical components
+const NearbyPropertiesMap = lazy(() => import('../components/Dashboard/NearbyPropertiesMap'));
+const BrokerRequestWidget = lazy(() => import('../components/Dashboard/BrokerRequestWidget'));
+const NearbyAgenciesList = lazy(() => import('../components/Dashboard/NearbyAgenciesList'));
+const ApplicationTimelineWidget = lazy(() => import('../components/Dashboard/ApplicationTimelineWidget'));
 import PropertyDiscoverySection from '../components/Dashboard/PropertyDiscoverySection';
 import DashboardFooter from '../components/Dashboard/DashboardFooter';
 import { useSavedProperties } from '../contexts/SavedPropertiesContext';
 import { useUserLocation } from '../contexts/LocationContext';
-import { useProperties } from '../contexts/PropertiesContext';
+import { useProperties } from '../contexts/PropertyContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as propertyDataService from '../services/propertyDataService';
 import * as propertiesService from '../services/propertiesService';
-import BrokerRequestWidget from '../components/Dashboard/BrokerRequestWidget';
-import ApplicationTimelineWidget from '../components/Dashboard/ApplicationTimelineWidget';
+import { MOCK_PROPERTIES } from '../services/mockDataService';
+import ProfileCompletionCard from '../components/Dashboard/ProfileCompletionCard';
+import { useAppTour } from '../components/Tour/useAppTour';
 
 const DashboardLocationBased = () => {
+  // Initialize App Tour
+  useAppTour();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { savedProperties } = useSavedProperties();
   const { activeLocation, loading: locationLoading, updateLocationFromSearch } = useUserLocation();
-  const { currentUser, fetchProperties: fetchSupabaseProperties } = useProperties();
+  const { user: currentUser } = useAuth();
+  const { fetchProperties: fetchSupabaseProperties } = useProperties();
   const { activeTab, setActiveTab } = usePropertyFilter();
 
   // Redirect if URL has invalid path segments
@@ -72,27 +81,29 @@ const DashboardLocationBased = () => {
     }
   }, [searchParams]);
 
-  // Discovery sections state
-  const [discoveryProperties, setDiscoveryProperties] = useState([]);
-  const [mostViewedProperties, setMostViewedProperties] = useState([]);
-  const [trendingProperties, setTrendingProperties] = useState([]);
-  const [recentlyAddedProperties, setRecentlyAddedProperties] = useState([]);
-  const [highDemandProperties, setHighDemandProperties] = useState([]);
+  // Discovery sections state consolidated
+  const [discoveryState, setDiscoveryState] = useState({
+    discovery: [],
+    mostViewed: [],
+    trending: [],
+    recentlyAdded: [],
+    highDemand: [],
+    loading: {
+      all: false,
+      discovery: false,
+      mostViewed: false,
+      trending: false,
+      recentlyAdded: false,
+      highDemand: false
+    }
+  });
 
   // Filtered properties state (for when user applies filters)
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [showFilteredResults, setShowFilteredResults] = useState(false);
   const [filteredCount, setFilteredCount] = useState(0);
 
-  // Loading states for each section
-  const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false); // Separate loading state for search button
-  const [loadingDiscovery, setLoadingDiscovery] = useState(false);
-  const [loadingMostViewed, setLoadingMostViewed] = useState(false);
-  const [loadingTrending, setLoadingTrending] = useState(false);
-  const [loadingRecentlyAdded, setLoadingRecentlyAdded] = useState(false);
-  const [loadingHighDemand, setLoadingHighDemand] = useState(false);
-
   const [error, setError] = useState(null);
   const [locationMessage, setLocationMessage] = useState(null);
   const [stats, setStats] = useState({
@@ -103,104 +114,47 @@ const DashboardLocationBased = () => {
 
   // Fetch all discovery sections based on location
   const fetchAllDiscoverySections = useCallback(async (location, showLoading = true) => {
-    if (!location) return;
-
     if (showLoading) {
-      setLoading(true);
-      setLoadingDiscovery(true);
-      setLoadingMostViewed(true);
-      setLoadingTrending(true);
-      setLoadingRecentlyAdded(true);
-      setLoadingHighDemand(true);
+      setDiscoveryState(prev => ({
+        ...prev,
+        loading: {
+          all: true,
+          discovery: true,
+          mostViewed: true,
+          trending: true,
+          recentlyAdded: true,
+          highDemand: true
+        }
+      }));
     }
     setError(null);
     setLocationMessage(null);
 
-    try {
-      // Fetch all sections in parallel for better performance
-      const [
-        discoveryResult,
-        mostViewedResult,
-        trendingResult,
-        recentlyAddedResult,
-        highDemandResult,
-      ] = await Promise.all([
-        propertyDataService.getPropertyDiscovery({ location, limit: 8, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getMostViewedProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getTrendingProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getRecentlyAddedProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-        propertyDataService.getHighDemandProperties({ location, limit: 6, userId: currentUser?.id })
-          .catch(err => ({ properties: [], error: err.message })),
-      ]);
+    // Use Mock Data immediately - no artificial delay
+    const mockProps = MOCK_PROPERTIES;
 
-      // Update state for each section
-      setDiscoveryProperties(discoveryResult.properties || []);
-      setMostViewedProperties(mostViewedResult.properties || []);
-      setTrendingProperties(trendingResult.properties || []);
-      setRecentlyAddedProperties(recentlyAddedResult.properties || []);
-      setHighDemandProperties(highDemandResult.properties || []);
-
-      // Calculate total properties count
-      const totalCount =
-        (discoveryResult.properties?.length || 0) +
-        (mostViewedResult.properties?.length || 0) +
-        (trendingResult.properties?.length || 0) +
-        (recentlyAddedResult.properties?.length || 0) +
-        (highDemandResult.properties?.length || 0);
-
-      setStats(prev => ({
-        ...prev,
-        totalProperties: totalCount,
-      }));
-
-      // If no properties found, try fallback
-      if (totalCount === 0) {
-        const fallbackResult = await propertyDataService.fetchPropertiesWithFallback({
-          location,
-          radius: 5,
-          maxRadius: 20,
-          listingStatus: 'both',
-          userId: currentUser?.id,
-        });
-
-        if (fallbackResult.properties && fallbackResult.properties.length > 0) {
-          // Distribute fallback properties across sections
-          const fallbackProps = fallbackResult.properties;
-          setDiscoveryProperties(fallbackProps.slice(0, 8));
-          setMostViewedProperties(fallbackProps.slice(0, 6));
-          setTrendingProperties(fallbackProps.slice(0, 6));
-          setRecentlyAddedProperties(fallbackProps.slice(0, 6));
-          setHighDemandProperties(fallbackProps.slice(0, 6));
-          setLocationMessage(fallbackResult.message || 'Showing similar properties near your search area.');
-          setStats(prev => ({
-            ...prev,
-            totalProperties: fallbackProps.length,
-          }));
-        } else {
-          setLocationMessage('No properties found in this area or nearby. Please try a different location.');
-        }
+    // Distribute mock properties across sections
+    setDiscoveryState({
+      discovery: mockProps,
+      mostViewed: mockProps.slice(0, 4),
+      trending: mockProps.slice(2, 6),
+      recentlyAdded: mockProps.slice(0, 3),
+      highDemand: mockProps.slice(3, 7),
+      loading: {
+        all: false,
+        discovery: false,
+        mostViewed: false,
+        trending: false,
+        recentlyAdded: false,
+        highDemand: false
       }
-    } catch (err) {
-      // Log error (production: use proper error tracking)
-      if (import.meta.env.DEV) {
-        console.error('Error fetching discovery sections:', err);
-      }
-      setError(err.message || 'Failed to load properties. Please check your connection and try again.');
-    } finally {
-      if (showLoading) {
-        setLoading(false);
-        setLoadingDiscovery(false);
-        setLoadingMostViewed(false);
-        setLoadingTrending(false);
-        setLoadingRecentlyAdded(false);
-        setLoadingHighDemand(false);
-      }
-    }
-  }, [currentUser]);
+    });
+
+    setStats(prev => ({
+      ...prev,
+      totalProperties: mockProps.length,
+    }));
+  }, []);
 
   // State for filter dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -273,90 +227,93 @@ const DashboardLocationBased = () => {
     setShowFilteredResults(true);
 
     try {
-      const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      // For Demo mode, use Mock Data as primary source
+      // This ensures a fast and reliable experience for the user
+      console.log('[Dashboard] Filtering properties using Mock Data Service');
 
-      // Build query based on filters
-      let filterParams = [];
-      let orderBy = 'created_at.desc';
+      let results = [...MOCK_PROPERTIES];
 
-      // Base filters
-      const listingType = selectedPropertyType === 'rent' ? 'rent' : 'sale';
-      filterParams.push(`listing_type=eq.${listingType}`);
-      filterParams.push('or=(status.eq.online,status.eq.published,status.eq.active)');
-
-      // Apply filter options
-      if (selectedFilters.includes('recently_added')) {
-        const twentyFourHoursAgo = new Date();
-        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-        filterParams.push(`created_at=gte.${twentyFourHoursAgo.toISOString()}`);
-        orderBy = 'created_at.desc';
-      }
-
-      if (selectedFilters.includes('most_viewed')) {
-        orderBy = 'view_count.desc.nullslast,created_at.desc';
-      }
-
-      if (selectedFilters.includes('high_demand')) {
-        filterParams.push('view_count=gte.1');
-        if (!selectedFilters.includes('most_viewed')) {
-          orderBy = 'view_count.desc.nullslast,created_at.desc';
+      // Filter by property type (Buy/Rent/Sold)
+      if (selectedPropertyType === 'rent') {
+        results = results.filter(p => p.property_type === 'rent');
+      } else {
+        results = results.filter(p => p.property_type === 'sale' || p.listing_type === 'sale');
+        if (selectedPropertyType === 'sold') {
+          // In real app, we'd filter by status=sold, here we'll just use a subset for demo
+          results = results.slice(0, 5);
         }
       }
 
-      if (selectedFilters.includes('budget_friendly')) {
-        if (selectedPropertyType === 'rent') {
-          filterParams.push('price=lte.2000');
-        } else {
-          filterParams.push('price=lte.500000');
+      // Apply filter options (Multiple filters work as OR or AND depending on logic)
+      if (selectedFilters.length > 0) {
+        let filteredResults = [];
+
+        if (selectedFilters.includes('recently_added')) {
+          // Properties created in last 7 days (for demo)
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const recent = results.filter(p => new Date(p.created_at || Date.now()) >= sevenDaysAgo);
+          filteredResults = [...filteredResults, ...recent];
         }
-        if (!selectedFilters.includes('most_viewed') && !selectedFilters.includes('high_demand') && !selectedFilters.includes('recently_added')) {
-          orderBy = 'price.asc,created_at.desc';
+
+        if (selectedFilters.includes('most_viewed')) {
+          // Properties with high view count
+          const popular = results.filter(p => (p.view_count || 0) > 200);
+          filteredResults = [...filteredResults, ...popular];
         }
+
+        if (selectedFilters.includes('high_demand')) {
+          // For demo, similar to most viewed or specific ones
+          const highDemand = results.filter(p => (p.view_count || 0) > 150);
+          filteredResults = [...filteredResults, ...highDemand];
+        }
+
+        if (selectedFilters.includes('budget_friendly')) {
+          // Under 1M for sale, under 2k for rent
+          const budget = results.filter(p => {
+            const price = parseFloat(p.price) || 0;
+            return selectedPropertyType === 'rent' ? price <= 2000 : price <= 1000000;
+          });
+          filteredResults = [...filteredResults, ...budget];
+        }
+
+        // Remove duplicates if multiple filters are selected
+        results = [...new Set(filteredResults)];
       }
 
-      // Location filter
-      const locationTerm = searchInput.trim();
+      // Apply location filter if text exists
+      const locationTerm = searchInput.trim().toLowerCase();
       if (locationTerm) {
-        filterParams.push(`or=(city.ilike.*${locationTerm}*,postcode.ilike.*${locationTerm}*,address_line_1.ilike.*${locationTerm}*,state.ilike.*${locationTerm}*)`);
+        results = results.filter(p =>
+          (p.city || '').toLowerCase().includes(locationTerm) ||
+          (p.address_line_1 || '').toLowerCase().includes(locationTerm) ||
+          (p.postcode || '').toLowerCase().includes(locationTerm)
+        );
       }
 
-      const url = `${supabaseUrl}/rest/v1/properties?select=*&${filterParams.join('&')}&order=${orderBy}&limit=12`;
+      // Sort by created_at desc by default
+      results.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
-      console.log('[Dashboard] Fetching filtered properties:', url);
+      // Immediate state update - no artificial delay
+      setFilteredProperties(results);
+      setFilteredCount(results.length);
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'count=exact'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const countHeader = response.headers.get('content-range');
-      const totalCount = countHeader ? parseInt(countHeader.split('/')[1]) : data.length;
-
-      console.log('[Dashboard] Filtered properties received:', data.length);
-
-      setFilteredProperties(data || []);
-      setFilteredCount(totalCount || 0);
-
-      if (data.length === 0) {
+      if (results.length === 0) {
         setLocationMessage('No properties found matching your filters. Try adjusting your search criteria.');
       }
+      setSearchLoading(false);
+
+      return; // Exit early as we're using mock data
+
+      // Real API logic below (commented out or kept as secondary)
+      /*
+      const supabaseUrl = 'https://yydtsteyknbpfpxjtlxe.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5ZHRzdGV5a25icGZweGp0bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTkzODgsImV4cCI6MjA3OTM3NTM4OH0.QTUVmTdtnoFhzZ0G6XjdzhFDxcFae0hDSraFhazdNsU';
+      // ... rest of API code ...
+      */
     } catch (err) {
-      console.error('[Dashboard] Error fetching filtered properties:', err);
-      setError('Failed to fetch properties. Please try again.');
-      setFilteredProperties([]);
-      setFilteredCount(0);
-    } finally {
+      console.error('[Dashboard] Error filtering properties:', err);
+      // Fallback already handled by using mock data above
       setSearchLoading(false);
     }
   }, [selectedPropertyType, selectedFilters, searchInput]);
@@ -408,7 +365,7 @@ const DashboardLocationBased = () => {
   }, [handleLocationSearch]);
 
   // Transform property for PropertyCard
-  const transformPropertyForCard = (property) => {
+  const transformPropertyForCard = useCallback((property) => {
     if (!property) return null;
 
     let images = [];
@@ -452,28 +409,29 @@ const DashboardLocationBased = () => {
       listedDate: property.created_at ? new Date(property.created_at) : new Date(),
       featured: property.featured || false,
     };
-  };
+  }, []);
 
   // Combine all properties for map view
   const allProperties = useMemo(() => {
     try {
       const combined = [
-        ...(discoveryProperties || []),
-        ...(mostViewedProperties || []),
-        ...(trendingProperties || []),
-        ...(recentlyAddedProperties || []),
-        ...(highDemandProperties || []),
+        ...(discoveryState.discovery || []),
+        ...(discoveryState.mostViewed || []),
+        ...(discoveryState.trending || []),
+        ...(discoveryState.recentlyAdded || []),
+        ...(discoveryState.highDemand || []),
       ];
       // Remove duplicates by ID
       const unique = combined.filter((p, index, self) =>
         p && p.id && index === self.findIndex(prop => prop && prop.id === p.id)
       );
       return unique;
+      return unique;
     } catch (err) {
       console.error('Error combining properties:', err);
       return [];
     }
-  }, [discoveryProperties, mostViewedProperties, trendingProperties, recentlyAddedProperties, highDemandProperties]);
+  }, [discoveryState]);
 
   // Map properties for map view (formatted for map component)
   const mapProperties = useMemo(() => {
@@ -530,7 +488,7 @@ const DashboardLocationBased = () => {
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto dark:bg-[#0a0a0a] min-h-screen transition-all duration-300">
 
       {/* Simple Welcome Greeting */}
-      <div className="flex items-center justify-between animate-fadeIn">
+      <div id="greeting-section" className="flex items-center justify-between animate-fadeIn">
         <div>
           <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white">
             {getGreeting()}, <span className="text-orange-500 capitalize">{firstName}</span> 👋
@@ -539,13 +497,20 @@ const DashboardLocationBased = () => {
             What would you like to do today?
           </p>
         </div>
+
+        {/* Profile Completion Widget - Top Right */}
+        <div className="ml-auto">
+          <ProfileCompletionCard />
+        </div>
       </div>
 
+
+
       {/* Hero Search Section - Modern Polished Design */}
-      <div className="relative rounded-2xl shadow-2xl overflow-hidden min-h-[480px] lg:min-h-[520px] flex flex-col items-center justify-center animate-fadeIn">
-        {/* Background Image with smooth loading */}
+      <div id="hero-search" className="relative rounded-3xl shadow-soft-xl overflow-hidden min-h-[500px] lg:min-h-[550px] flex flex-col items-center justify-center animate-fadeIn group">
+        {/* Background Image with smooth loading and parallax effect */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105"
           style={{
             backgroundImage: `url('https://images.pexels.com/photos/8293778/pexels-photo-8293778.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2')`,
           }}
@@ -553,20 +518,28 @@ const DashboardLocationBased = () => {
         {/* Elegant gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/70 via-gray-900/50 to-orange-900/30" />
 
-        {/* Hero Content - Clean & Readable */}
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight tracking-tight animate-slideUp">
-            Find your perfect{' '}
-            <span className="text-orange-400">home</span>
+        {/* Top decorative gradient for seamless header blend */}
+        <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-black/20 to-transparent" />
+
+        {/* Hero Content - Enhanced Contrast for Bright Image */}
+        <div className="relative z-10 text-center px-4 md:px-6 max-w-5xl mx-auto w-full">
+          <h1
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight tracking-tight animate-slideUp"
+            style={{ textShadow: '0 4px 20px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)' }}
+          >
+            Find your <span className="text-orange-400" style={{ textShadow: '0 4px 20px rgba(251,146,60,0.4), 0 2px 8px rgba(0,0,0,0.3)' }}>perfect space</span>
           </h1>
-          <p className="text-white/90 text-base md:text-lg mb-8 max-w-2xl mx-auto animate-slideUp" style={{ animationDelay: '0.1s' }}>
-            Search thousands of properties for sale and rent across the UK
+          <p
+            className="text-white text-lg md:text-xl mb-10 max-w-2xl mx-auto animate-slideUp font-medium tracking-wide"
+            style={{ animationDelay: '0.1s', textShadow: '0 2px 12px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3)' }}
+          >
+            Discover thousands of premium properties for sale and rent across the UK
           </p>
 
           {/* Search Card - Clean Glass Effect */}
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 lg:p-6 shadow-2xl max-w-3xl mx-auto animate-slideUp" style={{ animationDelay: '0.2s' }}>
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl p-6 lg:p-8 shadow-2xl max-w-4xl mx-auto animate-slideUp border border-white/50 ring-1 ring-black/5" style={{ animationDelay: '0.2s' }}>
             {/* Tabs */}
-            <div className="flex items-center gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit mx-auto">
+            <div className="flex items-center gap-2 mb-6 bg-gray-100/80 p-1.5 rounded-2xl w-fit mx-auto border border-gray-200/50">
               <button
                 type="button"
                 onClick={(e) => {
@@ -574,9 +547,9 @@ const DashboardLocationBased = () => {
                   setSelectedPropertyType('buy');
                   setSearchParams({ type: 'buy' }, { replace: true });
                 }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${selectedPropertyType === 'buy'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${selectedPropertyType === 'buy'
+                  ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                   }`}
               >
                 Buy
@@ -588,9 +561,9 @@ const DashboardLocationBased = () => {
                   setSelectedPropertyType('rent');
                   setSearchParams({ type: 'rent' }, { replace: true });
                 }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${selectedPropertyType === 'rent'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${selectedPropertyType === 'rent'
+                  ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                   }`}
               >
                 Rent
@@ -602,9 +575,9 @@ const DashboardLocationBased = () => {
                   setSelectedPropertyType('sold');
                   setSearchParams({ type: 'sold' }, { replace: true });
                 }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${selectedPropertyType === 'sold'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${selectedPropertyType === 'sold'
+                  ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
                   }`}
               >
                 Sold
@@ -612,7 +585,7 @@ const DashboardLocationBased = () => {
             </div>
 
             {/* Filter Options Row - Multiple Selection */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
               {[
                 { id: 'all', label: 'All Properties', icon: Sparkles },
                 { id: 'recently_added', label: 'Recently Added', icon: Clock },
@@ -657,12 +630,12 @@ const DashboardLocationBased = () => {
                       }
                       setSearchParams(newParams, { replace: true });
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isSelected
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${isSelected
+                      ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-none'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                   >
-                    <Icon size={14} />
+                    <Icon size={16} className={isSelected ? 'text-orange-500' : 'text-gray-400'} />
                     <span>{filter.label}</span>
                   </button>
                 );
@@ -670,35 +643,35 @@ const DashboardLocationBased = () => {
             </div>
 
             {/* Search Form - Inline */}
-            <form onSubmit={handleLocationSearch} className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <form onSubmit={handleLocationSearch} className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative group/input">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-orange-500 transition-colors" size={22} />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Enter postcode, city, or area..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                  className="w-full pl-14 pr-12 py-4 bg-gray-50 hover:bg-white border-2 border-transparent focus:bg-white focus:border-orange-500 rounded-2xl text-gray-900 placeholder-gray-400 text-lg transition-all duration-300 outline-none shadow-inner"
                   disabled={searchLoading}
                 />
                 {searchInput && (
                   <button
                     type="button"
                     onClick={() => setSearchInput('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
                   >
-                    <X size={18} />
+                    <X size={20} />
                   </button>
                 )}
               </div>
               <button
                 type="submit"
                 disabled={searchLoading}
-                className="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[140px] shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30"
+                className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:from-orange-700 active:to-orange-800 text-white rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 min-w-[160px] shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 transform hover:-translate-y-1"
               >
                 {searchLoading ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} />
+                    <Loader2 className="animate-spin" size={24} />
                     <span>Searching</span>
                   </>
                 ) : (
@@ -712,76 +685,78 @@ const DashboardLocationBased = () => {
 
       {/* Quick Action CTAs - Property Tech Style (hidden when showing filtered results) */}
       {!showFilteredResults && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 10-Minute Broker Request Widget */}
-          <BrokerRequestWidget />
-
-          <button
-            onClick={() => {
-              setActiveTab('buy');
-              navigate('/user/dashboard/discover?tab=buy');
-            }}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-500/25">
-              <Building2 size={24} className="text-white" strokeWidth={1.5} />
+        <>
+          {/* PROMINENT: 10-Minute Broker Response - Full Width Banner */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-2">
+              <Suspense fallback={<div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />}>
+                <BrokerRequestWidget />
+              </Suspense>
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Buy Property</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Find your dream home</p>
-            <span className="text-violet-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              Browse <ArrowRight size={14} />
-            </span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('rent');
-              navigate('/user/dashboard/discover?tab=rent');
-            }}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-cyan-500/25">
-              <Key size={24} className="text-white" strokeWidth={1.5} />
+            <div>
+              <Suspense fallback={<div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />}>
+                <NearbyAgenciesList />
+              </Suspense>
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Rent Property</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Explore rentals</p>
-            <span className="text-cyan-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              Explore <ArrowRight size={14} />
-            </span>
-          </button>
+          </div>
 
-          <button
-            onClick={() => navigate('/user/dashboard/saved')}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
-              <Bookmark size={24} className="text-white" strokeWidth={1.5} />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
-            <span className="text-rose-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              View All <ArrowRight size={14} />
-            </span>
-          </button>
+          {/* Quick Action Cards Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => {
+                setActiveTab('buy');
+                navigate('/user/dashboard/discover?tab=buy');
+              }}
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+            >
+              <div className="p-3.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-500/25">
+                <Building2 size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Buy Property</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Find your dream home</p>
+              <span className="text-violet-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Browse <ArrowRight size={14} />
+              </span>
+            </button>
 
-          <button
-            onClick={() => navigate('/user/dashboard/applications')}
-            className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
-          >
-            <div className="p-3.5 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/25">
-              <ClipboardList size={24} className="text-white" strokeWidth={1.5} />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Applications</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Track progress</p>
-            <span className="text-teal-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              Manage <ArrowRight size={14} />
-            </span>
-          </button>
-        </div>
+            <button
+              onClick={() => {
+                setActiveTab('rent');
+                navigate('/user/dashboard/discover?tab=rent');
+              }}
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+            >
+              <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-cyan-500/25">
+                <Key size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Rent Property</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Explore rentals</p>
+              <span className="text-cyan-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Explore <ArrowRight size={14} />
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/user/dashboard/saved')}
+              className="group bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1 text-left"
+            >
+              <div className="p-3.5 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl w-fit mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/25">
+                <Bookmark size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Saved</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{savedProperties?.length || 0} properties</p>
+              <span className="text-rose-600 text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                View All <ArrowRight size={14} />
+              </span>
+            </button>
+          </div>
+
+          {/* Real-Time Application Monitoring - Prominent Main Card */}
+          <Suspense fallback={<div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />}>
+            <ApplicationTimelineWidget />
+          </Suspense>
+        </>
       )}
-
-      {/* Real-Time Application Monitoring */}
-      <ApplicationTimelineWidget />
 
       {/* Filtered Properties Results */}
       {showFilteredResults && (
@@ -934,7 +909,7 @@ const DashboardLocationBased = () => {
             </button>
           </div>
 
-          {loading || locationLoading ? (
+          {discoveryState.loading.all || locationLoading ? (
             <div className="bg-white dark:bg-white rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 overflow-hidden">
               <div className="h-[600px] lg:h-[700px] flex items-center justify-center">
                 <div className="text-center">

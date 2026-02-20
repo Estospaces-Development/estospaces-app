@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Mail, Phone, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface VerificationModalProps {
@@ -104,8 +105,8 @@ const VerificationModal = ({ isOpen, onClose, onVerified, email, phone }: Verifi
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 relative">
         <button
           onClick={handleClose}
@@ -286,7 +287,8 @@ const VerificationModal = ({ isOpen, onClose, onVerified, email, phone }: Verifi
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

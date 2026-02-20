@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  FileText, Download, Eye, CheckCircle, Clock, AlertCircle, FileCheck, 
+import {
+  FileText, Download, Eye, CheckCircle, Clock, AlertCircle, FileCheck,
   Search, Filter, SortAsc, SortDesc, List, Grid, Calendar, MapPin,
   MoreVertical, Copy, Share2, X, ChevronRight, Loader2, TrendingUp, Bell, ArrowLeft
 } from 'lucide-react';
@@ -104,10 +104,49 @@ const DashboardContracts = () => {
     },
   ];
 
+  const forms = [
+    {
+      id: 'form-1',
+      name: 'Standard Tenant Application Form',
+      description: 'Mandatory form for all new tenancy applications.',
+      type: 'Application Form',
+      category: 'form',
+      date: '2024-01-01',
+      status: 'available',
+      pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      requiresAction: true,
+      isMandatory: true
+    },
+    {
+      id: 'form-2',
+      name: 'Pet Policy Agreement',
+      description: 'Required if you intend to bring pets into the property.',
+      type: 'Agreement',
+      category: 'form',
+      date: '2024-01-01',
+      status: 'available',
+      pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      requiresAction: false,
+      isMandatory: false
+    },
+    {
+      id: 'form-3',
+      name: 'Guarantor Reference Form',
+      description: 'To be completed by your guarantor if applicable.',
+      type: 'Reference Form',
+      category: 'form',
+      date: '2024-01-01',
+      status: 'available',
+      pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      requiresAction: false,
+      isMandatory: true
+    }
+  ];
+
   // Check if contract is signed
   const isSigned = (contractId) => {
-    return signedContracts.some((sc) => sc.contractId === contractId) || 
-           contracts.find(c => c.id === contractId)?.signedDate;
+    return signedContracts.some((sc) => sc.contractId === contractId) ||
+      contracts.find(c => c.id === contractId)?.signedDate;
   };
 
   const getContractStatus = (contract) => {
@@ -124,7 +163,7 @@ const DashboardContracts = () => {
       return {
         label: isUrgent ? 'Urgent - Signature Required' : 'Pending Signature',
         icon: Clock,
-        color: isUrgent 
+        color: isUrgent
           ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
           : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
         bgColor: isUrgent ? 'bg-red-50 dark:bg-red-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20',
@@ -152,7 +191,7 @@ const DashboardContracts = () => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           contract.property?.toLowerCase().includes(query) ||
           contract.name?.toLowerCase().includes(query) ||
           contract.type?.toLowerCase().includes(query) ||
@@ -176,7 +215,7 @@ const DashboardContracts = () => {
     // Sort
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'name':
           comparison = (a.property || '').localeCompare(b.property || '');
@@ -197,6 +236,18 @@ const DashboardContracts = () => {
 
     return filtered;
   }, [contracts, searchQuery, statusFilter, typeFilter, sortBy, sortOrder, signedContracts]);
+
+  // Filter forms
+  const filteredForms = useMemo(() => {
+    return forms.filter(form => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return form.name?.toLowerCase().includes(query) || form.description?.toLowerCase().includes(query);
+      }
+      return true;
+    });
+  }, [forms, searchQuery]);
 
   const handleViewContract = (contract) => {
     setSelectedContract(contract);
@@ -219,7 +270,7 @@ const DashboardContracts = () => {
       },
     ];
     setSignedContracts(updated);
-    
+
     // Also update localStorage (already done in SignatureModal, but refresh state)
     const stored = JSON.parse(localStorage.getItem('signedContracts') || '[]');
     setSignedContracts(stored);
@@ -329,7 +380,7 @@ const DashboardContracts = () => {
 
   const pendingContractsCount = filteredAndSortedContracts.filter(c => !isSigned(c.id) && !c.signedDate && c.status === 'pending').length;
   const signedContractsCount = filteredAndSortedContracts.filter(c => isSigned(c.id) || c.signedDate).length;
-  const urgentContractsCount = filteredAndSortedContracts.filter(c => 
+  const urgentContractsCount = filteredAndSortedContracts.filter(c =>
     !isSigned(c.id) && !c.signedDate && c.daysUntilExpiration && c.daysUntilExpiration < 7
   ).length;
 
@@ -359,22 +410,20 @@ const DashboardContracts = () => {
           <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'list'
+              className={`p-2 rounded transition-colors ${viewMode === 'list'
                   ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
+                }`}
               title="List View"
             >
               <List size={18} />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'grid'
+              className={`p-2 rounded transition-colors ${viewMode === 'grid'
                   ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
+                }`}
               title="Grid View"
             >
               <Grid size={18} />
@@ -436,11 +485,10 @@ const DashboardContracts = () => {
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg font-medium transition-colors ${
-              showFilters || statusFilter !== 'all' || typeFilter !== 'all'
+            className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg font-medium transition-colors ${showFilters || statusFilter !== 'all' || typeFilter !== 'all'
                 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400'
                 : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
+              }`}
           >
             <Filter size={18} />
             Filters
@@ -501,7 +549,70 @@ const DashboardContracts = () => {
         )}
       </div>
 
+      {/* Application Forms Section */}
+      {filteredForms.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <FileCheck size={24} className="text-orange-500" />
+            Mandatory Forms & Agreements
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredForms.map((form) => (
+              <div
+                key={form.id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow relative p-6"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <FileText className="text-blue-600 dark:text-blue-400" size={24} />
+                    </div>
+                    {form.isMandatory && (
+                      <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full border border-red-200 dark:border-red-800">
+                        Mandatory
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => downloadContract(form)}
+                    className="p-2 text-gray-400 hover:text-orange-500 transition-colors"
+                    title="Download"
+                  >
+                    <Download size={20} />
+                  </button>
+                </div>
+
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1 truncate" title={form.name}>
+                  {form.name}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2" title={form.description}>
+                  {form.description}
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleViewContract(form)}
+                    className="flex-1 py-2 px-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Eye size={16} />
+                    View
+                  </button>
+                  <button
+                    onClick={() => downloadContract(form)}
+                    className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download size={16} />
+                    Download
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Contracts List/Grid */}
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">My Contracts</h2>
       {filteredAndSortedContracts.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <FileText className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
@@ -527,11 +638,10 @@ const DashboardContracts = () => {
           )}
         </div>
       ) : (
-        <div className={`${
-          viewMode === 'grid'
+        <div className={`${viewMode === 'grid'
             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
             : 'space-y-4'
-        }`}>
+          }`}>
           {filteredAndSortedContracts.map((contract) => {
             const status = getContractStatus(contract);
             const StatusIcon = status.icon;
@@ -693,9 +803,8 @@ const DashboardContracts = () => {
                       {contract.expirationDate && (
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Expires:</span>
-                          <span className={`font-medium ${
-                            isUrgent ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'
-                          }`}>
+                          <span className={`font-medium ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'
+                            }`}>
                             {formatDate(contract.expirationDate)}
                           </span>
                         </div>
@@ -719,11 +828,10 @@ const DashboardContracts = () => {
                             e.stopPropagation();
                             handleSignContract(contract);
                           }}
-                          className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                            isUrgent
+                          className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${isUrgent
                               ? 'bg-red-600 hover:bg-red-700 text-white'
                               : 'bg-orange-500 hover:bg-orange-600 text-white'
-                          }`}
+                            }`}
                         >
                           <FileCheck size={16} />
                           {isUrgent ? 'Sign Urgently' : 'Accept & Sign'}
@@ -772,10 +880,9 @@ const DashboardContracts = () => {
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
-                  <div 
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-50 dark:bg-orange-900/30'
-                    }`}
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-50 dark:bg-orange-900/30'
+                      }`}
                   >
                     <FileText className={isUrgent ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'} size={24} />
                   </div>
@@ -802,7 +909,7 @@ const DashboardContracts = () => {
                         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
-                          Created {formatDate(contract.date)}
+                            Created {formatDate(contract.date)}
                           </span>
                           {contract.location && (
                             <span className="flex items-center gap-1">
@@ -824,12 +931,12 @@ const DashboardContracts = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                      <span
+                        <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap ${status.color}`}
-                      >
-                        <StatusIcon size={14} />
-                        {status.label}
-                      </span>
+                        >
+                          <StatusIcon size={14} />
+                          {status.label}
+                        </span>
                         <button
                           onClick={() => setQuickActionMenu(quickActionMenu === contract.id ? null : contract.id)}
                           className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors relative"
@@ -888,11 +995,10 @@ const DashboardContracts = () => {
                             e.stopPropagation();
                             handleSignContract(contract);
                           }}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            isUrgent
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isUrgent
                               ? 'bg-red-600 hover:bg-red-700 text-white'
                               : 'bg-orange-500 hover:bg-orange-600 text-white'
-                          }`}
+                            }`}
                         >
                           <FileCheck size={16} />
                           {isUrgent ? 'Sign Urgently' : 'Accept & Sign'}
@@ -1036,7 +1142,7 @@ const ContractDetailsModal = ({ contract, isSigned, signedDate, onClose, onSign,
             {/* Contract Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Contract Information</h3>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Property</label>
                 <p className="text-gray-900 dark:text-gray-100 font-medium">{contract.property}</p>
@@ -1091,7 +1197,7 @@ const ContractDetailsModal = ({ contract, isSigned, signedDate, onClose, onSign,
             {/* Financial & Terms */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-orange-500 mb-4">Financial Details</h3>
-              
+
               {contract.amount && (
                 <div>
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Monthly Amount</label>
@@ -1177,11 +1283,10 @@ const ContractDetailsModal = ({ contract, isSigned, signedDate, onClose, onSign,
           {!isSigned && (
             <button
               onClick={onSign}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-white ${
-                isUrgent
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-white ${isUrgent
                   ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-orange-500 hover:bg-orange-600'
-              }`}
+                }`}
             >
               <FileCheck size={18} />
               {isUrgent ? 'Sign Urgently' : 'Accept & Sign'}

@@ -7,6 +7,8 @@ import { useAuth } from '../../contexts/AuthContext';
  * A simplified protected route that relies solely on AuthContext.
  * No duplicate session checks or auth listeners.
  * Checks if user has 'manager' role.
+ * 
+ * DEVELOPMENT MODE: Auth check can be bypassed using mock user in localStorage.
  */
 const ManagerProtectedRoute = ({ children }) => {
     const { authState, isAuthenticated, loading, getRole } = useAuth();

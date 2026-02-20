@@ -141,7 +141,12 @@ const VirtualTourViewer: React.FC<VirtualTourViewerProps> = ({
     return (
         <div
             ref={containerRef}
-            className={`bg-black overflow-hidden ${embedded ? 'relative w-full h-[600px] rounded-lg shadow-xl' : 'fixed inset-0 z-50'}`}
+            className={`bg-black overflow-hidden ${isFullscreen
+                    ? 'fixed inset-0 z-[9999] w-screen h-screen'
+                    : embedded
+                        ? 'relative w-full h-[600px] rounded-lg shadow-xl'
+                        : 'fixed inset-0 z-50'
+                }`}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}

@@ -90,17 +90,17 @@ const MessageInput = ({ conversationId, onSend }) => {
   }
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
+    <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700/50 flex-shrink-0 z-10 sticky bottom-0 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90">
       {/* Quick Reply Templates */}
       {showQuickReplies && (
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Quick Replies</p>
+        <div className="mb-3 animate-slideUp">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quick Replies</p>
             <button
               onClick={() => setShowQuickReplies(false)}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ const MessageInput = ({ conversationId, onSend }) => {
               <button
                 key={index}
                 onClick={() => handleQuickReply(template)}
-                className="px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 text-gray-700 dark:text-gray-300 transition-colors"
+                className="px-3 py-1.5 text-xs font-medium bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-200 dark:hover:border-orange-800 text-gray-700 dark:text-gray-300 transition-all"
               >
                 {template}
               </button>
@@ -119,27 +119,29 @@ const MessageInput = ({ conversationId, onSend }) => {
 
       {/* Attachments Preview */}
       {attachments.length > 0 && (
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+        <div className="mb-3 px-1">
           <div className="flex flex-wrap gap-2">
             {attachments.map((attachment, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
+                className="group relative flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20 rounded-xl"
               >
-                {getFileIcon(attachment.type)}
+                <div className="text-orange-500 dark:text-orange-400">
+                  {getFileIcon(attachment.type)}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[150px]">
                     {attachment.name}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">
                     {formatFileSize(attachment.size)}
                   </p>
                 </div>
                 <button
                   onClick={() => removeAttachment(index)}
-                  className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white dark:bg-gray-700 rounded-full shadow-sm border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               </div>
             ))}
@@ -148,50 +150,52 @@ const MessageInput = ({ conversationId, onSend }) => {
       )}
 
       {/* Input Area */}
-      <form onSubmit={handleSend} className="p-4">
-        <div className="flex items-end gap-2">
-          {/* Attachment Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
-            title="Attach file"
-          >
-            <Paperclip size={20} />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,.pdf"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+      <form onSubmit={handleSend} className="relative">
+        <div className="flex items-end gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-2xl border border-transparent focus-within:border-orange-200 dark:focus-within:border-orange-900/50 focus-within:ring-2 focus-within:ring-orange-100 dark:focus-within:ring-orange-900/20 transition-all">
 
-          {/* Quick Reply Button */}
-          <button
-            type="button"
-            onClick={() => setShowQuickReplies(!showQuickReplies)}
-            className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
-              showQuickReplies
-                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Quick replies"
-          >
-            <Smile size={20} />
-          </button>
+          <div className="flex gap-1 pb-1">
+            {/* Attachment Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
+              title="Attach file"
+            >
+              <Paperclip size={20} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* Quick Reply Button */}
+            <button
+              type="button"
+              onClick={() => setShowQuickReplies(!showQuickReplies)}
+              className={`p-2 rounded-xl transition-colors ${showQuickReplies
+                  ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                  : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700/50'
+                }`}
+              title="Quick replies"
+            >
+              <Smile size={20} />
+            </button>
+          </div>
 
           {/* Text Input */}
-          <div className="flex-1 relative">
+          <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message... (Press Enter to send, Shift+Enter for new line)"
+              placeholder="Type your message..."
               rows={1}
-              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white resize-none overflow-hidden max-h-32 text-sm"
+              className="w-full px-2 py-2.5 bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 resize-none overflow-hidden max-h-32 text-sm leading-relaxed"
             />
           </div>
 
@@ -199,18 +203,12 @@ const MessageInput = ({ conversationId, onSend }) => {
           <button
             type="submit"
             disabled={!messageText.trim() && attachments.length === 0}
-            className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            className="p-2.5 mb-0.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm hover:shadow-md disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all transform active:scale-95"
             title="Send message"
           >
-            <Send size={20} />
+            <Send size={18} className={messageText.trim() ? "translate-x-0.5" : ""} />
           </button>
         </div>
-
-        {/* Helper Text */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Enter</kbd> to send,{' '}
-          <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Shift+Enter</kbd> for new line
-        </p>
       </form>
     </div>
   );

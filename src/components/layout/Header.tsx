@@ -1,10 +1,12 @@
-import { Search, Bell, User, Palette, Shield, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Search, Bell, User, Palette, Shield, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationsContext';
 import * as managerVerificationService from '../../services/managerVerificationService';
 import type { VerificationStatus } from '../../services/managerVerificationService';
+import NotificationDropdown from '../Dashboard/NotificationDropdown';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -13,9 +15,12 @@ interface HeaderProps {
 const Header = ({ onMenuToggle }: HeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const themeDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
@@ -28,7 +33,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
   useEffect(() => {
     const fetchVerificationStatus = async () => {
       if (!user?.id) return;
-      
+
       try {
         const result = await managerVerificationService.getManagerProfile(user.id);
         if (result.data) {
@@ -38,15 +43,18 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         console.error('Error fetching verification status:', err);
       }
     };
-    
+
     fetchVerificationStatus();
   }, [user?.id]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
         setShowThemeDropdown(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
       }
     };
 
@@ -61,13 +69,17 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
     setShowThemeDropdown(false);
   };
 
+  const handleNotificationClick = (id: string, read: boolean) => {
+    if (!read) markAsRead(id);
+  };
+
   return (
     <header className="bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 font-sans transition-colors duration-300">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Left Section */}
           <div className="flex items-center gap-6 flex-1">
-            <h1 className="page-title text-gray-800 dark:text-white transition-colors duration-300">Manager Dashboard</h1>
+
 
             {/* Search Bar */}
             <div className="flex-1 max-w-md">
@@ -119,18 +131,13 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             </div>
 
             {/* Verification Status Badge */}
-            <HeaderVerificationBadge 
-              status={verificationStatus} 
-              onClick={() => navigate('/manager/dashboard/verification')} 
+            <HeaderVerificationBadge
+              status={verificationStatus}
+              onClick={() => navigate('/manager/dashboard/verification')}
             />
 
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300">
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
-            </button>
+            <NotificationDropdown />
 
             {/* User Profile */}
             <button
@@ -148,15 +155,15 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 };
 
 // Verification badge for header
-const HeaderVerificationBadge = ({ 
-  status, 
-  onClick 
-}: { 
-  status: VerificationStatus | null; 
+const HeaderVerificationBadge = ({
+  status,
+  onClick
+}: {
+  status: VerificationStatus | null;
   onClick: () => void;
 }) => {
   if (!status) return null;
-  
+
   const getConfig = () => {
     switch (status) {
       case 'approved':
@@ -202,10 +209,10 @@ const HeaderVerificationBadge = ({
         };
     }
   };
-  
+
   const config = getConfig();
   const Icon = config.icon;
-  
+
   return (
     <button
       onClick={onClick}

@@ -16,7 +16,7 @@ import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
 const EmailLogin = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated, loading: authLoading, getRole } = useAuth();
+    const { isAuthenticated, loading: authLoading, getRole, refreshSession } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,7 +29,7 @@ const EmailLogin = () => {
 
     // Ref to prevent multiple concurrent sign-in attempts
     const isSigningIn = useRef(false);
-    
+
     // Refs for input elements (for browser automation testing)
     const emailInputRef = useRef(null);
     const passwordInputRef = useRef(null);
@@ -153,44 +153,75 @@ const EmailLogin = () => {
 
         if (emailErr || passErr) return;
 
-        // Check network connectivity
-        if (!navigator.onLine) {
-            setGeneralError('No internet connection. Please check your network and try again.');
-            return;
-        }
-
         // Set loading state and prevent concurrent attempts
         isSigningIn.current = true;
         setLoading(true);
         setGeneralError('');
 
         try {
-            console.log('🔐 EmailLogin: Attempting sign in...');
-            
-            const result = await authService.signInWithEmail(email, password);
+            console.log('🔐 EmailLogin: Checking mock credentials...');
 
-            if (!result.success) {
-                const errorMsg = result.error || 'Sign-in failed. Please try again.';
-                
-                // Categorize errors for better UX
-                const msg = errorMsg.toLowerCase();
-                if (msg.includes('email') && !msg.includes('password') && !msg.includes('credentials')) {
-                    setEmailError(errorMsg);
-                } else if (msg.includes('password') || msg.includes('credentials') || msg.includes('invalid')) {
-                    setPasswordError('Invalid email or password');
-                } else {
-                    setGeneralError(errorMsg);
+            // Mock credentials for development/testing
+            const MOCK_USERS = {
+                'manager@gmail.com': {
+                    password: 'Estospaces@123',
+                    role: 'manager',
+                    redirectPath: '/manager/dashboard',
+                    name: 'Manager User'
+                },
+                'manager@estospaces.com': {
+                    password: 'Estospaces@123',
+                    role: 'manager',
+                    redirectPath: '/manager/dashboard',
+                    name: 'Manager User'
+                },
+                'user@gmail.com': {
+                    password: 'Estospaces@123',
+                    role: 'user',
+                    redirectPath: '/user/dashboard',
+                    name: 'User'
+                },
+                'user@estospaces.com': {
+                    password: 'Estospaces@123',
+                    role: 'user',
+                    redirectPath: '/user/dashboard',
+                    name: 'User'
                 }
+            };
+
+            // Check if email exists in mock users
+            const mockUser = MOCK_USERS[email.toLowerCase()];
+
+            if (!mockUser) {
+                setGeneralError('Invalid email. Use manager@gmail.com or user@gmail.com for demo.');
+                isSigningIn.current = false;
+                setLoading(false);
                 return;
             }
 
-            // Success! Get role and redirect
-            console.log('✅ EmailLogin: Sign-in successful');
-            const role = await authService.getUserRole(result.user);
-            const redirectPath = authService.getRedirectPath(role, from);
+            // Validate password
+            if (password !== mockUser.password) {
+                setGeneralError('Invalid password. Use Estospaces@123 for demo.');
+                isSigningIn.current = false;
+                setLoading(false);
+                return;
+            }
 
-            console.log('🔄 EmailLogin: Navigating to:', redirectPath);
-            navigate(redirectPath, { replace: true });
+            console.log(`✅ EmailLogin: Mock login successful as ${mockUser.role}`);
+
+            // Store mock user info in localStorage for session simulation
+            localStorage.setItem('mockUser', JSON.stringify({
+                email: email.toLowerCase(),
+                role: mockUser.role,
+                name: mockUser.name,
+                isAuthenticated: true
+            }));
+
+            // CRITICAL: Update AuthContext state immediately before navigating
+            await refreshSession();
+
+            console.log('✅ EmailLogin: Navigating to:', mockUser.redirectPath);
+            navigate(mockUser.redirectPath, { replace: true });
 
         } catch (error) {
             console.error('❌ EmailLogin: Unexpected error:', error);
