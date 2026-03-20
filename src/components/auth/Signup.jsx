@@ -25,6 +25,7 @@ const Signup = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     const rules = {
         length: password.length >= 8,
@@ -60,6 +61,11 @@ const Signup = () => {
         
         if (!allRulesPassed) {
             setError('Please meet all password requirements');
+            return;
+        }
+
+        if (!agreedToTerms) {
+            setError('You must agree to the Terms and Conditions and Privacy Policy to create an account.');
             return;
         }
 
@@ -292,9 +298,44 @@ const Signup = () => {
                         <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
                     )}
 
+                    {/* Terms Agreement */}
+                    <div className="mb-6 flex items-start gap-3">
+                        <div className="flex items-center h-5">
+                            <input
+                                id="terms"
+                                type="checkbox"
+                                checked={agreedToTerms}
+                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
+                            />
+                        </div>
+                        <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                            I agree to the{' '}
+                            <span 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    navigate('/terms');
+                                }}
+                                className="text-primary hover:underline font-medium"
+                            >
+                                Terms and Conditions
+                            </span>
+                            {' '}and{' '}
+                            <span 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    navigate('/privacy');
+                                }}
+                                className="text-primary hover:underline font-medium"
+                            >
+                                Privacy Policy
+                            </span>
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !agreedToTerms}
                         className="w-full py-3 bg-primary text-white font-medium rounded-md hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Creating account...' : 'Sign Up'}
